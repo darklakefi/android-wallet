@@ -252,7 +252,7 @@ data class HeliusDasResult(
 @Serializable
 data class HeliusDasAsset(
     @SerialName("interface")
-    val interface: String,
+    val `interface`: String,
     @SerialName("id")
     val id: String,
     @SerialName("content")

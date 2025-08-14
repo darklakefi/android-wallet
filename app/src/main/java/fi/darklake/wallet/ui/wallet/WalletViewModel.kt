@@ -24,13 +24,17 @@ data class WalletUiState(
     val publicKey: String? = null
 )
 
-class WalletViewModel(
+open class WalletViewModel(
     private val storageManager: WalletStorageManager,
     private val settingsManager: SettingsManager
 ) : ViewModel() {
 
-    private val solanaApi = SolanaApiService { settingsManager.getCurrentRpcUrl() }
-    private val assetsRepository = WalletAssetsRepository(solanaApi)
+    private val assetsRepository = createAssetsRepository()
+
+    protected open fun createAssetsRepository(): WalletAssetsRepository {
+        val solanaApi = SolanaApiService { settingsManager.getCurrentRpcUrl() }
+        return WalletAssetsRepository(solanaApi)
+    }
 
     private val _uiState = MutableStateFlow(WalletUiState())
     val uiState: StateFlow<WalletUiState> = _uiState.asStateFlow()

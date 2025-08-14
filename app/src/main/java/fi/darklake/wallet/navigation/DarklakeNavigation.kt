@@ -32,8 +32,10 @@ sealed class Screen(val route: String) {
     data object SendToken : Screen("send_token/{tokenMint}")
     data object SendNft : Screen("send_nft/{nftMint}")
     
-    fun sendToken(tokenMint: String) = "send_token/$tokenMint"
-    fun sendNft(nftMint: String) = "send_nft/$nftMint"
+    companion object {
+        fun sendToken(tokenMint: String) = "send_token/$tokenMint"
+        fun sendNft(nftMint: String) = "send_nft/$nftMint"
+    }
 }
 
 @Composable

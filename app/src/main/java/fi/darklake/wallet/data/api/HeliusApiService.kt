@@ -339,7 +339,7 @@ class SolanaApiService(
             
             val nfts = dasResponse.result.items.mapNotNull { asset ->
                 // Only process assets that are NFTs (non-fungible)
-                if (asset.interface == "V1_NFT" || asset.interface == "ProgrammableNFT") {
+                if (asset.`interface` == "V1_NFT" || asset.`interface` == "ProgrammableNFT") {
                     NftMetadata(
                         mint = asset.id,
                         name = asset.content?.metadata?.name,

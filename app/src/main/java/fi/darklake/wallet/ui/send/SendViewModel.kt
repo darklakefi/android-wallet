@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlin.math.pow
 
 data class SendUiState(
     val recipientAddress: String = "",
@@ -56,7 +57,7 @@ class SendViewModel(
     }
     
     private fun initializeServices() {
-        val networkSettings = settingsManager.getNetworkSettings()
+        val networkSettings = settingsManager.networkSettings.value
         solanaApiService = SolanaApiService { networkSettings.getHeliusRpcUrl() }
         assetsRepository = WalletAssetsRepository(solanaApiService)
     }
@@ -267,7 +268,7 @@ class SendViewModel(
                 
                 val state = _uiState.value
                 val tokenMint = state.tokenMint ?: return@launch
-                val amount = (state.amount * kotlin.math.pow(10.0, state.tokenDecimals.toDouble())).toLong()
+                val amount = (state.amount * (10.0).pow(state.tokenDecimals)).toLong()
                 
                 val result = transactionService.sendTokenTransaction(
                     fromPrivateKey = wallet.privateKey,

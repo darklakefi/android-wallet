@@ -236,7 +236,7 @@ class SolanaTransactionService(
 
     private suspend fun getRecentBlockhash(): Result<String> {
         return try {
-            val networkSettings = settingsManager.getNetworkSettings()
+            val networkSettings = settingsManager.networkSettings.value
             val rpcUrl = networkSettings.getHeliusRpcUrl()
 
             val request = JsonRpcRequest(
@@ -269,7 +269,7 @@ class SolanaTransactionService(
 
     private suspend fun sendTransaction(signedTransaction: String): Result<String> {
         return try {
-            val networkSettings = settingsManager.getNetworkSettings()
+            val networkSettings = settingsManager.networkSettings.value
             val rpcUrl = networkSettings.getHeliusRpcUrl()
 
             val request = JsonRpcRequest(
