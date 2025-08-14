@@ -28,22 +28,25 @@ To enable wallet balance, token, and NFT fetching, you need to configure the Hel
 
 - **SOL Balance:** Fetches native Solana balance via `getBalance` RPC call
 - **Token Accounts:** Retrieves SPL token holdings via `getTokenAccountsByOwner`
-- **NFTs:** Prepared for Digital Asset Standard (DAS) API integration via `getAssetsByOwner`
+- **Token Metadata:** Fetches token metadata (name, symbol, logo) via Jupiter's token list API
+- **NFTs:** Fetches NFT assets and metadata via Helius Digital Asset Standard (DAS) API using `getAssetsByOwner`
 
 ## Current Status:
 
 - ✅ SOL balance fetching implemented
 - ✅ Token account enumeration implemented  
-- ⚠️ Token metadata fetching needs completion
-- ⚠️ NFT fetching needs DAS API response parsing
+- ✅ Token metadata fetching implemented via Jupiter API
+- ✅ NFT fetching implemented via Helius DAS API
 
 ## Testing:
 
 The wallet screen will display:
 - Total SOL balance with refresh capability
-- Token list (currently shows balance without metadata)
-- NFT grid (placeholder until metadata implemented)
+- Token list with full metadata (name, symbol, logo, balance)
+- NFT grid with images, names, and collection information
 - Proper loading states and error handling
+
+**Note:** Token metadata requires no API key (uses public Jupiter API), but NFT fetching requires a valid Helius API key.
 
 ## Security Notes:
 

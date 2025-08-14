@@ -218,21 +218,157 @@ class SolanaApiService(
 
     suspend fun getTokenMetadata(mints: List<String>): Result<List<TokenMetadata>> = withContext(Dispatchers.IO) {
         try {
-            // Helius provides token metadata through their enhanced APIs
-            // For now, return empty list - would need to implement metadata fetching
-            Result.success(emptyList())
+            if (mints.isEmpty()) {
+                return@withContext Result.success(emptyList())
+            }
+            
+            println("=== JUPITER TOKEN METADATA FETCH ===")
+            println("Fetching metadata for ${mints.size} tokens")
+            
+            // Use Jupiter's token list API for metadata
+            // This is a public API that doesn't require authentication
+            val jupiterTokenListUrl = "https://token.jup.ag/strict"
+            
+            val response = client.get(jupiterTokenListUrl) {
+                accept(ContentType.Application.Json)
+            }
+            
+            println("Jupiter API Response status: ${response.status}")
+            
+            if (response.status != HttpStatusCode.OK) {
+                println("Jupiter API request failed with status: ${response.status}")
+                return@withContext Result.success(emptyList())
+            }
+            
+            val responseBody = response.bodyAsText()
+            println("Jupiter API Response received (${responseBody.length} chars)")
+            
+            // Parse the Jupiter token list
+            val jupiterTokens = json.decodeFromString<List<JupiterToken>>(responseBody)
+            println("Parsed ${jupiterTokens.size} tokens from Jupiter")
+            
+            // Filter tokens that match our mint addresses
+            val matchingTokens = jupiterTokens.filter { token ->
+                mints.contains(token.address)
+            }.map { token ->
+                TokenMetadata(
+                    mint = token.address,
+                    name = token.name,
+                    symbol = token.symbol,
+                    description = null, // Jupiter doesn't provide description
+                    image = token.logoURI,
+                    decimals = token.decimals
+                )
+            }
+            
+            println("Found metadata for ${matchingTokens.size} out of ${mints.size} requested tokens")
+            Result.success(matchingTokens)
         } catch (e: Exception) {
-            Result.failure(e)
+            println("Token metadata fetch error: ${e.message}")
+            e.printStackTrace()
+            // Don't fail the whole operation if metadata fetching fails
+            Result.success(emptyList())
         }
     }
 
     suspend fun getNftsByOwner(publicKey: String): Result<List<NftMetadata>> = withContext(Dispatchers.IO) {
         try {
-            // For now, return empty list to keep the app working
-            // NFT functionality can be implemented later when the basic RPC is working
-            Result.success(emptyList())
+            val rpcUrl = getRpcUrl()
+            
+            // Only use Helius DAS API if we have a Helius endpoint
+            if (!rpcUrl.contains("helius")) {
+                println("NFT fetch skipped - requires Helius API key")
+                return@withContext Result.success(emptyList())
+            }
+            
+            println("=== HELIUS DAS API NFT FETCH ===")
+            println("Fetching NFTs for owner: $publicKey")
+            
+            // Use Helius Digital Asset Standard (DAS) API for NFTs
+            val dasRequest = JsonRpcRequest(
+                method = "getAssetsByOwner",
+                params = listOf(
+                    kotlinx.serialization.json.buildJsonObject {
+                        put("ownerAddress", kotlinx.serialization.json.JsonPrimitive(publicKey))
+                        put("page", kotlinx.serialization.json.JsonPrimitive(1))
+                        put("limit", kotlinx.serialization.json.JsonPrimitive(1000))
+                        put("displayOptions", kotlinx.serialization.json.buildJsonObject {
+                            put("showFungible", kotlinx.serialization.json.JsonPrimitive(false))
+                            put("showNativeBalance", kotlinx.serialization.json.JsonPrimitive(false))
+                        })
+                    }
+                )
+            )
+            
+            val jsonString = json.encodeToString(JsonRpcRequest.serializer(), dasRequest)
+            println("DAS Request: $jsonString")
+            
+            val response = client.post(rpcUrl) {
+                contentType(ContentType.Application.Json)
+                accept(ContentType.Application.Json)
+                setBody(jsonString)
+            }
+            
+            println("DAS API Response status: ${response.status}")
+            
+            if (response.status != HttpStatusCode.OK) {
+                println("DAS API request failed with status: ${response.status}")
+                return@withContext Result.success(emptyList())
+            }
+            
+            val responseBody = response.bodyAsText()
+            println("DAS API Response received (${responseBody.length} chars)")
+            
+            if (responseBody.isBlank()) {
+                println("Empty response from DAS API")
+                return@withContext Result.success(emptyList())
+            }
+            
+            // Parse the DAS response
+            val dasResponse = json.decodeFromString<HeliusDasResponse>(responseBody)
+            
+            if (dasResponse.error != null) {
+                println("DAS API Error: ${dasResponse.error.message}")
+                return@withContext Result.success(emptyList())
+            }
+            
+            if (dasResponse.result == null) {
+                println("No result in DAS API response")
+                return@withContext Result.success(emptyList())
+            }
+            
+            val nfts = dasResponse.result.items.mapNotNull { asset ->
+                // Only process assets that are NFTs (non-fungible)
+                if (asset.interface == "V1_NFT" || asset.interface == "ProgrammableNFT") {
+                    NftMetadata(
+                        mint = asset.id,
+                        name = asset.content?.metadata?.name,
+                        symbol = asset.content?.metadata?.symbol,
+                        description = asset.content?.metadata?.description,
+                        image = asset.content?.files?.firstOrNull()?.uri ?: asset.content?.jsonUri,
+                        externalUrl = asset.content?.metadata?.externalUrl,
+                        attributes = asset.content?.metadata?.attributes?.map { attr ->
+                            NftAttribute(
+                                traitType = attr.traitType ?: "",
+                                value = attr.value ?: ""
+                            )
+                        },
+                        collection = asset.grouping?.firstOrNull { it.groupKey == "collection" }?.let { group ->
+                            NftCollection(
+                                name = group.groupValue,
+                                family = null
+                            )
+                        }
+                    )
+                } else null
+            }
+            
+            println("Successfully fetched ${nfts.size} NFTs")
+            Result.success(nfts)
         } catch (e: Exception) {
             println("NFT fetch error: ${e.message}")
+            e.printStackTrace()
+            // Don't fail the whole operation if NFT fetching fails
             Result.success(emptyList())
         }
     }
@@ -260,9 +396,20 @@ class WalletAssetsRepository(
             val tokens = tokensResult.getOrNull() ?: emptyList()
             val nfts = nftsResult.getOrNull() ?: emptyList()
 
+            // Fetch token metadata for all tokens
+            val tokenMints = tokens.map { it.balance.mint }
+            val metadataResult = solanaApi.getTokenMetadata(tokenMints)
+            val tokenMetadata = metadataResult.getOrNull() ?: emptyList()
+            
+            // Associate metadata with tokens
+            val tokensWithMetadata = tokens.map { token ->
+                val metadata = tokenMetadata.find { it.mint == token.balance.mint }
+                token.copy(metadata = metadata)
+            }
+
             return Result.success(WalletAssets(
                 solBalance = solBalance,
-                tokens = tokens,
+                tokens = tokensWithMetadata,
                 nfts = nfts
             ))
         } catch (e: Exception) {
