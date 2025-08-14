@@ -14,6 +14,9 @@ import fi.darklake.wallet.ui.onboarding.MnemonicVerificationScreen
 import fi.darklake.wallet.ui.onboarding.SharedWalletViewModel
 import fi.darklake.wallet.ui.wallet.WalletScreen
 import fi.darklake.wallet.ui.settings.SettingsScreen
+import fi.darklake.wallet.ui.send.SendSolScreen
+import fi.darklake.wallet.ui.send.SendTokenScreen
+import fi.darklake.wallet.ui.send.SendNftScreen
 import fi.darklake.wallet.storage.WalletStorageManager
 import fi.darklake.wallet.data.preferences.SettingsManager
 
@@ -25,6 +28,12 @@ sealed class Screen(val route: String) {
     data object MnemonicVerification : Screen("mnemonic_verification")
     data object Wallet : Screen("wallet")
     data object Settings : Screen("settings")
+    data object SendSol : Screen("send_sol")
+    data object SendToken : Screen("send_token/{tokenMint}")
+    data object SendNft : Screen("send_nft/{nftMint}")
+    
+    fun sendToken(tokenMint: String) = "send_token/$tokenMint"
+    fun sendNft(nftMint: String) = "send_nft/$nftMint"
 }
 
 @Composable
@@ -107,6 +116,15 @@ fun DarklakeNavigation(
                 settingsManager = settingsManager,
                 onNavigateToSettings = {
                     navController.navigate(Screen.Settings.route)
+                },
+                onNavigateToSendSol = {
+                    navController.navigate(Screen.SendSol.route)
+                },
+                onNavigateToSendToken = { tokenMint ->
+                    navController.navigate(Screen.sendToken(tokenMint))
+                },
+                onNavigateToSendNft = { nftMint ->
+                    navController.navigate(Screen.sendNft(nftMint))
                 }
             )
         }
@@ -117,6 +135,40 @@ fun DarklakeNavigation(
                 onBack = {
                     navController.popBackStack()
                 }
+            )
+        }
+        
+        composable(Screen.SendSol.route) {
+            SendSolScreen(
+                onBack = {
+                    navController.popBackStack()
+                },
+                storageManager = storageManager,
+                settingsManager = settingsManager
+            )
+        }
+        
+        composable(Screen.SendToken.route) { backStackEntry ->
+            val tokenMint = backStackEntry.arguments?.getString("tokenMint") ?: ""
+            SendTokenScreen(
+                tokenMint = tokenMint,
+                onBack = {
+                    navController.popBackStack()
+                },
+                storageManager = storageManager,
+                settingsManager = settingsManager
+            )
+        }
+        
+        composable(Screen.SendNft.route) { backStackEntry ->
+            val nftMint = backStackEntry.arguments?.getString("nftMint") ?: ""
+            SendNftScreen(
+                nftMint = nftMint,
+                onBack = {
+                    navController.popBackStack()
+                },
+                storageManager = storageManager,
+                settingsManager = settingsManager
             )
         }
     }

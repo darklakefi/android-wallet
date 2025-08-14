@@ -2,6 +2,7 @@ package fi.darklake.wallet.ui.wallet
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -14,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.CurrencyExchange
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -50,6 +52,9 @@ fun WalletScreen(
     storageManager: WalletStorageManager,
     settingsManager: SettingsManager,
     onNavigateToSettings: () -> Unit,
+    onNavigateToSendSol: () -> Unit = {},
+    onNavigateToSendToken: (String) -> Unit = {},
+    onNavigateToSendNft: (String) -> Unit = {},
     viewModel: WalletViewModel = viewModel { WalletViewModel(storageManager, settingsManager) }
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -82,7 +87,8 @@ fun WalletScreen(
                     isLoading = uiState.isLoading,
                     isRefreshing = uiState.isRefreshing,
                     onRefresh = { viewModel.refresh() },
-                    onSettings = onNavigateToSettings
+                    onSettings = onNavigateToSettings,
+                    onSendSol = onNavigateToSendSol
                 )
             }
 
@@ -101,7 +107,8 @@ fun WalletScreen(
                 item {
                     TerminalTokensSection(
                         tokens = uiState.tokens,
-                        isLoading = uiState.isLoading
+                        isLoading = uiState.isLoading,
+                        onTokenClick = onNavigateToSendToken
                     )
                 }
             }
@@ -111,7 +118,8 @@ fun WalletScreen(
                 item {
                     TerminalNftsSection(
                         nfts = uiState.nfts,
-                        isLoading = uiState.isLoading
+                        isLoading = uiState.isLoading,
+                        onNftClick = onNavigateToSendNft
                     )
                 }
             }
@@ -126,7 +134,8 @@ private fun TerminalWalletCard(
     isLoading: Boolean,
     isRefreshing: Boolean,
     onRefresh: () -> Unit,
-    onSettings: () -> Unit
+    onSettings: () -> Unit,
+    onSendSol: () -> Unit
 ) {
     TerminalCard(
         title = "WALLET_STATUS",
@@ -151,6 +160,19 @@ private fun TerminalWalletCard(
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                TerminalButton(
+                    onClick = onSendSol,
+                    enabled = solBalance > 0.0 && !isLoading,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.Send,
+                        contentDescription = "Send SOL",
+                        tint = if (solBalance > 0.0 && !isLoading) NeonGreen else TerminalGray,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+                
                 TerminalButton(
                     onClick = onSettings,
                     modifier = Modifier.size(32.dp)
@@ -247,7 +269,8 @@ private fun ErrorCard(
 @Composable
 private fun TerminalTokensSection(
     tokens: List<DisplayToken>,
-    isLoading: Boolean
+    isLoading: Boolean,
+    onTokenClick: (String) -> Unit = {}
 ) {
     TerminalCard(
         title = "TOKEN_INVENTORY",
@@ -281,7 +304,10 @@ private fun TerminalTokensSection(
                 contentPadding = PaddingValues(4.dp)
             ) {
                 items(tokens) { token ->
-                    TerminalTokenItem(token = token)
+                    TerminalTokenItem(
+                        token = token,
+                        onClick = { onTokenClick(token.mint) }
+                    )
                 }
             }
         }
@@ -289,7 +315,10 @@ private fun TerminalTokensSection(
 }
 
 @Composable
-private fun TerminalTokenItem(token: DisplayToken) {
+private fun TerminalTokenItem(
+    token: DisplayToken,
+    onClick: () -> Unit = {}
+) {
     Box(
         modifier = Modifier
             .width(140.dp)
@@ -303,6 +332,7 @@ private fun TerminalTokenItem(token: DisplayToken) {
                 color = NeonGreen.copy(alpha = 0.6f),
                 shape = RoundedCornerShape(2.dp)
             )
+            .clickable { onClick() }
             .padding(12.dp)
     ) {
         Column(
@@ -442,7 +472,8 @@ private fun TokenItemSkeleton() {
 @Composable
 private fun TerminalNftsSection(
     nfts: List<DisplayNft>,
-    isLoading: Boolean
+    isLoading: Boolean,
+    onNftClick: (String) -> Unit = {}
 ) {
     TerminalCard(
         title = "NFT_COLLECTION",
@@ -481,7 +512,10 @@ private fun TerminalNftsSection(
                 modifier = Modifier.height(320.dp) // Adjusted height for better display
             ) {
                 items(nfts) { nft ->
-                    TerminalNftItem(nft = nft)
+                    TerminalNftItem(
+                        nft = nft,
+                        onClick = { onNftClick(nft.mint) }
+                    )
                 }
             }
         }
@@ -489,7 +523,10 @@ private fun TerminalNftsSection(
 }
 
 @Composable
-private fun TerminalNftItem(nft: DisplayNft) {
+private fun TerminalNftItem(
+    nft: DisplayNft,
+    onClick: () -> Unit = {}
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -503,6 +540,7 @@ private fun TerminalNftItem(nft: DisplayNft) {
                 color = BrightCyan.copy(alpha = 0.6f),
                 shape = RoundedCornerShape(2.dp)
             )
+            .clickable { onClick() }
     ) {
         Column(
             modifier = Modifier.fillMaxSize()
