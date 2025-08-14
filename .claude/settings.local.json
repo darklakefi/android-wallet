@@ -8,7 +8,11 @@
       "Bash(rm:*)",
       "Bash(touch:*)",
       "Bash(chmod:*)",
-      "Bash(/home/vitorpy/AndroidStudioProjects/DarklakeWallet/test_helius_api.sh:*)"
+      "Bash(/home/vitorpy/AndroidStudioProjects/DarklakeWallet/test_helius_api.sh:*)",
+      "Bash(ls:*)",
+      "Bash(./reproducible-build.sh)",
+      "Bash(find:*)",
+      "Bash(./verify-reproducible.sh:*)"
     ],
     "deny": []
   }

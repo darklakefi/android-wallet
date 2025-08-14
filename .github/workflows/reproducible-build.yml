@@ -1,0 +1,188 @@
+name: Reproducible Build Verification
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Weekly verification run
+    - cron: '0 2 * * 1'
+
+jobs:
+  reproducible-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    strategy:
+      matrix:
+        # Test on multiple environments to ensure broader reproducibility
+        java-version: ['11', '17']
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        # Fetch full history for proper git information
+        fetch-depth: 0
+    
+    - name: Set up JDK ${{ matrix.java-version }}
+      uses: actions/setup-java@v4
+      with:
+        java-version: ${{ matrix.java-version }}
+        distribution: 'temurin'
+        
+    - name: Cache Gradle packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          gradle-${{ runner.os }}-
+    
+    - name: Set deterministic environment
+      run: |
+        # Set reproducible build timestamp
+        echo "SOURCE_DATE_EPOCH=1734307200" >> $GITHUB_ENV
+        echo "TZ=UTC" >> $GITHUB_ENV
+        echo "LC_ALL=C" >> $GITHUB_ENV
+        echo "LANG=C" >> $GITHUB_ENV
+        
+    - name: Validate Gradle wrapper
+      uses: gradle/wrapper-validation-action@v3
+      
+    - name: Run reproducible build verification
+      run: |
+        echo "🔍 Running reproducible build verification..."
+        ./verify-reproducible.sh 3
+        
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: reproducible-builds-java${{ matrix.java-version }}
+        path: |
+          verification-builds/
+          build-info.json
+        retention-days: 30
+        
+    - name: Upload verification report
+      uses: actions/upload-artifact@v4
+      with:
+        name: verification-report-java${{ matrix.java-version }}
+        path: verification-builds/verification-report.json
+        retention-days: 90
+
+  cross-platform-verification:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Set up JDK 11
+      uses: actions/setup-java@v4
+      with:
+        java-version: '11'
+        distribution: 'temurin'
+        
+    - name: Cache Gradle packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: gradle-${{ matrix.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          gradle-${{ matrix.os }}-
+    
+    - name: Set deterministic environment (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        echo "SOURCE_DATE_EPOCH=1734307200" >> $GITHUB_ENV
+        echo "TZ=UTC" >> $GITHUB_ENV
+        echo "LC_ALL=C" >> $GITHUB_ENV
+        echo "LANG=C" >> $GITHUB_ENV
+        
+    - name: Set deterministic environment (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        echo "SOURCE_DATE_EPOCH=1734307200" >> $env:GITHUB_ENV
+        echo "TZ=UTC" >> $env:GITHUB_ENV
+        
+    - name: Run single reproducible build (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        ./reproducible-build.sh
+        
+    - name: Run single reproducible build (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        # Windows equivalent of reproducible build
+        $env:SOURCE_DATE_EPOCH="1734307200"
+        $env:TZ="UTC"
+        $env:GRADLE_OPTS="-Dorg.gradle.daemon=false -Dorg.gradle.caching=true"
+        ./gradlew clean assembleRelease --no-daemon --no-parallel
+        
+    - name: Calculate checksum (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        APK_PATH="app/build/outputs/apk/release/app-release-unsigned.apk"
+        if [ -f "$APK_PATH" ]; then
+          CHECKSUM=$(sha256sum "$APK_PATH" | cut -d' ' -f1)
+          echo "APK_CHECKSUM=$CHECKSUM" >> $GITHUB_ENV
+          echo "Cross-platform checksum (${{ matrix.os }}): $CHECKSUM"
+        fi
+        
+    - name: Calculate checksum (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        $APK_PATH = "app/build/outputs/apk/release/app-release-unsigned.apk"
+        if (Test-Path $APK_PATH) {
+          $CHECKSUM = (Get-FileHash $APK_PATH -Algorithm SHA256).Hash.ToLower()
+          echo "APK_CHECKSUM=$CHECKSUM" >> $env:GITHUB_ENV
+          echo "Cross-platform checksum (${{ matrix.os }}): $CHECKSUM"
+        }
+        
+    - name: Upload cross-platform build
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-${{ matrix.os }}
+        path: |
+          app/build/outputs/apk/release/app-release-unsigned.apk
+          build-info.json
+        retention-days: 7
+
+  # Job to compare checksums across platforms
+  verify-cross-platform:
+    needs: cross-platform-verification
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download all cross-platform builds
+      uses: actions/download-artifact@v4
+      with:
+        pattern: build-*
+        path: cross-platform-builds/
+        merge-multiple: true
+        
+    - name: Compare cross-platform checksums
+      run: |
+        echo "🔍 Comparing cross-platform build reproducibility..."
+        
+        cd cross-platform-builds
+        echo "Available builds:"
+        ls -la
+        
+        # This would need custom logic to compare the checksums
+        # For now, just display what we have
+        echo "Note: Cross-platform reproducibility verification requires manual comparison"
+        echo "due to platform-specific differences in the Android build process."

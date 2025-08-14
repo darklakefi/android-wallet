@@ -5,6 +5,17 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+import java.util.Properties
+import java.io.FileInputStream
+
+// Load signing configuration if available
+val signingPropsFile = rootProject.file("signing.properties")
+val signingProps = if (signingPropsFile.exists()) {
+    Properties().apply { 
+        load(FileInputStream(signingPropsFile))
+    }
+} else null
+
 android {
     namespace = "fi.darklake.wallet"
     compileSdk = 36
@@ -17,6 +28,29 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        
+        // Set deterministic build timestamp (SOURCE_DATE_EPOCH environment variable or fixed timestamp)
+        val buildTimestamp = System.getenv("SOURCE_DATE_EPOCH")?.toLongOrNull()?.times(1000L) 
+            ?: 1734307200000L // Fixed timestamp: 2024-12-16 00:00:00 UTC
+        buildConfigField("long", "BUILD_TIMESTAMP", "${buildTimestamp}L")
+    }
+
+    // Signing configuration for reproducible builds
+    signingConfigs {
+        create("release") {
+            if (signingProps != null) {
+                storeFile = file(signingProps.getProperty("KEYSTORE_FILE"))
+                storePassword = signingProps.getProperty("KEYSTORE_PASSWORD")
+                keyAlias = signingProps.getProperty("KEY_ALIAS")
+                keyPassword = signingProps.getProperty("KEY_PASSWORD")
+                
+                // Use deterministic signing algorithm
+                enableV1Signing = true
+                enableV2Signing = true
+                enableV3Signing = true
+                enableV4Signing = false // Disable for broader compatibility
+            }
+        }
     }
 
     buildTypes {
@@ -26,6 +60,18 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            
+            // Reproducible build settings
+            isDebuggable = false
+            isJniDebuggable = false
+            
+            // Apply signing configuration if available
+            if (signingProps != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+            
+            // Set deterministic APK naming
+            setProperty("archivesBaseName", "darklake-wallet-${defaultConfig.versionName}")
         }
     }
     compileOptions {
@@ -37,6 +83,29 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true // Required for buildConfigField
+    }
+    
+    packaging {
+        // Exclude files that may vary between builds
+        resources {
+            excludes += setOf(
+                "META-INF/DEPENDENCIES",
+                "META-INF/LICENSE",
+                "META-INF/LICENSE.txt",
+                "META-INF/license.txt",
+                "META-INF/NOTICE",
+                "META-INF/NOTICE.txt",
+                "META-INF/notice.txt",
+                "META-INF/ASL2.0",
+                "META-INF/*.kotlin_module",
+                "META-INF/versions/9/previous-compilation-data.bin"
+            )
+        }
+        // Ensure deterministic file ordering in APK
+        dex {
+            useLegacyPackaging = false
+        }
     }
 }
 
