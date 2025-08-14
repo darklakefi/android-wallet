@@ -13,3 +13,5 @@
 .externalNativeBuild
 .cxx
 local.properties
+# API keys and sensitive configuration
+app/src/main/assets/local.properties

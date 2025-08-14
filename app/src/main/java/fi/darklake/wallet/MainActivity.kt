@@ -16,6 +16,7 @@ import fi.darklake.wallet.navigation.DarklakeNavigation
 import fi.darklake.wallet.navigation.Screen
 import fi.darklake.wallet.storage.WalletStorageManager
 import fi.darklake.wallet.ui.theme.DarklakeWalletTheme
+import fi.darklake.wallet.util.LocalConfig
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -23,9 +24,19 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         
+        // Initialize LocalConfig to load API keys
+        LocalConfig.init(this)
+        
         val repository = WalletRepositoryProvider.getInstance(this)
         val storageManager = WalletStorageManager(this)
         val settingsManager = SettingsManager(this)
+        
+        // Set the API key from local config if available and not already set
+        LocalConfig.getHeliusApiKey()?.let { apiKey ->
+            if (settingsManager.networkSettings.value.heliusApiKey == null) {
+                settingsManager.updateHeliusApiKey(apiKey)
+            }
+        }
         
         setContent {
             var startDestination by remember { mutableStateOf<String?>(null) }

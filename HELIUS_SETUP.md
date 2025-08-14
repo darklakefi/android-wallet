@@ -10,10 +10,19 @@ To enable wallet balance, token, and NFT fetching, you need to configure the Hel
    - Create a new project
    - Copy your API key
 
-2. **Configure API Key:**
-   - Open `app/src/main/java/fi/darklake/wallet/data/api/HeliusApiService.kt`
-   - Replace `"your-helius-api-key-here"` with your actual API key
-   - **Important:** In production, store this securely using Android secrets or environment variables
+2. **Configure API Key (Choose one method):**
+
+   ### Method 1: Local Properties File (Recommended for Development)
+   - Copy `app/src/main/assets/local.properties.template` to `app/src/main/assets/local.properties`
+   - Replace `YOUR_API_KEY_HERE` with your actual API key
+   - The app will automatically load this key on startup
+   - This file is gitignored and won't be committed
+
+   ### Method 2: In-App Settings
+   - Open the app and go to Settings
+   - Enter your API key in the "HELIUS API KEY" field
+   - Tap "Save API Key"
+   - The key will be stored in app preferences
 
 ## API Features Implemented:
 

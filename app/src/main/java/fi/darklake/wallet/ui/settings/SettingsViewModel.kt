@@ -38,4 +38,9 @@ class SettingsViewModel(
     fun updateNetwork(network: SolanaNetwork) {
         settingsManager.switchNetwork(network)
     }
+    
+    fun updateHeliusApiKey(apiKey: String) {
+        val key = apiKey.trim().ifBlank { null }
+        settingsManager.updateHeliusApiKey(key)
+    }
 }

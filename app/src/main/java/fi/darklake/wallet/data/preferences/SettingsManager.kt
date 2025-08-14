@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import fi.darklake.wallet.data.model.NetworkSettings
 import fi.darklake.wallet.data.model.SolanaNetwork
+import fi.darklake.wallet.data.model.getHeliusRpcUrl
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -46,7 +47,13 @@ class SettingsManager(context: Context) {
     
     fun getCurrentRpcUrl(): String {
         val settings = _networkSettings.value
-        return settings.customRpcUrl ?: settings.network.rpcUrl
+        return settings.customRpcUrl ?: settings.getHeliusRpcUrl()
+    }
+    
+    fun updateHeliusApiKey(apiKey: String?) {
+        val currentSettings = _networkSettings.value
+        val newSettings = currentSettings.copy(heliusApiKey = apiKey)
+        updateNetworkSettings(newSettings)
     }
     
     companion object {

@@ -1,0 +1,9 @@
+# Local configuration template - DO NOT COMMIT TO GIT
+# 
+# To use this file:
+# 1. Copy this file to local.properties (remove .template extension)
+# 2. Replace YOUR_API_KEY_HERE with your actual Helius API key
+# 3. Get a free API key from https://www.helius.dev/
+#
+# The app will automatically load this API key on startup
+helius.api.key=YOUR_API_KEY_HERE

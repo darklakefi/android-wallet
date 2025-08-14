@@ -13,21 +13,31 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import io.ktor.client.statement.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class SolanaApiService(
     private val getRpcUrl: () -> String
 ) {
+    private val json = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+        encodeDefaults = true
+    }
+    
     private val client = HttpClient(Android) {
         install(ContentNegotiation) {
-            json(Json {
-                ignoreUnknownKeys = true
-                isLenient = true
-            })
+            json(this@SolanaApiService.json)
         }
         install(Logging) {
-            level = LogLevel.INFO
+            level = LogLevel.ALL
+            logger = object : Logger {
+                override fun log(message: String) {
+                    println("HTTP Client: $message")
+                }
+            }
         }
         engine {
             connectTimeout = 30_000
@@ -50,8 +60,16 @@ class SolanaApiService(
     suspend fun getBalance(publicKey: String): Result<Double> = withContext(Dispatchers.IO) {
         try {
             val rpcUrl = getRpcUrl()
+            println("=== HELIUS API REQUEST ===")
             println("Making request to: $rpcUrl")
             println("Public key: $publicKey")
+            
+            // Log if this is using Helius or fallback
+            if (rpcUrl.contains("helius")) {
+                println("Using Helius RPC endpoint")
+            } else {
+                println("Using standard Solana RPC endpoint (no Helius API key)")
+            }
             
             // First, test basic connectivity
             try {
@@ -69,29 +87,50 @@ class SolanaApiService(
                 publicKey
             }
             
+            // Create the JSON-RPC request
+            val requestBody = JsonRpcRequest(
+                method = "getBalance",
+                params = listOf(
+                    kotlinx.serialization.json.JsonPrimitive(testPublicKey)
+                )
+            )
+            
+            val jsonString = json.encodeToString(JsonRpcRequest.serializer(), requestBody)
+            println("Request body to be sent: $jsonString")
+            
             val response = client.post(rpcUrl) {
                 contentType(ContentType.Application.Json)
-                setBody(JsonRpcRequest(
-                    method = "getBalance",
-                    params = listOf(
-                        kotlinx.serialization.json.JsonPrimitive(testPublicKey)
-                    )
-                ))
+                accept(ContentType.Application.Json)
+                setBody(jsonString)
             }
 
             println("Response status: ${response.status}")
-            println("Response headers: ${response.headers}")
+            println("Response content-type: ${response.headers["Content-Type"]}")
             
-            // Check if response is empty
-            val responseBody = response.body<String>()
+            // Get raw response as text first
+            val rawResponse = response.bodyAsText()
+            println("Raw response first 500 chars: ${rawResponse.take(500)}")
+            
+            // Check if response is HTML (common error response)
+            if (rawResponse.contains("<html", ignoreCase = true)) {
+                println("ERROR: Received HTML response instead of JSON")
+                return@withContext Result.failure(Exception("API returned HTML instead of JSON. Check if the API key is valid."))
+            }
+            
+            val responseBody = rawResponse
+            println("Raw response body: '$responseBody'")
+            println("Response body length: ${responseBody.length}")
+            
             if (responseBody.isBlank()) {
-                return@withContext Result.failure(Exception("Empty response from Helius API"))
+                println("ERROR: Received empty response body")
+                println("Response status code: ${response.status.value}")
+                println("Response status description: ${response.status.description}")
+                return@withContext Result.failure(Exception("Empty response from API. Status: ${response.status}. Make sure you have configured a valid Helius API key in Settings."))
             }
             
             println("Helius API Response: $responseBody")
             
             // Try to parse the response
-            val json = Json { ignoreUnknownKeys = true; isLenient = true }
             val balanceResponse = json.decodeFromString<HeliusBalanceResponse>(responseBody)
             
             // Check for API errors
@@ -115,20 +154,25 @@ class SolanaApiService(
 
     suspend fun getTokenAccounts(publicKey: String): Result<List<TokenInfo>> = withContext(Dispatchers.IO) {
         try {
+            val tokenRequest = JsonRpcRequest(
+                method = "getTokenAccountsByOwner",
+                params = listOf(
+                    kotlinx.serialization.json.JsonPrimitive(publicKey),
+                    kotlinx.serialization.json.buildJsonObject {
+                        put("programId", kotlinx.serialization.json.JsonPrimitive("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"))
+                    },
+                    kotlinx.serialization.json.buildJsonObject {
+                        put("encoding", kotlinx.serialization.json.JsonPrimitive("jsonParsed"))
+                    }
+                )
+            )
+            
+            val tokenJsonString = json.encodeToString(JsonRpcRequest.serializer(), tokenRequest)
+            
             val response = client.post(getRpcUrl()) {
                 contentType(ContentType.Application.Json)
-                setBody(JsonRpcRequest(
-                    method = "getTokenAccountsByOwner",
-                    params = listOf(
-                        kotlinx.serialization.json.JsonPrimitive(publicKey),
-                        kotlinx.serialization.json.buildJsonObject {
-                            put("programId", kotlinx.serialization.json.JsonPrimitive("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"))
-                        },
-                        kotlinx.serialization.json.buildJsonObject {
-                            put("encoding", kotlinx.serialization.json.JsonPrimitive("jsonParsed"))
-                        }
-                    )
-                ))
+                accept(ContentType.Application.Json)
+                setBody(tokenJsonString)
             }
 
             val responseBody = response.body<String>()
@@ -138,7 +182,6 @@ class SolanaApiService(
             
             println("Helius Token API Response: $responseBody")
             
-            val json = Json { ignoreUnknownKeys = true; isLenient = true }
             val tokenResponse = json.decodeFromString<HeliusTokenResponse>(responseBody)
             
             // Check for API errors
