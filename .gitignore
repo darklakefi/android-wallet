@@ -15,6 +15,7 @@
 local.properties
 # API keys and sensitive configuration
 app/src/main/assets/local.properties
+.kotlin/*/*.salive
 
 # Reproducible build artifacts (keep verification builds local)
 verification-builds/
@@ -24,3 +25,4 @@ build-info.json
 signing.properties
 *.jks
 *.keystore
+releases/

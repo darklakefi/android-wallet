@@ -1,0 +1,14 @@
+# Signing configuration for release builds
+# Copy this file to signing.properties and fill in your keystore details
+
+# Path to your keystore file (relative to project root)
+KEYSTORE_FILE=release-keystore.jks
+
+# Keystore password
+KEYSTORE_PASSWORD=your_keystore_password
+
+# Key alias
+KEY_ALIAS=your_key_alias
+
+# Key password
+KEY_PASSWORD=your_key_password
