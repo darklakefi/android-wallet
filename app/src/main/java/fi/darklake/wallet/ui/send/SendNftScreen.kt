@@ -26,6 +26,7 @@ import fi.darklake.wallet.ui.components.RetroGridBackground
 import fi.darklake.wallet.ui.components.TerminalButton
 import fi.darklake.wallet.ui.components.TerminalCard
 import fi.darklake.wallet.ui.theme.*
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -208,7 +209,7 @@ fun SendNftScreen(
                     
                     // Transaction fee estimate (in SOL)
                     Text(
-                        text = "ESTIMATED_FEE: ${String.format("%.6f", uiState.estimatedFee)} SOL",
+                        text = "ESTIMATED_FEE: ${String.format(Locale.US, "%.6f", uiState.estimatedFee)} SOL",
                         style = TerminalTextStyle,
                         color = TerminalGray
                     )

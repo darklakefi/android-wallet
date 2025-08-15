@@ -18,8 +18,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
+import android.util.Base64
 import java.security.MessageDigest
-import java.util.*
 import javax.crypto.Cipher
 import javax.crypto.spec.SecretKeySpec
 import kotlin.experimental.xor
@@ -338,7 +338,7 @@ class SolanaTransactionService(
         // Real implementation would derive the public key from private key
         // and encode it as a base58 Solana address
         val hash = MessageDigest.getInstance("SHA-256").digest(privateKey)
-        return "mock_address_" + Base64.getEncoder().encodeToString(hash.take(8).toByteArray())
+        return "mock_address_" + Base64.encodeToString(hash.take(8).toByteArray(), Base64.NO_WRAP)
     }
 
     fun close() {

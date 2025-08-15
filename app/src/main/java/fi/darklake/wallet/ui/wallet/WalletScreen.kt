@@ -45,6 +45,7 @@ import fi.darklake.wallet.ui.components.TerminalButton
 import fi.darklake.wallet.ui.components.TerminalNetworkStatus
 import fi.darklake.wallet.ui.components.neonGlow
 import fi.darklake.wallet.ui.theme.*
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -215,7 +216,7 @@ private fun TerminalWalletCard(
         
         // Balance display
         TerminalBalanceDisplay(
-            balance = if (solBalance > 0) String.format("%.4f", solBalance) else "0.0000",
+            balance = if (solBalance > 0) String.format(Locale.US, "%.4f", solBalance) else "0.0000",
             currency = "SOL",
             isLoading = isLoading && solBalance == 0.0,
             modifier = Modifier.fillMaxWidth()

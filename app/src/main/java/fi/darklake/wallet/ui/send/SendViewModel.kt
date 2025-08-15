@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlin.math.pow
+import java.util.Locale
 
 data class SendUiState(
     val recipientAddress: String = "",
@@ -116,7 +117,7 @@ class SendViewModel(
     fun setMaxAmount() {
         val state = _uiState.value
         val maxAmount = (state.solBalance - state.estimatedFee).coerceAtLeast(0.0)
-        val maxAmountStr = String.format("%.6f", maxAmount)
+        val maxAmountStr = String.format(Locale.US, "%.6f", maxAmount)
         
         _uiState.value = state.copy(
             amountInput = maxAmountStr,
