@@ -6,10 +6,7 @@ import java.security.SecureRandom
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
 import org.bitcoinj.core.Base58
-import java.security.MessageDigest
-import java.security.KeyPairGenerator
-import java.security.spec.ECGenParameterSpec
-import java.security.KeyPair
+import fi.darklake.wallet.data.solana.Ed25519Utils
 
 data class SolanaWallet(
     val publicKey: String,
@@ -87,20 +84,13 @@ object SolanaWalletManager {
     }
     
     private fun deriveKeyPair(seed: ByteArray): Pair<ByteArray, ByteArray> {
-        // Ed25519 key derivation for Solana
-        // For a production app, you'd want to use proper Ed25519 implementation
-        // This is a simplified version for demonstration
-        
+        // Use proper Ed25519 key derivation for Solana
+        // Take first 32 bytes of seed as the private key
         val privateKey = seed.sliceArray(0..31)
-        val publicKey = derivePublicKey(privateKey)
+        
+        // Derive public key using proper Ed25519
+        val publicKey = Ed25519Utils.getPublicKey(privateKey)
         
         return Pair(publicKey, privateKey)
-    }
-    
-    private fun derivePublicKey(privateKey: ByteArray): ByteArray {
-        // Simplified Ed25519 public key derivation
-        // In production, use a proper Ed25519 library
-        val digest = MessageDigest.getInstance("SHA-256")
-        return digest.digest(privateKey).sliceArray(0..31)
     }
 }
