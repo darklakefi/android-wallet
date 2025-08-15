@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,6 +21,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import fi.darklake.wallet.data.preferences.SettingsManager
+import fi.darklake.wallet.data.model.getHeliusRpcUrl
 import fi.darklake.wallet.storage.WalletStorageManager
 import fi.darklake.wallet.ui.components.RetroGridBackground
 import fi.darklake.wallet.ui.components.TerminalButton
@@ -41,12 +42,32 @@ fun SendNftScreen(
     
     // Initialize NFT data when screen loads
     LaunchedEffect(nftMint) {
-        // TODO: Load actual NFT data based on mint
-        viewModel.initializeNftSend(
-            nftMint = nftMint,
-            nftName = "Cool NFT #123", // This would be fetched from metadata
-            nftImageUrl = null // Would be loaded from metadata
-        )
+        // Load NFT from wallet assets to get metadata
+        val wallet = storageManager.getWallet().getOrNull()
+        if (wallet != null) {
+            val networkSettings = settingsManager.networkSettings.value
+            val solanaApiService = fi.darklake.wallet.data.api.SolanaApiService { networkSettings.getHeliusRpcUrl() }
+            
+            val nftsResult = solanaApiService.getNftsByOwner(wallet.publicKey)
+            if (nftsResult.isSuccess) {
+                val nft = nftsResult.getOrNull()?.find { it.mint == nftMint }
+                if (nft != null) {
+                    viewModel.initializeNftSend(
+                        nftMint = nftMint,
+                        nftName = nft.name ?: "Unknown NFT",
+                        nftImageUrl = nft.image
+                    )
+                } else {
+                    // Fallback for unknown NFT
+                    viewModel.initializeNftSend(
+                        nftMint = nftMint,
+                        nftName = "Unknown NFT",
+                        nftImageUrl = null
+                    )
+                }
+            }
+            solanaApiService.close()
+        }
     }
     
     RetroGridBackground {
@@ -75,7 +96,7 @@ fun SendNftScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Icon(
-                        Icons.Default.Send,
+                        Icons.AutoMirrored.Filled.Send,
                         contentDescription = "Send",
                         tint = MaterialTheme.colorScheme.primary
                     )

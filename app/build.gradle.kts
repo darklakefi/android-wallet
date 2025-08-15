@@ -122,7 +122,9 @@ dependencies {
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
-    implementation(libs.bitcoinj.core)
+    implementation(libs.bitcoinj.core) {
+        exclude(group = "org.bouncycastle", module = "bcprov-jdk15to18")
+    }
     implementation(libs.kotlinx.serialization.json)
     // implementation(libs.seed.vault) // TODO: Add correct Seed Vault dependency
     implementation(libs.androidx.security.crypto)

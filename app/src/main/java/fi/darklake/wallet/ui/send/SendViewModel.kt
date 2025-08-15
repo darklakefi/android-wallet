@@ -31,6 +31,8 @@ data class SendUiState(
     // For token sends
     val tokenMint: String? = null,
     val tokenSymbol: String? = null,
+    val tokenName: String? = null,
+    val tokenImageUrl: String? = null,
     val tokenBalance: String? = null,
     val tokenDecimals: Int = 0,
     // For NFT sends
@@ -249,6 +251,31 @@ class SendViewModel(
             tokenBalance = tokenBalance,
             tokenDecimals = decimals
         )
+        
+        // Load actual token metadata
+        loadTokenMetadata(tokenMint)
+    }
+    
+    private fun loadTokenMetadata(mint: String) {
+        viewModelScope.launch {
+            try {
+                val metadataResult = solanaApiService.getTokenMetadata(listOf(mint))
+                if (metadataResult.isSuccess) {
+                    val metadata = metadataResult.getOrNull()?.firstOrNull()
+                    if (metadata != null) {
+                        _uiState.value = _uiState.value.copy(
+                            tokenSymbol = metadata.symbol,
+                            tokenName = metadata.name,
+                            tokenImageUrl = metadata.image,
+                            tokenDecimals = metadata.decimals
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                // Metadata loading failed, but continue with existing data
+                println("Failed to load token metadata: ${e.message}")
+            }
+        }
     }
     
     fun sendToken() {
@@ -310,6 +337,32 @@ class SendViewModel(
             nftName = nftName,
             nftImageUrl = nftImageUrl
         )
+        
+        // Load actual NFT metadata
+        loadNftMetadata(nftMint)
+    }
+    
+    private fun loadNftMetadata(mint: String) {
+        viewModelScope.launch {
+            try {
+                val wallet = storageManager.getWallet().getOrNull()
+                if (wallet != null) {
+                    val nftsResult = solanaApiService.getNftsByOwner(wallet.publicKey)
+                    if (nftsResult.isSuccess) {
+                        val nft = nftsResult.getOrNull()?.find { it.mint == mint }
+                        if (nft != null) {
+                            _uiState.value = _uiState.value.copy(
+                                nftName = nft.name ?: _uiState.value.nftName,
+                                nftImageUrl = nft.image ?: _uiState.value.nftImageUrl
+                            )
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                // NFT metadata loading failed, but continue with existing data
+                println("Failed to load NFT metadata: ${e.message}")
+            }
+        }
     }
     
     fun sendNft() {
