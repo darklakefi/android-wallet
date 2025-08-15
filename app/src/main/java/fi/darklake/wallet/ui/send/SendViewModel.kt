@@ -6,7 +6,7 @@ import fi.darklake.wallet.data.api.SolanaApiService
 import fi.darklake.wallet.data.api.WalletAssetsRepository
 import fi.darklake.wallet.data.model.getHeliusRpcUrl
 import fi.darklake.wallet.data.preferences.SettingsManager
-import fi.darklake.wallet.data.solana.SolanaTransactionService
+import fi.darklake.wallet.data.solana.SolanaKTTransactionService
 import fi.darklake.wallet.storage.WalletStorageManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -49,7 +49,7 @@ class SendViewModel(
     private val _uiState = MutableStateFlow(SendUiState())
     val uiState: StateFlow<SendUiState> = _uiState.asStateFlow()
     
-    private val transactionService = SolanaTransactionService(settingsManager)
+    private val transactionService = SolanaKTTransactionService(settingsManager)
     
     private lateinit var solanaApiService: SolanaApiService
     private lateinit var assetsRepository: WalletAssetsRepository

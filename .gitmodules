@@ -1,0 +1,3 @@
+[submodule "libs/SolanaKT"]
+	path = libs/SolanaKT
+	url = git@github.com:darklakefi/SolanaKT.git

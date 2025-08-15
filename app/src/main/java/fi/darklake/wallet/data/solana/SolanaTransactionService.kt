@@ -104,19 +104,19 @@ class SolanaTransactionService(
     )
 
     @Serializable
-    private data class RecentBlockhashResponse(
+    private data class LatestBlockhashResponse(
         @SerialName("jsonrpc")
         val jsonrpc: String,
         @SerialName("id")
         val id: String,
         @SerialName("result")
-        val result: RecentBlockhashResult? = null,
+        val result: LatestBlockhashResult? = null,
         @SerialName("error")
         val error: SolanaError? = null
     )
 
     @Serializable
-    private data class RecentBlockhashResult(
+    private data class LatestBlockhashResult(
         @SerialName("context")
         val context: BlockhashContext,
         @SerialName("value")
@@ -133,14 +133,8 @@ class SolanaTransactionService(
     private data class BlockhashValue(
         @SerialName("blockhash")
         val blockhash: String,
-        @SerialName("feeCalculator")
-        val feeCalculator: FeeCalculator
-    )
-
-    @Serializable
-    private data class FeeCalculator(
-        @SerialName("lamportsPerSignature")
-        val lamportsPerSignature: Long
+        @SerialName("lastValidBlockHeight")
+        val lastValidBlockHeight: Long
     )
     
     @Serializable
@@ -188,11 +182,11 @@ class SolanaTransactionService(
                 println("To: $toAddress")
                 println("Amount: $lamports lamports")
 
-                // 1. Get recent blockhash
-                val blockhash = getRecentBlockhash().getOrElse { 
-                    return@withRetry Result.failure(Exception("Failed to get recent blockhash: ${it.message}"))
+                // 1. Get latest blockhash
+                val blockhash = getLatestBlockhash().getOrElse { 
+                    return@withRetry Result.failure(Exception("Failed to get latest blockhash: ${it.message}"))
                 }
-                println("Recent blockhash: $blockhash")
+                println("Latest blockhash: $blockhash")
 
                 // 2. Build transaction
                 val fromAddress = getAddressFromPrivateKey(fromPrivateKey)
@@ -252,9 +246,9 @@ class SolanaTransactionService(
                 println("Token: $tokenMint")
                 println("Amount: $amount (decimals: $decimals)")
 
-                // Get recent blockhash
-                val blockhash = getRecentBlockhash().getOrElse { 
-                    return@withRetry Result.failure(Exception("Failed to get recent blockhash: ${it.message}"))
+                // Get latest blockhash
+                val blockhash = getLatestBlockhash().getOrElse { 
+                    return@withRetry Result.failure(Exception("Failed to get latest blockhash: ${it.message}"))
                 }
 
                 // Get from address
@@ -312,14 +306,18 @@ class SolanaTransactionService(
         }
     }
 
-    private suspend fun getRecentBlockhash(): Result<String> {
+    private suspend fun getLatestBlockhash(): Result<String> {
         return try {
             val networkSettings = settingsManager.networkSettings.value
             val rpcUrl = networkSettings.getHeliusRpcUrl()
 
             val request = JsonRpcRequest(
-                method = "getRecentBlockhash",
-                params = emptyList()
+                method = "getLatestBlockhash",
+                params = listOf(
+                    kotlinx.serialization.json.buildJsonObject {
+                        put("commitment", kotlinx.serialization.json.JsonPrimitive("confirmed"))
+                    }
+                )
             )
 
             val jsonString = json.encodeToString(request)
@@ -331,7 +329,7 @@ class SolanaTransactionService(
             }
 
             val responseBody = response.bodyAsText()
-            val blockhashResponse: RecentBlockhashResponse = json.decodeFromString(responseBody)
+            val blockhashResponse: LatestBlockhashResponse = json.decodeFromString(responseBody)
 
             if (blockhashResponse.error != null) {
                 Result.failure(Exception("RPC Error: ${blockhashResponse.error.message}"))
@@ -684,23 +682,24 @@ class SolanaTransactionService(
     }
     
     /**
-     * Checks if a point is on the Ed25519 curve using Bouncy Castle validation
-     * This is much more reliable than implementing curve arithmetic from scratch
+     * Checks if a point is on the Ed25519 curve
+     * For Solana PDAs, we consider a point off-curve if it's a valid Ed25519 point
+     * (PDAs must be off-curve)
      */
     private fun isOnCurve(publicKey: ByteArray): Boolean {
         if (publicKey.size != 32) return false
         
         return try {
-            // Use Bouncy Castle's Ed25519 public key validation
-            // This will throw an exception if the point is not on the curve
-            org.bouncycastle.crypto.params.Ed25519PublicKeyParameters(publicKey, 0)
+            // Try to use the bytes as a public key
+            // If it's a valid Ed25519 point, it's on the curve
+            // For PDA generation, we want points that are OFF the curve
+            com.solana.core.PublicKey(publicKey).toByteArray()
             true
         } catch (_: Exception) {
-            // If validation fails, the point is not on the curve
+            // If validation fails, the point is not on the curve (good for PDAs)
             false
         }
     }
-    
     
     /**
      * Checks if an account exists on Solana

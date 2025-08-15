@@ -124,7 +124,10 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.bitcoinj.core) {
         exclude(group = "org.bouncycastle", module = "bcprov-jdk15to18")
+        exclude(group = "org.bouncycastle", module = "bcprov-jdk18on")
     }
+    implementation(project(":libs:SolanaKT:solana"))
+    // Bouncy Castle is provided by SolanaKT
     implementation(libs.kotlinx.serialization.json)
     // implementation(libs.seed.vault) // TODO: Add correct Seed Vault dependency
     implementation(libs.androidx.security.crypto)
@@ -134,7 +137,6 @@ dependencies {
     implementation(libs.ktor.serialization.kotlinx.json)
     implementation(libs.ktor.client.logging)
     implementation(libs.coil.compose)
-    implementation(libs.bouncycastle.provider)
     testImplementation(libs.junit)
     testImplementation("org.mockito:mockito-core:5.8.0")
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")

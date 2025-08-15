@@ -1,22 +1,17 @@
 package fi.darklake.wallet.data.solana
 
-import org.bouncycastle.crypto.AsymmetricCipherKeyPair
-import org.bouncycastle.crypto.generators.Ed25519KeyPairGenerator
-import org.bouncycastle.crypto.params.Ed25519KeyGenerationParameters
-import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters
-import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters
-import org.bouncycastle.crypto.signers.Ed25519Signer
+import com.solana.vendor.TweetNaclFast
 import java.security.SecureRandom
 
 /**
- * Ed25519 utility functions for Solana using Bouncy Castle
+ * Ed25519 utility functions for Solana using SolanaKT's TweetNaclFast
  * Provides proper Ed25519 cryptographic operations
  */
 object Ed25519Utils {
     
     /**
      * Derives a public key from a private key using proper Ed25519
-     * Uses Bouncy Castle for all Ed25519 operations
+     * Uses TweetNaclFast for all Ed25519 operations
      */
     fun getPublicKey(privateKey: ByteArray): ByteArray {
         require(privateKey.size == 64 || privateKey.size == 32) {
@@ -24,43 +19,20 @@ object Ed25519Utils {
         }
         
         return try {
-            // For Ed25519, if we have 64 bytes, it's typically [32-byte private key][32-byte public key]
-            // For 32 bytes, we need to derive the public key
-            val actualPrivateKey = if (privateKey.size == 64) {
-                // Extract the private key portion (first 32 bytes) and derive public key
-                // Don't trust the second half, always derive for security
-                privateKey.sliceArray(0..31)
-            } else {
-                privateKey
+            when (privateKey.size) {
+                64 -> {
+                    // It's already a full keypair, extract public key
+                    privateKey.sliceArray(32..63)
+                }
+                32 -> {
+                    // It's a seed, generate keypair and extract public key
+                    val keypair = TweetNaclFast.Signature.keyPair_fromSeed(privateKey)
+                    keypair.publicKey
+                }
+                else -> throw IllegalArgumentException("Invalid private key size")
             }
-            
-            // Use Bouncy Castle to derive the public key from the private key
-            val privateKeyParams = Ed25519PrivateKeyParameters(actualPrivateKey, 0)
-            val publicKeyParams = privateKeyParams.generatePublicKey()
-            publicKeyParams.encoded
         } catch (e: Exception) {
-            // If the above fails, treat it as a seed and derive from it
-            try {
-                derivePublicKeyFromSeed(privateKey)
-            } catch (seedException: Exception) {
-                throw IllegalArgumentException("Failed to derive public key: ${e.message}. Seed derivation also failed: ${seedException.message}")
-            }
-        }
-    }
-    
-    /**
-     * Derives public key from seed using Ed25519 standard derivation
-     * Uses Bouncy Castle's proper Ed25519 key derivation from seed
-     */
-    private fun derivePublicKeyFromSeed(seed: ByteArray): ByteArray {
-        return try {
-            // Use Bouncy Castle's Ed25519PrivateKeyParameters constructor that accepts a seed
-            // This automatically handles the proper SHA-512 hashing and scalar clamping
-            val privateKeyParams = Ed25519PrivateKeyParameters(seed, 0)
-            val publicKeyParams = privateKeyParams.generatePublicKey()
-            publicKeyParams.encoded
-        } catch (e: Exception) {
-            throw IllegalArgumentException("Failed to derive public key from seed: ${e.message}")
+            throw IllegalArgumentException("Failed to derive public key: ${e.message}")
         }
     }
     
@@ -73,18 +45,18 @@ object Ed25519Utils {
         }
         
         return try {
-            // Extract the actual private key (first 32 bytes if 64-byte keypair)
-            val secretKey = if (privateKey.size == 64) {
-                privateKey.sliceArray(0..31)
-            } else {
-                privateKey
+            val secretKey = when (privateKey.size) {
+                64 -> privateKey // Already a full keypair
+                32 -> {
+                    // It's a seed, generate full keypair
+                    val keypair = TweetNaclFast.Signature.keyPair_fromSeed(privateKey)
+                    keypair.secretKey
+                }
+                else -> throw IllegalArgumentException("Invalid private key size")
             }
             
-            val privateKeyParams = Ed25519PrivateKeyParameters(secretKey, 0)
-            val signer = Ed25519Signer()
-            signer.init(true, privateKeyParams)
-            signer.update(message, 0, message.size)
-            signer.generateSignature()
+            val signer = TweetNaclFast.Signature(ByteArray(0), secretKey)
+            signer.detached(message)
         } catch (e: Exception) {
             throw IllegalArgumentException("Failed to sign message: ${e.message}")
         }
@@ -98,11 +70,8 @@ object Ed25519Utils {
         require(publicKey.size == 32) { "Public key must be 32 bytes" }
         
         return try {
-            val publicKeyParams = Ed25519PublicKeyParameters(publicKey, 0)
-            val verifier = Ed25519Signer()
-            verifier.init(false, publicKeyParams)
-            verifier.update(message, 0, message.size)
-            verifier.verifySignature(signature)
+            val verifier = TweetNaclFast.Signature(publicKey, ByteArray(0))
+            verifier.detached_verify(message, signature)
         } catch (e: Exception) {
             false
         }
@@ -111,23 +80,17 @@ object Ed25519Utils {
     /**
      * Generates a new Ed25519 key pair
      */
-    fun generateKeyPair(): AsymmetricCipherKeyPair {
-        val keyPairGenerator = Ed25519KeyPairGenerator()
-        keyPairGenerator.init(Ed25519KeyGenerationParameters(SecureRandom()))
-        return keyPairGenerator.generateKeyPair()
+    fun generateKeyPair(): Pair<ByteArray, ByteArray> {
+        val keypair = TweetNaclFast.Signature.keyPair()
+        return Pair(keypair.publicKey, keypair.secretKey)
     }
     
     /**
-     * Converts private key parameters to byte array
+     * Generates a key pair from seed
      */
-    fun privateKeyToBytes(privateKey: Ed25519PrivateKeyParameters): ByteArray {
-        return privateKey.encoded
-    }
-    
-    /**
-     * Converts public key parameters to byte array
-     */
-    fun publicKeyToBytes(publicKey: Ed25519PublicKeyParameters): ByteArray {
-        return publicKey.encoded
+    fun generateKeyPairFromSeed(seed: ByteArray): Pair<ByteArray, ByteArray> {
+        require(seed.size == 32) { "Seed must be 32 bytes" }
+        val keypair = TweetNaclFast.Signature.keyPair_fromSeed(seed)
+        return Pair(keypair.publicKey, keypair.secretKey)
     }
 }
