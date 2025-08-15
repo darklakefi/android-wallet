@@ -220,7 +220,7 @@ fun TerminalButton(
                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 onClick()
             }
-            .padding(horizontal = 24.dp, vertical = 12.dp),
+            .padding(8.dp),
         contentAlignment = Alignment.Center
     ) {
         if (isLoading) {

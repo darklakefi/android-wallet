@@ -12,11 +12,9 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.CurrencyExchange
-import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -44,8 +42,10 @@ import fi.darklake.wallet.ui.components.TerminalCard
 import fi.darklake.wallet.ui.components.TerminalButton
 import fi.darklake.wallet.ui.components.TerminalNetworkStatus
 import fi.darklake.wallet.ui.components.neonGlow
+import fi.darklake.wallet.ui.components.AssetImage
 import fi.darklake.wallet.ui.theme.*
 import java.util.Locale
+import androidx.compose.ui.graphics.Color
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -178,12 +178,19 @@ private fun TerminalWalletCard(
                     onClick = onSettings,
                     modifier = Modifier.size(32.dp)
                 ) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data("file:///android_asset/icons/png/dark/bullet-list.png")
-                            .build(),
+                    AssetImage(
+                        assetPath = "icons/png/dark/bullet-list.png",
                         contentDescription = "Settings",
-                        modifier = Modifier.size(20.dp) // Adjust size as needed
+                        modifier = Modifier.size(32.dp),
+                        tint = NeonGreen,
+                        fallback = {
+                            Icon(
+                                Icons.Default.Settings,
+                                contentDescription = "Settings",
+                                tint = NeonGreen,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
                     )
                 }
                 
@@ -200,12 +207,19 @@ private fun TerminalWalletCard(
                             strokeWidth = 2.dp
                         )
                     } else {
-                        AsyncImage(
-                            model = ImageRequest.Builder(LocalContext.current)
-                                .data("file:///android_asset/icons/png/dark/refresh.png")
-                                .build(),
+                        AssetImage(
+                            assetPath = "icons/png/dark/refresh.png",
                             contentDescription = "Refresh",
-                            modifier = Modifier.size(20.dp) // Adjust size as needed
+                            modifier = Modifier.size(20.dp),
+                            tint = if (!isLoading && !isRefreshing) NeonGreen else TerminalGray,
+                            fallback = {
+                                Icon(
+                                    Icons.Default.Refresh,
+                                    contentDescription = "Refresh",
+                                    tint = if (!isLoading && !isRefreshing) NeonGreen else TerminalGray,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
                         )
                     }
                 }
