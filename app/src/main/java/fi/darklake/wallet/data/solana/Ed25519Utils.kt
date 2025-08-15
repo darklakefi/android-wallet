@@ -7,7 +7,6 @@ import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters
 import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters
 import org.bouncycastle.crypto.signers.Ed25519Signer
 import java.security.SecureRandom
-import java.security.MessageDigest
 
 /**
  * Ed25519 utility functions for Solana using Bouncy Castle
@@ -17,45 +16,47 @@ object Ed25519Utils {
     
     /**
      * Derives a public key from a private key using proper Ed25519
+     * Uses Bouncy Castle for all Ed25519 operations
      */
     fun getPublicKey(privateKey: ByteArray): ByteArray {
         require(privateKey.size == 64 || privateKey.size == 32) {
             "Private key must be 32 or 64 bytes"
         }
         
-        // If 64 bytes, the public key is in the second half
-        if (privateKey.size == 64) {
-            return privateKey.sliceArray(32..63)
-        }
-        
-        // For 32-byte private key, derive public key using proper Ed25519
         return try {
-            val privateKeyParams = Ed25519PrivateKeyParameters(privateKey, 0)
+            // For Ed25519, if we have 64 bytes, it's typically [32-byte private key][32-byte public key]
+            // For 32 bytes, we need to derive the public key
+            val actualPrivateKey = if (privateKey.size == 64) {
+                // Extract the private key portion (first 32 bytes) and derive public key
+                // Don't trust the second half, always derive for security
+                privateKey.sliceArray(0..31)
+            } else {
+                privateKey
+            }
+            
+            // Use Bouncy Castle to derive the public key from the private key
+            val privateKeyParams = Ed25519PrivateKeyParameters(actualPrivateKey, 0)
             val publicKeyParams = privateKeyParams.generatePublicKey()
             publicKeyParams.encoded
         } catch (e: Exception) {
-            // Fallback to seed-based derivation if direct key derivation fails
-            derivePublicKeyFromSeed(privateKey)
+            // If the above fails, treat it as a seed and derive from it
+            try {
+                derivePublicKeyFromSeed(privateKey)
+            } catch (seedException: Exception) {
+                throw IllegalArgumentException("Failed to derive public key: ${e.message}. Seed derivation also failed: ${seedException.message}")
+            }
         }
     }
     
     /**
      * Derives public key from seed using Ed25519 standard derivation
+     * Uses Bouncy Castle's proper Ed25519 key derivation from seed
      */
     private fun derivePublicKeyFromSeed(seed: ByteArray): ByteArray {
-        // Hash the seed to get the private scalar
-        val hash = MessageDigest.getInstance("SHA-512").digest(seed)
-        
-        // Clamp the private scalar according to Ed25519 specification
-        hash[0] = (hash[0].toInt() and 0xF8).toByte()
-        hash[31] = (hash[31].toInt() and 0x7F).toByte()
-        hash[31] = (hash[31].toInt() or 0x40).toByte()
-        
-        // Use first 32 bytes as the private key
-        val privateKey = hash.sliceArray(0..31)
-        
         return try {
-            val privateKeyParams = Ed25519PrivateKeyParameters(privateKey, 0)
+            // Use Bouncy Castle's Ed25519PrivateKeyParameters constructor that accepts a seed
+            // This automatically handles the proper SHA-512 hashing and scalar clamping
+            val privateKeyParams = Ed25519PrivateKeyParameters(seed, 0)
             val publicKeyParams = privateKeyParams.generatePublicKey()
             publicKeyParams.encoded
         } catch (e: Exception) {

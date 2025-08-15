@@ -684,15 +684,23 @@ class SolanaTransactionService(
     }
     
     /**
-     * Simplified check if a point is on the Ed25519 curve
-     * In production, this would use proper curve arithmetic
+     * Checks if a point is on the Ed25519 curve using Bouncy Castle validation
+     * This is much more reliable than implementing curve arithmetic from scratch
      */
     private fun isOnCurve(publicKey: ByteArray): Boolean {
-        // Simplified heuristic: check if the last byte has certain patterns
-        // that are less likely to be valid curve points
-        // In production, use proper Ed25519 curve validation
-        return (publicKey[31].toInt() and 0x80) == 0
+        if (publicKey.size != 32) return false
+        
+        return try {
+            // Use Bouncy Castle's Ed25519 public key validation
+            // This will throw an exception if the point is not on the curve
+            org.bouncycastle.crypto.params.Ed25519PublicKeyParameters(publicKey, 0)
+            true
+        } catch (_: Exception) {
+            // If validation fails, the point is not on the curve
+            false
+        }
     }
+    
     
     /**
      * Checks if an account exists on Solana

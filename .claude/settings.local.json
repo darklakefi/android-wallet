@@ -12,7 +12,10 @@
       "Bash(ls:*)",
       "Bash(./reproducible-build.sh)",
       "Bash(find:*)",
-      "Bash(./verify-reproducible.sh:*)"
+      "Bash(./verify-reproducible.sh:*)",
+      "Bash(kotlinc:*)",
+      "Bash(java:*)",
+      "Bash(kotlin:*)"
     ],
     "deny": []
   }
