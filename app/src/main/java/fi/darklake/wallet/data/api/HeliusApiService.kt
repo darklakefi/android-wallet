@@ -54,7 +54,7 @@ class SolanaApiService(
         @SerialName("method")
         val method: String,
         @SerialName("params")
-        val params: List<kotlinx.serialization.json.JsonElement>
+        val params: kotlinx.serialization.json.JsonElement
     )
 
     suspend fun getBalance(publicKey: String): Result<Double> = withContext(Dispatchers.IO) {
@@ -90,9 +90,9 @@ class SolanaApiService(
             // Create the JSON-RPC request
             val requestBody = JsonRpcRequest(
                 method = "getBalance",
-                params = listOf(
-                    kotlinx.serialization.json.JsonPrimitive(testPublicKey)
-                )
+                params = kotlinx.serialization.json.buildJsonArray {
+                    add(kotlinx.serialization.json.JsonPrimitive(testPublicKey))
+                }
             )
             
             val jsonString = json.encodeToString(JsonRpcRequest.serializer(), requestBody)
@@ -156,15 +156,15 @@ class SolanaApiService(
         try {
             val tokenRequest = JsonRpcRequest(
                 method = "getTokenAccountsByOwner",
-                params = listOf(
-                    kotlinx.serialization.json.JsonPrimitive(publicKey),
-                    kotlinx.serialization.json.buildJsonObject {
+                params = kotlinx.serialization.json.buildJsonArray {
+                    add(kotlinx.serialization.json.JsonPrimitive(publicKey))
+                    add(kotlinx.serialization.json.buildJsonObject {
                         put("programId", kotlinx.serialization.json.JsonPrimitive("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"))
-                    },
-                    kotlinx.serialization.json.buildJsonObject {
+                    })
+                    add(kotlinx.serialization.json.buildJsonObject {
                         put("encoding", kotlinx.serialization.json.JsonPrimitive("jsonParsed"))
-                    }
-                )
+                    })
+                }
             )
             
             val tokenJsonString = json.encodeToString(JsonRpcRequest.serializer(), tokenRequest)
@@ -284,20 +284,18 @@ class SolanaApiService(
             println("=== LIGHT PROTOCOL COMPRESSED TOKENS FETCH ===")
             println("Fetching compressed tokens for owner: $publicKey")
             
-            // Use DAS API to get compressed tokens
+            // Use DAS API to get compressed tokens - params should be a direct object, not wrapped in array
             val compressedTokenRequest = JsonRpcRequest(
                 method = "getAssetsByOwner",
-                params = listOf(
-                    kotlinx.serialization.json.buildJsonObject {
-                        put("ownerAddress", kotlinx.serialization.json.JsonPrimitive(publicKey))
-                        put("page", kotlinx.serialization.json.JsonPrimitive(1))
-                        put("limit", kotlinx.serialization.json.JsonPrimitive(1000))
-                        put("displayOptions", kotlinx.serialization.json.buildJsonObject {
-                            put("showFungible", kotlinx.serialization.json.JsonPrimitive(true))
-                            put("showNativeBalance", kotlinx.serialization.json.JsonPrimitive(false))
-                        })
-                    }
-                )
+                params = kotlinx.serialization.json.buildJsonObject {
+                    put("ownerAddress", kotlinx.serialization.json.JsonPrimitive(publicKey))
+                    put("page", kotlinx.serialization.json.JsonPrimitive(1))
+                    put("limit", kotlinx.serialization.json.JsonPrimitive(1000))
+                    put("displayOptions", kotlinx.serialization.json.buildJsonObject {
+                        put("showFungible", kotlinx.serialization.json.JsonPrimitive(true))
+                        put("showNativeBalance", kotlinx.serialization.json.JsonPrimitive(false))
+                    })
+                }
             )
             
             val jsonString = json.encodeToString(JsonRpcRequest.serializer(), compressedTokenRequest)
@@ -338,6 +336,7 @@ class SolanaApiService(
             }
             
             val compressedTokens = dasResponse.result.items.mapNotNull { asset ->
+                println("Processing asset: ${asset.id}, interface: ${asset.`interface`}, compressed: ${asset.compression?.compressed}")
                 // Only process assets that are fungible tokens and compressed
                 if (asset.`interface` == "FungibleToken" && asset.compression?.compressed == true) {
                     // Extract token information from the asset
@@ -373,24 +372,19 @@ class SolanaApiService(
             println("=== LIGHT PROTOCOL COMPRESSED NFTS FETCH ===")
             println("Fetching compressed NFTs for owner: $publicKey")
             
-            // Use DAS API to get compressed NFTs specifically
+            // Use DAS API to get all assets then filter for compressed NFTs - params should be a direct object
             val compressedNftRequest = JsonRpcRequest(
                 method = "getAssetsByOwner",
-                params = listOf(
-                    kotlinx.serialization.json.buildJsonObject {
-                        put("ownerAddress", kotlinx.serialization.json.JsonPrimitive(publicKey))
-                        put("page", kotlinx.serialization.json.JsonPrimitive(1))
-                        put("limit", kotlinx.serialization.json.JsonPrimitive(1000))
-                        put("displayOptions", kotlinx.serialization.json.buildJsonObject {
-                            put("showFungible", kotlinx.serialization.json.JsonPrimitive(false))
-                            put("showNativeBalance", kotlinx.serialization.json.JsonPrimitive(false))
-                        })
-                        // Filter for only compressed assets
-                        put("compression", kotlinx.serialization.json.buildJsonObject {
-                            put("compressed", kotlinx.serialization.json.JsonPrimitive(true))
-                        })
-                    }
-                )
+                params = kotlinx.serialization.json.buildJsonObject {
+                    put("ownerAddress", kotlinx.serialization.json.JsonPrimitive(publicKey))
+                    put("page", kotlinx.serialization.json.JsonPrimitive(1))
+                    put("limit", kotlinx.serialization.json.JsonPrimitive(1000))
+                    put("displayOptions", kotlinx.serialization.json.buildJsonObject {
+                        put("showFungible", kotlinx.serialization.json.JsonPrimitive(false))
+                        put("showNativeBalance", kotlinx.serialization.json.JsonPrimitive(false))
+                    })
+                    // Don't filter in the request, we'll filter in the response processing
+                }
             )
             
             val jsonString = json.encodeToString(JsonRpcRequest.serializer(), compressedNftRequest)
@@ -431,9 +425,11 @@ class SolanaApiService(
             }
             
             val compressedNfts = dasResponse.result.items.mapNotNull { asset ->
+                println("Processing NFT asset: ${asset.id}, interface: ${asset.`interface`}, compressed: ${asset.compression?.compressed}")
                 // Only process assets that are NFTs and compressed
                 if ((asset.`interface` == "V1_NFT" || asset.`interface` == "ProgrammableNFT") && 
                     asset.compression?.compressed == true) {
+                    println("Found compressed NFT: ${asset.content?.metadata?.name}")
                     CompressedNftMetadata(
                         id = asset.id,
                         name = asset.content?.metadata?.name,
@@ -481,20 +477,18 @@ class SolanaApiService(
             println("=== HELIUS DAS API NFT FETCH ===")
             println("Fetching NFTs for owner: $publicKey")
             
-            // Use Helius Digital Asset Standard (DAS) API for NFTs
+            // Use Helius Digital Asset Standard (DAS) API for NFTs - params should be a direct object
             val dasRequest = JsonRpcRequest(
                 method = "getAssetsByOwner",
-                params = listOf(
-                    kotlinx.serialization.json.buildJsonObject {
-                        put("ownerAddress", kotlinx.serialization.json.JsonPrimitive(publicKey))
-                        put("page", kotlinx.serialization.json.JsonPrimitive(1))
-                        put("limit", kotlinx.serialization.json.JsonPrimitive(1000))
-                        put("displayOptions", kotlinx.serialization.json.buildJsonObject {
-                            put("showFungible", kotlinx.serialization.json.JsonPrimitive(false))
-                            put("showNativeBalance", kotlinx.serialization.json.JsonPrimitive(false))
-                        })
-                    }
-                )
+                params = kotlinx.serialization.json.buildJsonObject {
+                    put("ownerAddress", kotlinx.serialization.json.JsonPrimitive(publicKey))
+                    put("page", kotlinx.serialization.json.JsonPrimitive(1))
+                    put("limit", kotlinx.serialization.json.JsonPrimitive(1000))
+                    put("displayOptions", kotlinx.serialization.json.buildJsonObject {
+                        put("showFungible", kotlinx.serialization.json.JsonPrimitive(false))
+                        put("showNativeBalance", kotlinx.serialization.json.JsonPrimitive(false))
+                    })
+                }
             )
             
             val jsonString = json.encodeToString(JsonRpcRequest.serializer(), dasRequest)
@@ -544,12 +538,7 @@ class SolanaApiService(
                         description = asset.content?.metadata?.description,
                         image = asset.content?.files?.firstOrNull()?.uri ?: asset.content?.jsonUri,
                         externalUrl = asset.content?.metadata?.externalUrl,
-                        attributes = asset.content?.metadata?.attributes?.map { attr ->
-                            NftAttribute(
-                                traitType = attr.traitType ?: "",
-                                value = attr.value ?: ""
-                            )
-                        },
+                        attributes = null,  // TODO: Parse from JsonElement if needed
                         collection = asset.grouping?.firstOrNull { it.groupKey == "collection" }?.let { group ->
                             NftCollection(
                                 name = group.groupValue,

@@ -310,7 +310,7 @@ data class HeliusDasQuality(
 @Serializable
 data class HeliusDasMetadata(
     @SerialName("attributes")
-    val attributes: List<HeliusDasAttribute>? = null,
+    val attributes: kotlinx.serialization.json.JsonElement? = null,  // Can be object or array
     @SerialName("description")
     val description: String? = null,
     @SerialName("name")
@@ -318,7 +318,9 @@ data class HeliusDasMetadata(
     @SerialName("symbol")
     val symbol: String? = null,
     @SerialName("external_url")
-    val externalUrl: String? = null
+    val externalUrl: String? = null,
+    @SerialName("token_standard")
+    val tokenStandard: String? = null
 )
 
 @Serializable
