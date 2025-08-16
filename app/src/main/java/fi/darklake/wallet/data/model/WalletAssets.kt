@@ -158,7 +158,7 @@ data class HeliusTokenAccountData(
     @SerialName("owner")
     val owner: String,
     @SerialName("rentEpoch")
-    val rentEpoch: Long
+    val rentEpoch: String? = null  // Use String to handle numeric overflow from ULong.MAX_VALUE
 )
 
 @Serializable

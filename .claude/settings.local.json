@@ -18,7 +18,14 @@
       "Bash(kotlin:*)",
       "WebFetch(domain:github.com)",
       "Bash(git checkout:*)",
-      "Bash(git submodule add:*)"
+      "Bash(git submodule add:*)",
+      "Bash(solana balance:*)",
+      "Bash(spl-token create-token:*)",
+      "Bash(spl-token:*)",
+      "Bash(solana address:*)",
+      "Bash(adb logcat:*)",
+      "Bash(adb shell:*)",
+      "Bash(adb shell am start:*)"
     ],
     "deny": []
   }
