@@ -1,141 +1,120 @@
 package fi.darklake.wallet.ui.onboarding
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import fi.darklake.wallet.R
 import fi.darklake.wallet.ui.theme.DarklakeWalletTheme
-import fi.darklake.wallet.ui.theme.NeonGreen
-import fi.darklake.wallet.ui.theme.ElectricBlue
+import fi.darklake.wallet.ui.design.DesignTokens
+import fi.darklake.wallet.ui.components.FlexLayout
+import fi.darklake.wallet.ui.components.FlexSection
+import fi.darklake.wallet.ui.components.FlexPosition
+import fi.darklake.wallet.ui.components.defaultScreenBackground
+import fi.darklake.wallet.ui.components.AppLogo
+import fi.darklake.wallet.ui.components.AppTitle
+import fi.darklake.wallet.ui.components.AppBodyText
+import fi.darklake.wallet.ui.components.AppButton
+import fi.darklake.wallet.ui.components.AppContainer
+import fi.darklake.wallet.ui.components.ContainerVariant
+import fi.darklake.wallet.ui.components.HighlightedText
+import fi.darklake.wallet.ui.components.BackgroundWithOverlay
+import fi.darklake.wallet.ui.components.NumberedList
+import fi.darklake.wallet.ui.components.createHighlightedItem
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.graphics.Color
+import fi.darklake.wallet.ui.theme.Green100
+import fi.darklake.wallet.ui.theme.Green300
 
+/**
+ * Welcome screen for the Darklake wallet onboarding flow.
+ * 
+ * Displays the app logo, tagline, and main action buttons for creating
+ * or importing a wallet. Uses a flexible layout system to position
+ * content with proper spacing and visual hierarchy.
+ * 
+ * @param onCreateWallet Callback when user wants to create a new wallet
+ * @param onImportWallet Callback when user wants to import existing wallet
+ */
 @Composable
 fun WelcomeScreen(
     onCreateWallet: () -> Unit,
     onImportWallet: () -> Unit
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.radialGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.surface,
-                        MaterialTheme.colorScheme.background
-                    ),
-                    radius = 1200f
-                )
-            )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            // Logo placeholder - would use SVG when properly converted
-            Box(
-                modifier = Modifier
-                    .size(120.dp)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "DARKLAKE",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-            
-            Spacer(modifier = Modifier.height(32.dp))
-            
-            Text(
-                text = "DARKLAKE",
-                style = MaterialTheme.typography.displayMedium,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.primary
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            Text(
-                text = "WALLET",
-                style = MaterialTheme.typography.displaySmall,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.secondary
-            )
-            
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            Text(
-                text = "Your trades become invisible.\nYour moves, untraceable.\nYour value, preserved.\nYour identity, yours again.",
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                lineHeight = MaterialTheme.typography.bodyMedium.lineHeight
-            )
-            
-            Spacer(modifier = Modifier.height(64.dp))
-            
-            Button(
-                onClick = onCreateWallet,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
+    BackgroundWithOverlay {
+        FlexLayout(
+            sections = listOf(
+                // Top section: Logo + Title + Tagline
+                FlexSection(
+                    content = {
+                        AppLogo(
+                            logoResId = R.drawable.darklake_logo,
+                            contentDescription = "Darklake Logo"
+                        )
+                        
+                        Spacer(modifier = Modifier.height(DesignTokens.Layout.componentGap))
+                        
+                        AppTitle(text = "DARKLAKE WALLET")
+                        
+                        Spacer(modifier = Modifier.height(DesignTokens.Layout.componentGap))
+                        
+                        AppBodyText(text = "SECURE • PRIVATE • DECENTRALIZED")
+                    },
+                    position = FlexPosition.Top,
+                    topSpacing = DesignTokens.Spacing.top,
+                    bottomSpacing = DesignTokens.Spacing.logoToContent
                 ),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text(
-                    text = "CREATE NEW WALLET",
-                    style = MaterialTheme.typography.labelLarge
-                )
-            }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            OutlinedButton(
-                onClick = onImportWallet,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = MaterialTheme.colorScheme.primary
+                // Middle section: Message box
+                FlexSection(
+                    content = {
+                        AppContainer(
+                            variant = ContainerVariant.Shadowed,
+                            horizontalPadding = DesignTokens.Sizing.messageBoxPadding,
+                            verticalPadding = DesignTokens.Sizing.messageBoxVerticalPadding,
+                            content = {
+                                NumberedList(
+                                    items = listOf(
+                                        createHighlightedItem("YOUR TRADES BECOME ", "INVISIBLE", "."),
+                                        createHighlightedItem("YOUR MOVES, ", "UNTRACEABLE", "."),
+                                        createHighlightedItem("YOUR VALUE, ", "PRESERVED", "."),
+                                        createHighlightedItem("YOUR IDENTITY, ", "YOURS AGAIN", ".")
+                                    )
+                                )
+                            }
+                        )
+                    },
+                    position = FlexPosition.Flex,
+                    spacing = DesignTokens.Spacing.logoToContent
                 ),
-                border = ButtonDefaults.outlinedButtonBorder.copy(
-                    width = 2.dp
-                ),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text(
-                    text = "IMPORT EXISTING WALLET",
-                    style = MaterialTheme.typography.labelLarge
+                // Bottom section: Buttons (now properly positioned at bottom)
+                FlexSection(
+                    content = {
+                        AppButton(
+                            text = "CREATE NEW WALLET",
+                            onClick = onCreateWallet,
+                            isPrimary = true
+                        )
+                        
+                        Spacer(modifier = Modifier.height(DesignTokens.Layout.buttonGap))
+                        
+                        AppButton(
+                            text = "IMPORT EXISTING WALLET",
+                            onClick = onImportWallet,
+                            isPrimary = false,
+                            hasUnderline = true
+                        )
+                    },
+                    position = FlexPosition.Bottom,
+                    bottomSpacing = DesignTokens.Spacing.xs
                 )
-            }
-            
-            Spacer(modifier = Modifier.height(48.dp))
-            
-            Text(
-                text = "Secure • Private • Decentralized",
-                style = MaterialTheme.typography.bodySmall,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-        }
+        )
     }
 }
 

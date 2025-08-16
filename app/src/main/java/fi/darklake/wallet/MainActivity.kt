@@ -9,6 +9,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import fi.darklake.wallet.data.WalletRepositoryProvider
 import fi.darklake.wallet.data.preferences.SettingsManager
@@ -22,7 +24,7 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        // Let system handle default behavior
         
         // Initialize LocalConfig to load API keys
         LocalConfig.init(this)
@@ -56,13 +58,16 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    startDestination?.let { destination ->
+                    // Let system handle system bars naturally
+                    
+                    if (startDestination != null) {
                         DarklakeNavigation(
-                            startDestination = destination,
+                            startDestination = startDestination!!,
                             storageManager = storageManager,
                             settingsManager = settingsManager
                         )
                     }
+                    // Show loading state with same background color
                 }
             }
         }
