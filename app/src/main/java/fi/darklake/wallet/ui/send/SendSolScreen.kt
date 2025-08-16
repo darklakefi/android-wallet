@@ -25,11 +25,20 @@ import java.util.Locale
 @Composable
 fun SendSolScreen(
     onBack: () -> Unit,
+    onSuccess: (() -> Unit)? = null,
     storageManager: WalletStorageManager,
     settingsManager: SettingsManager,
     viewModel: SendViewModel = viewModel { SendViewModel(storageManager, settingsManager) }
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    
+    // Handle success state - navigate back and trigger refresh
+    LaunchedEffect(uiState.transactionSuccess) {
+        if (uiState.transactionSuccess) {
+            onSuccess?.invoke()
+            onBack()
+        }
+    }
     
     RetroGridBackground {
         Column(

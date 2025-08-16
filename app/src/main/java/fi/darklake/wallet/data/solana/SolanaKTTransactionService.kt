@@ -64,6 +64,31 @@ class SolanaKTTransactionService(
         return Solana(router)
     }
 
+    private fun createAssociatedTokenAccountIdempotentInstruction(
+        associatedProgramId: PublicKey = ASSOCIATED_TOKEN_PROGRAM_ID,
+        programId: PublicKey = TOKEN_PROGRAM_ID,
+        mint: PublicKey,
+        associatedAccount: PublicKey,
+        owner: PublicKey,
+        payer: PublicKey
+    ): TransactionInstruction {
+        val keys = listOf(
+            com.solana.core.AccountMeta(payer, isSigner = true, isWritable = true),
+            com.solana.core.AccountMeta(associatedAccount, isSigner = false, isWritable = true),
+            com.solana.core.AccountMeta(owner, isSigner = false, isWritable = false),
+            com.solana.core.AccountMeta(mint, isSigner = false, isWritable = false),
+            com.solana.core.AccountMeta(SystemProgram.PROGRAM_ID, isSigner = false, isWritable = false),
+            com.solana.core.AccountMeta(programId, isSigner = false, isWritable = false),
+            com.solana.core.AccountMeta(TokenProgram.SYSVAR_RENT_PUBKEY, isSigner = false, isWritable = false)
+        )
+
+        return TransactionInstruction(
+            keys = keys,
+            programId = associatedProgramId,
+            data = byteArrayOf(1), // Idempotent instruction data: [1]
+        )
+    }
+
     suspend fun sendSolTransaction(
         fromPrivateKey: ByteArray,
         toAddress: String,
@@ -186,10 +211,8 @@ class SolanaKTTransactionService(
                 val transaction = Transaction()
                 transaction.feePayer = fromPubkey
                 
-                // For simplicity, always create ATA instruction if it doesn't exist
-                // The transaction will fail if ATA already exists, so we'll add it anyway
-                // and rely on the program to handle it gracefully
-                val createAtaInstruction = AssociatedTokenProgram.createAssociatedTokenAccountInstruction(
+                // Use idempotent version that won't fail if ATA already exists
+                val createAtaInstruction = createAssociatedTokenAccountIdempotentInstruction(
                     payer = fromPubkey,
                     associatedAccount = toTokenAccount,
                     owner = toPubkey,

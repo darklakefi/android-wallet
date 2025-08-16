@@ -13,6 +13,7 @@ import fi.darklake.wallet.ui.onboarding.MnemonicDisplayScreen
 import fi.darklake.wallet.ui.onboarding.MnemonicVerificationScreen
 import fi.darklake.wallet.ui.onboarding.SharedWalletViewModel
 import fi.darklake.wallet.ui.wallet.WalletScreen
+import fi.darklake.wallet.ui.wallet.WalletViewModel
 import fi.darklake.wallet.ui.settings.SettingsScreen
 import fi.darklake.wallet.ui.send.SendSolScreen
 import fi.darklake.wallet.ui.send.SendTokenScreen
@@ -46,6 +47,7 @@ fun DarklakeNavigation(
     settingsManager: SettingsManager
 ) {
     val sharedViewModel: SharedWalletViewModel = viewModel()
+    val walletViewModel: WalletViewModel = viewModel { WalletViewModel(storageManager, settingsManager) }
     NavHost(
         navController = navController,
         startDestination = startDestination
@@ -116,6 +118,7 @@ fun DarklakeNavigation(
             WalletScreen(
                 storageManager = storageManager,
                 settingsManager = settingsManager,
+                viewModel = walletViewModel,
                 onNavigateToSettings = {
                     navController.navigate(Screen.Settings.route)
                 },
@@ -145,6 +148,9 @@ fun DarklakeNavigation(
                 onBack = {
                     navController.popBackStack()
                 },
+                onSuccess = {
+                    walletViewModel.refresh()
+                },
                 storageManager = storageManager,
                 settingsManager = settingsManager
             )
@@ -157,6 +163,9 @@ fun DarklakeNavigation(
                 onBack = {
                     navController.popBackStack()
                 },
+                onSuccess = {
+                    walletViewModel.refresh()
+                },
                 storageManager = storageManager,
                 settingsManager = settingsManager
             )
@@ -168,6 +177,9 @@ fun DarklakeNavigation(
                 nftMint = nftMint,
                 onBack = {
                     navController.popBackStack()
+                },
+                onSuccess = {
+                    walletViewModel.refresh()
                 },
                 storageManager = storageManager,
                 settingsManager = settingsManager

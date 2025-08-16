@@ -34,11 +34,20 @@ import java.util.Locale
 fun SendNftScreen(
     nftMint: String,
     onBack: () -> Unit,
+    onSuccess: (() -> Unit)? = null,
     storageManager: WalletStorageManager,
     settingsManager: SettingsManager,
     viewModel: SendViewModel = viewModel { SendViewModel(storageManager, settingsManager) }
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    
+    // Handle success state - navigate back and trigger refresh
+    LaunchedEffect(uiState.transactionSuccess) {
+        if (uiState.transactionSuccess) {
+            onSuccess?.invoke()
+            onBack()
+        }
+    }
     
     // Initialize NFT data when screen loads
     LaunchedEffect(nftMint) {

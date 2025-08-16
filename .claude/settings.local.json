@@ -27,7 +27,15 @@
       "Bash(adb shell:*)",
       "Bash(adb shell am start:*)",
       "WebFetch(domain:docs.lightprotocol.com)",
-      "WebFetch(domain:www.helius.dev)"
+      "WebFetch(domain:www.helius.dev)",
+      "mcp__mobile__mobile_list_available_devices",
+      "mcp__mobile__mobile_take_screenshot",
+      "mcp__mobile__mobile_use_device",
+      "mcp__mobile__mobile_list_apps",
+      "mcp__mobile__mobile_launch_app",
+      "mcp__mobile__mobile_click_on_screen_at_coordinates",
+      "WebSearch",
+      "Bash(adb install:*)"
     ],
     "deny": []
   }
