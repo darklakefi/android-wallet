@@ -1,7 +1,6 @@
 package fi.darklake.wallet.data.solana
 
 import com.solana.vendor.TweetNaclFast
-import java.security.SecureRandom
 
 /**
  * Ed25519 utility functions for Solana using SolanaKT's TweetNaclFast
@@ -60,37 +59,5 @@ object Ed25519Utils {
         } catch (e: Exception) {
             throw IllegalArgumentException("Failed to sign message: ${e.message}")
         }
-    }
-    
-    /**
-     * Verifies an Ed25519 signature
-     */
-    fun verify(message: ByteArray, signature: ByteArray, publicKey: ByteArray): Boolean {
-        require(signature.size == 64) { "Signature must be 64 bytes" }
-        require(publicKey.size == 32) { "Public key must be 32 bytes" }
-        
-        return try {
-            val verifier = TweetNaclFast.Signature(publicKey, ByteArray(0))
-            verifier.detached_verify(message, signature)
-        } catch (e: Exception) {
-            false
-        }
-    }
-    
-    /**
-     * Generates a new Ed25519 key pair
-     */
-    fun generateKeyPair(): Pair<ByteArray, ByteArray> {
-        val keypair = TweetNaclFast.Signature.keyPair()
-        return Pair(keypair.publicKey, keypair.secretKey)
-    }
-    
-    /**
-     * Generates a key pair from seed
-     */
-    fun generateKeyPairFromSeed(seed: ByteArray): Pair<ByteArray, ByteArray> {
-        require(seed.size == 32) { "Seed must be 32 bytes" }
-        val keypair = TweetNaclFast.Signature.keyPair_fromSeed(seed)
-        return Pair(keypair.publicKey, keypair.secretKey)
     }
 }
