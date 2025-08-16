@@ -423,11 +423,90 @@ data class HeliusDasSupply(
     val editionNonce: Long? = null
 )
 
+// Light Protocol compressed asset models
+@Serializable
+data class LightProtocolAssetRequest(
+    @SerialName("jsonrpc")
+    val jsonrpc: String = "2.0",
+    @SerialName("id")
+    val id: String = "1",
+    @SerialName("method")
+    val method: String,
+    @SerialName("params")
+    val params: kotlinx.serialization.json.JsonElement
+)
+
+@Serializable
+data class CompressedTokenBalance(
+    @SerialName("mint")
+    val mint: String,
+    @SerialName("amount")
+    val amount: String,
+    @SerialName("decimals")
+    val decimals: Int,
+    @SerialName("compressed")
+    val compressed: Boolean = true
+)
+
+@Serializable
+data class CompressedNftMetadata(
+    @SerialName("id")
+    val id: String,
+    @SerialName("name")
+    val name: String?,
+    @SerialName("symbol")
+    val symbol: String?,
+    @SerialName("description")
+    val description: String?,
+    @SerialName("image")
+    val image: String?,
+    @SerialName("external_url")
+    val externalUrl: String?,
+    @SerialName("compressed")
+    val compressed: Boolean = true,
+    @SerialName("compression")
+    val compression: CompressedAssetCompression?
+)
+
+@Serializable
+data class CompressedAssetCompression(
+    @SerialName("eligible")
+    val eligible: Boolean,
+    @SerialName("compressed")
+    val compressed: Boolean,
+    @SerialName("data_hash")
+    val dataHash: String?,
+    @SerialName("creator_hash")
+    val creatorHash: String?,
+    @SerialName("asset_hash")
+    val assetHash: String?,
+    @SerialName("tree")
+    val tree: String?,
+    @SerialName("seq")
+    val seq: Long?,
+    @SerialName("leaf_id")
+    val leafId: Long?
+)
+
+@Serializable
+data class LightProtocolResponse<T>(
+    @SerialName("jsonrpc")
+    val jsonrpc: String,
+    @SerialName("id")
+    val id: String,
+    @SerialName("result")
+    val result: T? = null,
+    @SerialName("error")
+    val error: HeliusError? = null
+)
+
 // Simplified models for UI
 data class WalletAssets(
     val solBalance: Double,
     val tokens: List<TokenInfo>,
-    val nfts: List<NftMetadata>
+    val nfts: List<NftMetadata>,
+    val compressedTokens: List<CompressedTokenBalance> = emptyList(),
+    val compressedNfts: List<CompressedNftMetadata> = emptyList()
 )
 
 data class DisplayToken(
@@ -436,12 +515,14 @@ data class DisplayToken(
     val symbol: String,
     val balance: String,
     val imageUrl: String?,
-    val usdValue: Double? = null
+    val usdValue: Double? = null,
+    val compressed: Boolean = false
 )
 
 data class DisplayNft(
     val mint: String,
     val name: String,
     val imageUrl: String?,
-    val collectionName: String?
+    val collectionName: String?,
+    val compressed: Boolean = false
 )

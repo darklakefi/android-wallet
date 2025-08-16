@@ -344,7 +344,7 @@ private fun TerminalTokenItem(
             )
             .border(
                 width = 1.dp,
-                color = NeonGreen.copy(alpha = 0.6f),
+                color = if (token.compressed) BrightCyan.copy(alpha = 0.6f) else NeonGreen.copy(alpha = 0.6f),
                 shape = RoundedCornerShape(2.dp)
             )
             .clickable { onClick() }
@@ -354,15 +354,28 @@ private fun TerminalTokenItem(
             verticalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier.fillMaxSize()
         ) {
-            // Token symbol/name header
-            Text(
-                text = "[${token.symbol}]",
-                style = TerminalHeaderStyle,
-                color = NeonGreen,
-                fontSize = 11.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            // Token symbol/name header with compression indicator
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "[${token.symbol}]",
+                    style = TerminalHeaderStyle,
+                    color = if (token.compressed) BrightCyan else NeonGreen,
+                    fontSize = 11.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+                if (token.compressed) {
+                    Text(
+                        text = "⚡",
+                        color = BrightCyan,
+                        fontSize = 8.sp
+                    )
+                }
+            }
             
             Spacer(modifier = Modifier.height(4.dp))
             
@@ -552,7 +565,7 @@ private fun TerminalNftItem(
             )
             .border(
                 width = 1.dp,
-                color = BrightCyan.copy(alpha = 0.6f),
+                color = if (nft.compressed) BrightCyan.copy(alpha = 0.8f) else BrightCyan.copy(alpha = 0.6f),
                 shape = RoundedCornerShape(2.dp)
             )
             .clickable { onClick() }
@@ -593,15 +606,28 @@ private fun TerminalNftItem(
                 modifier = Modifier.padding(8.dp),
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
-                Text(
-                    text = "[${nft.name}]", // Displaying NFT name in brackets
-                    style = TerminalTextStyle,
-                    color = BrightCyan,
-                    fontSize = 10.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    fontWeight = FontWeight.Bold
-                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "[${nft.name}]", // Displaying NFT name in brackets
+                        style = TerminalTextStyle,
+                        color = BrightCyan,
+                        fontSize = 10.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                    if (nft.compressed) {
+                        Text(
+                            text = "⚡",
+                            color = BrightCyan,
+                            fontSize = 8.sp
+                        )
+                    }
+                }
                 
                 nft.collectionName?.let { collection ->
                     Text(

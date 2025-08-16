@@ -25,7 +25,9 @@
       "Bash(solana address:*)",
       "Bash(adb logcat:*)",
       "Bash(adb shell:*)",
-      "Bash(adb shell am start:*)"
+      "Bash(adb shell am start:*)",
+      "WebFetch(domain:docs.lightprotocol.com)",
+      "WebFetch(domain:www.helius.dev)"
     ],
     "deny": []
   }

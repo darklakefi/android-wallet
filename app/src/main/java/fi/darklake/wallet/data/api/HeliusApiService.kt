@@ -271,6 +271,203 @@ class SolanaApiService(
         }
     }
 
+    suspend fun getCompressedTokensByOwner(publicKey: String): Result<List<CompressedTokenBalance>> = withContext(Dispatchers.IO) {
+        try {
+            val rpcUrl = getRpcUrl()
+            
+            // Only use Helius if we have a Helius endpoint
+            if (!rpcUrl.contains("helius")) {
+                println("Compressed token fetch skipped - requires Helius API key")
+                return@withContext Result.success(emptyList())
+            }
+            
+            println("=== LIGHT PROTOCOL COMPRESSED TOKENS FETCH ===")
+            println("Fetching compressed tokens for owner: $publicKey")
+            
+            // Use DAS API to get compressed tokens
+            val compressedTokenRequest = JsonRpcRequest(
+                method = "getAssetsByOwner",
+                params = listOf(
+                    kotlinx.serialization.json.buildJsonObject {
+                        put("ownerAddress", kotlinx.serialization.json.JsonPrimitive(publicKey))
+                        put("page", kotlinx.serialization.json.JsonPrimitive(1))
+                        put("limit", kotlinx.serialization.json.JsonPrimitive(1000))
+                        put("displayOptions", kotlinx.serialization.json.buildJsonObject {
+                            put("showFungible", kotlinx.serialization.json.JsonPrimitive(true))
+                            put("showNativeBalance", kotlinx.serialization.json.JsonPrimitive(false))
+                        })
+                    }
+                )
+            )
+            
+            val jsonString = json.encodeToString(JsonRpcRequest.serializer(), compressedTokenRequest)
+            println("Compressed Token Request: $jsonString")
+            
+            val response = client.post(rpcUrl) {
+                contentType(ContentType.Application.Json)
+                accept(ContentType.Application.Json)
+                setBody(jsonString)
+            }
+            
+            println("Compressed Token API Response status: ${response.status}")
+            
+            if (response.status != HttpStatusCode.OK) {
+                println("Compressed Token API request failed with status: ${response.status}")
+                return@withContext Result.success(emptyList())
+            }
+            
+            val responseBody = response.bodyAsText()
+            println("Compressed Token API Response received (${responseBody.length} chars)")
+            
+            if (responseBody.isBlank()) {
+                println("Empty response from Compressed Token API")
+                return@withContext Result.success(emptyList())
+            }
+            
+            // Parse the DAS response for compressed tokens
+            val dasResponse = json.decodeFromString<HeliusDasResponse>(responseBody)
+            
+            if (dasResponse.error != null) {
+                println("Compressed Token API Error: ${dasResponse.error.message}")
+                return@withContext Result.success(emptyList())
+            }
+            
+            if (dasResponse.result == null) {
+                println("No result in Compressed Token API response")
+                return@withContext Result.success(emptyList())
+            }
+            
+            val compressedTokens = dasResponse.result.items.mapNotNull { asset ->
+                // Only process assets that are fungible tokens and compressed
+                if (asset.`interface` == "FungibleToken" && asset.compression?.compressed == true) {
+                    // Extract token information from the asset
+                    CompressedTokenBalance(
+                        mint = asset.id,
+                        amount = "0", // Would need additional API call to get actual balance
+                        decimals = 6, // Default, would need metadata lookup
+                        compressed = true
+                    )
+                } else null
+            }
+            
+            println("Successfully fetched ${compressedTokens.size} compressed tokens")
+            Result.success(compressedTokens)
+        } catch (e: Exception) {
+            println("Compressed token fetch error: ${e.message}")
+            e.printStackTrace()
+            // Don't fail the whole operation if compressed token fetching fails
+            Result.success(emptyList())
+        }
+    }
+
+    suspend fun getCompressedNftsByOwner(publicKey: String): Result<List<CompressedNftMetadata>> = withContext(Dispatchers.IO) {
+        try {
+            val rpcUrl = getRpcUrl()
+            
+            // Only use Helius if we have a Helius endpoint
+            if (!rpcUrl.contains("helius")) {
+                println("Compressed NFT fetch skipped - requires Helius API key")
+                return@withContext Result.success(emptyList())
+            }
+            
+            println("=== LIGHT PROTOCOL COMPRESSED NFTS FETCH ===")
+            println("Fetching compressed NFTs for owner: $publicKey")
+            
+            // Use DAS API to get compressed NFTs specifically
+            val compressedNftRequest = JsonRpcRequest(
+                method = "getAssetsByOwner",
+                params = listOf(
+                    kotlinx.serialization.json.buildJsonObject {
+                        put("ownerAddress", kotlinx.serialization.json.JsonPrimitive(publicKey))
+                        put("page", kotlinx.serialization.json.JsonPrimitive(1))
+                        put("limit", kotlinx.serialization.json.JsonPrimitive(1000))
+                        put("displayOptions", kotlinx.serialization.json.buildJsonObject {
+                            put("showFungible", kotlinx.serialization.json.JsonPrimitive(false))
+                            put("showNativeBalance", kotlinx.serialization.json.JsonPrimitive(false))
+                        })
+                        // Filter for only compressed assets
+                        put("compression", kotlinx.serialization.json.buildJsonObject {
+                            put("compressed", kotlinx.serialization.json.JsonPrimitive(true))
+                        })
+                    }
+                )
+            )
+            
+            val jsonString = json.encodeToString(JsonRpcRequest.serializer(), compressedNftRequest)
+            println("Compressed NFT Request: $jsonString")
+            
+            val response = client.post(rpcUrl) {
+                contentType(ContentType.Application.Json)
+                accept(ContentType.Application.Json)
+                setBody(jsonString)
+            }
+            
+            println("Compressed NFT API Response status: ${response.status}")
+            
+            if (response.status != HttpStatusCode.OK) {
+                println("Compressed NFT API request failed with status: ${response.status}")
+                return@withContext Result.success(emptyList())
+            }
+            
+            val responseBody = response.bodyAsText()
+            println("Compressed NFT API Response received (${responseBody.length} chars)")
+            
+            if (responseBody.isBlank()) {
+                println("Empty response from Compressed NFT API")
+                return@withContext Result.success(emptyList())
+            }
+            
+            // Parse the DAS response for compressed NFTs
+            val dasResponse = json.decodeFromString<HeliusDasResponse>(responseBody)
+            
+            if (dasResponse.error != null) {
+                println("Compressed NFT API Error: ${dasResponse.error.message}")
+                return@withContext Result.success(emptyList())
+            }
+            
+            if (dasResponse.result == null) {
+                println("No result in Compressed NFT API response")
+                return@withContext Result.success(emptyList())
+            }
+            
+            val compressedNfts = dasResponse.result.items.mapNotNull { asset ->
+                // Only process assets that are NFTs and compressed
+                if ((asset.`interface` == "V1_NFT" || asset.`interface` == "ProgrammableNFT") && 
+                    asset.compression?.compressed == true) {
+                    CompressedNftMetadata(
+                        id = asset.id,
+                        name = asset.content?.metadata?.name,
+                        symbol = asset.content?.metadata?.symbol,
+                        description = asset.content?.metadata?.description,
+                        image = asset.content?.files?.firstOrNull()?.uri ?: asset.content?.jsonUri,
+                        externalUrl = asset.content?.metadata?.externalUrl,
+                        compressed = true,
+                        compression = asset.compression?.let { compression ->
+                            CompressedAssetCompression(
+                                eligible = compression.eligible,
+                                compressed = compression.compressed,
+                                dataHash = compression.dataHash,
+                                creatorHash = compression.creatorHash,
+                                assetHash = compression.assetHash,
+                                tree = compression.tree,
+                                seq = compression.seq,
+                                leafId = compression.leafId
+                            )
+                        }
+                    )
+                } else null
+            }
+            
+            println("Successfully fetched ${compressedNfts.size} compressed NFTs")
+            Result.success(compressedNfts)
+        } catch (e: Exception) {
+            println("Compressed NFT fetch error: ${e.message}")
+            e.printStackTrace()
+            // Don't fail the whole operation if compressed NFT fetching fails
+            Result.success(emptyList())
+        }
+    }
+
     suspend fun getNftsByOwner(publicKey: String): Result<List<NftMetadata>> = withContext(Dispatchers.IO) {
         try {
             val rpcUrl = getRpcUrl()
@@ -387,6 +584,8 @@ class WalletAssetsRepository(
             val balanceResult = solanaApi.getBalance(publicKey)
             val tokensResult = solanaApi.getTokenAccounts(publicKey)
             val nftsResult = solanaApi.getNftsByOwner(publicKey)
+            val compressedTokensResult = solanaApi.getCompressedTokensByOwner(publicKey)
+            val compressedNftsResult = solanaApi.getCompressedNftsByOwner(publicKey)
 
             if (balanceResult.isFailure) {
                 return Result.failure(balanceResult.exceptionOrNull() ?: Exception("Failed to get balance"))
@@ -395,6 +594,8 @@ class WalletAssetsRepository(
             val solBalance = balanceResult.getOrNull() ?: 0.0
             val tokens = tokensResult.getOrNull() ?: emptyList()
             val nfts = nftsResult.getOrNull() ?: emptyList()
+            val compressedTokens = compressedTokensResult.getOrNull() ?: emptyList()
+            val compressedNfts = compressedNftsResult.getOrNull() ?: emptyList()
 
             // Fetch token metadata for all tokens
             val tokenMints = tokens.map { it.balance.mint }
@@ -410,7 +611,9 @@ class WalletAssetsRepository(
             return Result.success(WalletAssets(
                 solBalance = solBalance,
                 tokens = tokensWithMetadata,
-                nfts = nfts
+                nfts = nfts,
+                compressedTokens = compressedTokens,
+                compressedNfts = compressedNfts
             ))
         } catch (e: Exception) {
             return Result.failure(e)

@@ -126,24 +126,55 @@ open class WalletViewModel(
     }
 
     private fun updateUiWithAssets(assets: WalletAssets) {
-        val displayTokens = assets.tokens.map { tokenInfo ->
+        val displayTokens = mutableListOf<DisplayToken>()
+        
+        // Add regular tokens
+        displayTokens.addAll(assets.tokens.map { tokenInfo ->
             DisplayToken(
                 mint = tokenInfo.balance.mint,
                 name = tokenInfo.metadata?.name ?: "Unknown Token",
                 symbol = tokenInfo.metadata?.symbol ?: tokenInfo.balance.mint.take(6),
                 balance = tokenInfo.balance.uiAmountString ?: "0",
-                imageUrl = tokenInfo.metadata?.image
+                imageUrl = tokenInfo.metadata?.image,
+                compressed = false
             )
-        }
+        })
+        
+        // Add compressed tokens
+        displayTokens.addAll(assets.compressedTokens.map { compressedToken ->
+            DisplayToken(
+                mint = compressedToken.mint,
+                name = "Compressed Token",
+                symbol = "cTOKEN",
+                balance = compressedToken.amount,
+                imageUrl = null,
+                compressed = true
+            )
+        })
 
-        val displayNfts = assets.nfts.map { nft ->
+        val displayNfts = mutableListOf<DisplayNft>()
+        
+        // Add regular NFTs
+        displayNfts.addAll(assets.nfts.map { nft ->
             DisplayNft(
                 mint = nft.mint,
                 name = nft.name ?: "Unknown NFT",
                 imageUrl = nft.image,
-                collectionName = nft.collection?.name
+                collectionName = nft.collection?.name,
+                compressed = false
             )
-        }
+        })
+        
+        // Add compressed NFTs
+        displayNfts.addAll(assets.compressedNfts.map { compressedNft ->
+            DisplayNft(
+                mint = compressedNft.id,
+                name = compressedNft.name ?: "Compressed NFT",
+                imageUrl = compressedNft.image,
+                collectionName = null,
+                compressed = true
+            )
+        })
 
         _uiState.value = _uiState.value.copy(
             isLoading = false,
