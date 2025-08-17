@@ -12,7 +12,7 @@ import fi.darklake.wallet.ui.onboarding.ImportWalletScreen
 import fi.darklake.wallet.ui.onboarding.MnemonicDisplayScreen
 import fi.darklake.wallet.ui.onboarding.MnemonicVerificationScreen
 import fi.darklake.wallet.ui.onboarding.SharedWalletViewModel
-import fi.darklake.wallet.ui.wallet.WalletScreen
+import fi.darklake.wallet.ui.MainScreen
 import fi.darklake.wallet.ui.wallet.WalletViewModel
 import fi.darklake.wallet.ui.settings.SettingsScreen
 import fi.darklake.wallet.ui.send.SendSolScreen
@@ -115,10 +115,9 @@ fun DarklakeNavigation(
         }
         
         composable(Screen.Wallet.route) {
-            WalletScreen(
+            MainScreen(
                 storageManager = storageManager,
                 settingsManager = settingsManager,
-                viewModel = walletViewModel,
                 onNavigateToSettings = {
                     navController.navigate(Screen.Settings.route)
                 },

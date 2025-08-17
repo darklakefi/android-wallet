@@ -35,7 +35,9 @@
       "mcp__mobile__mobile_launch_app",
       "mcp__mobile__mobile_click_on_screen_at_coordinates",
       "WebSearch",
-      "Bash(adb install:*)"
+      "Bash(adb install:*)",
+      "mcp__mobile__mobile_use_default_device",
+      "mcp__mobile__mobile_list_elements_on_screen"
     ],
     "deny": []
   }
