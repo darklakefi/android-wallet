@@ -38,11 +38,11 @@ class SwapRepository(
     companion object {
         // Staging/Development endpoints
         private const val RPC_BASE_URL_STAGING = "https://dex-web-staging.dex.darklake.fi"
-        private const val DEX_GATEWAY_URL_STAGING = "https://dex-gateway-staging.dex.darklake.fi:50051"
+        private const val DEX_GATEWAY_URL_STAGING = "https://dex-gateway-staging.dex.darklake.fi"
         
         // Production endpoints  
         private const val RPC_BASE_URL_PRODUCTION = "https://dex-web.dex.darklake.fi"
-        private const val DEX_GATEWAY_URL_PRODUCTION = "https://dex-gateway.dex.darklake.fi:50051"
+        private const val DEX_GATEWAY_URL_PRODUCTION = "https://dex-gateway-prod.dex.darklake.fi"
     }
     
     private val rpcBaseUrl: String
@@ -175,7 +175,7 @@ class SwapRepository(
                 params = request
             )
             
-            val response: HttpResponse = httpClient.post("$rpcBaseUrl/rpc") {
+            val response: HttpResponse = httpClient.post("$dexGatewayUrl/rpc") {
                 contentType(ContentType.Application.Json)
                 setBody(rpcRequest)
             }
@@ -208,7 +208,7 @@ class SwapRepository(
                 params = request
             )
             
-            val response: HttpResponse = httpClient.post("$rpcBaseUrl/rpc") {
+            val response: HttpResponse = httpClient.post("$dexGatewayUrl/rpc") {
                 contentType(ContentType.Application.Json)
                 setBody(rpcRequest)
             }
@@ -239,7 +239,7 @@ class SwapRepository(
                 params = request
             )
             
-            val response: HttpResponse = httpClient.post("$rpcBaseUrl/rpc") {
+            val response: HttpResponse = httpClient.post("$dexGatewayUrl/rpc") {
                 contentType(ContentType.Application.Json)
                 setBody(rpcRequest)
             }
