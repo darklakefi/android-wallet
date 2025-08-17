@@ -37,19 +37,11 @@ class SwapRepository(
     
     companion object {
         // Staging/Development endpoints
-        private const val RPC_BASE_URL_STAGING = "https://dex-web-staging.dex.darklake.fi"
         private const val DEX_GATEWAY_URL_STAGING = "https://dex-gateway-staging.dex.darklake.fi"
         
         // Production endpoints  
-        private const val RPC_BASE_URL_PRODUCTION = "https://dex-web.dex.darklake.fi"
         private const val DEX_GATEWAY_URL_PRODUCTION = "https://dex-gateway-prod.dex.darklake.fi"
     }
-    
-    private val rpcBaseUrl: String
-        get() = when (networkSettings.network) {
-            fi.darklake.wallet.data.model.SolanaNetwork.MAINNET -> RPC_BASE_URL_PRODUCTION
-            fi.darklake.wallet.data.model.SolanaNetwork.DEVNET -> RPC_BASE_URL_STAGING
-        }
     
     private val dexGatewayUrl: String
         get() = when (networkSettings.network) {
@@ -98,7 +90,7 @@ class SwapRepository(
                 params = request
             )
             
-            val response: HttpResponse = httpClient.post("$rpcBaseUrl/rpc") {
+            val response: HttpResponse = httpClient.post("$dexGatewayUrl/rpc") {
                 contentType(ContentType.Application.Json)
                 setBody(rpcRequest)
             }
@@ -108,41 +100,6 @@ class SwapRepository(
                 Result.success(quote)
             } else {
                 Result.failure(Exception("Failed to get quote: ${response.status}"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-    
-    suspend fun getSwapRate(
-        amountIn: Double,
-        isXtoY: Boolean,
-        tokenXMint: String,
-        tokenYMint: String
-    ): Result<SwapRateResponse> {
-        return try {
-            val params = SwapRateParams(
-                amountIn = amountIn,
-                isXtoY = isXtoY,
-                tokenXMint = tokenXMint,
-                tokenYMint = tokenYMint
-            )
-            
-            val rpcRequest = RpcRequest(
-                method = "swap.getSwapRate",
-                params = params
-            )
-            
-            val response: HttpResponse = httpClient.post("$rpcBaseUrl/rpc") {
-                contentType(ContentType.Application.Json)
-                setBody(rpcRequest)
-            }
-            
-            if (response.status.isSuccess()) {
-                val rate = response.body<SwapRateResponse>()
-                Result.success(rate)
-            } else {
-                Result.failure(Exception("Failed to get rate: ${response.status}"))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -289,37 +246,6 @@ class SwapRepository(
         }
         
         return Result.failure(Exception("Trade status check timed out"))
-    }
-    
-    suspend fun getPoolDetails(
-        tokenXMint: String,
-        tokenYMint: String
-    ): Result<PoolDetails> {
-        return try {
-            val request = PoolDetailsRequest(
-                tokenXMint = tokenXMint,
-                tokenYMint = tokenYMint
-            )
-            
-            val rpcRequest = RpcRequest(
-                method = "pools.getPoolDetails",
-                params = request
-            )
-            
-            val response: HttpResponse = httpClient.post("$rpcBaseUrl/rpc") {
-                contentType(ContentType.Application.Json)
-                setBody(rpcRequest)
-            }
-            
-            if (response.status.isSuccess()) {
-                val poolDetails = response.body<PoolDetails>()
-                Result.success(poolDetails)
-            } else {
-                Result.failure(Exception("Failed to get pool details: ${response.status}"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
     }
     
     // Helper function to sort token addresses (matching dex-web sortSolanaAddresses)
