@@ -1,0 +1,454 @@
+package fi.darklake.wallet.ui.screens.lp
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import fi.darklake.wallet.data.preferences.SettingsManager
+import fi.darklake.wallet.storage.WalletStorageManager
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import java.math.BigDecimal
+
+data class TokenInfo(
+    val address: String,
+    val symbol: String,
+    val name: String,
+    val decimals: Int,
+    val logoURI: String? = null
+)
+
+data class LiquidityPosition(
+    val id: String,
+    val tokenA: TokenInfo,
+    val tokenB: TokenInfo,
+    val tokenAAmount: BigDecimal,
+    val tokenBAmount: BigDecimal,
+    val lpTokenBalance: BigDecimal,
+    val sharePercentage: Double,
+    val usdValue: BigDecimal
+)
+
+data class PoolDetails(
+    val exists: Boolean,
+    val tokenXMint: String,
+    val tokenYMint: String,
+    val poolAddress: String? = null,
+    val reserveX: BigDecimal = BigDecimal.ZERO,
+    val reserveY: BigDecimal = BigDecimal.ZERO,
+    val totalLpSupply: BigDecimal = BigDecimal.ZERO
+)
+
+enum class LiquidityStep {
+    IDLE,
+    GENERATING_PROOF,      // Step 1: Generating zero-knowledge proof
+    CONFIRM_TRANSACTION,   // Step 2: Confirm transaction in wallet
+    PROCESSING,           // Step 3: Processing transaction
+    COMPLETED,
+    FAILED
+}
+
+data class LpUiState(
+    val tokenA: TokenInfo? = null,
+    val tokenB: TokenInfo? = null,
+    val tokenAAmount: String = "",
+    val tokenBAmount: String = "",
+    val tokenABalance: BigDecimal = BigDecimal.ZERO,
+    val tokenBBalance: BigDecimal = BigDecimal.ZERO,
+    val initialPrice: String = "1.0",
+    val slippagePercent: Double = 0.5,
+    val useCustomSlippage: Boolean = false,
+    val poolDetails: PoolDetails? = null,
+    val liquidityPositions: List<LiquidityPosition> = emptyList(),
+    val hasLiquidityPositions: Boolean = false,
+    val isLoadingQuote: Boolean = false,
+    val isAddingLiquidity: Boolean = false,
+    val isCreatingPool: Boolean = false,
+    val liquidityStep: LiquidityStep = LiquidityStep.IDLE,
+    val insufficientBalanceA: Boolean = false,
+    val insufficientBalanceB: Boolean = false,
+    val priceImpactWarning: Boolean = false,
+    val errorMessage: String? = null,
+    val successMessage: String? = null
+)
+
+class LpViewModel(
+    private val storageManager: WalletStorageManager,
+    private val settingsManager: SettingsManager
+) : ViewModel() {
+    
+    private val _uiState = MutableStateFlow(LpUiState())
+    val uiState: StateFlow<LpUiState> = _uiState.asStateFlow()
+    
+    // Token addresses by network
+    private val SOL_MINT = "So11111111111111111111111111111111111111112" // Same on all networks
+    
+    private fun getUsdcMint(): String = when (settingsManager.networkSettings.value.network) {
+        fi.darklake.wallet.data.model.SolanaNetwork.MAINNET -> "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" // USDC Mainnet
+        fi.darklake.wallet.data.model.SolanaNetwork.DEVNET -> "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"   // USDC Devnet
+    }
+    
+    init {
+        // Initialize with default tokens (SOL/USDC)
+        setTokenA(TokenInfo(
+            address = SOL_MINT,
+            symbol = "SOL", 
+            name = "Solana",
+            decimals = 9
+        ))
+        setTokenB(TokenInfo(
+            address = getUsdcMint(),
+            symbol = "USDC",
+            name = "USD Coin", 
+            decimals = 6
+        ))
+        
+        // Load balances and liquidity positions
+        loadTokenBalances()
+        loadLiquidityPositions()
+        
+        // Listen for network changes
+        viewModelScope.launch {
+            settingsManager.networkSettings.collect { networkSettings ->
+                // Update token B to use the correct USDC mint for the network
+                val currentTokenB = _uiState.value.tokenB
+                if (currentTokenB?.symbol == "USDC") {
+                    setTokenB(TokenInfo(
+                        address = getUsdcMint(),
+                        symbol = "USDC",
+                        name = "USD Coin",
+                        decimals = 6
+                    ))
+                }
+                // Reload data with new network settings
+                loadTokenBalances()
+                loadLiquidityPositions()
+                checkPoolExists()
+            }
+        }
+    }
+    
+    fun setTokenA(token: TokenInfo) {
+        _uiState.value = _uiState.value.copy(tokenA = token)
+        loadTokenBalances()
+        checkPoolExists()
+    }
+    
+    fun setTokenB(token: TokenInfo) {
+        _uiState.value = _uiState.value.copy(tokenB = token)
+        loadTokenBalances()
+        checkPoolExists()
+    }
+    
+    fun swapTokens() {
+        val currentState = _uiState.value
+        _uiState.value = currentState.copy(
+            tokenA = currentState.tokenB,
+            tokenB = currentState.tokenA,
+            tokenAAmount = currentState.tokenBAmount,
+            tokenBAmount = currentState.tokenAAmount,
+            tokenABalance = currentState.tokenBBalance,
+            tokenBBalance = currentState.tokenABalance
+        )
+        checkPoolExists()
+    }
+    
+    fun updateTokenAAmount(amount: String) {
+        val cleanAmount = amount.replace(",", "")
+        if (cleanAmount.isEmpty() || cleanAmount == "." || 
+            (cleanAmount.toDoubleOrNull() ?: 0.0) < 0) {
+            _uiState.value = _uiState.value.copy(
+                tokenAAmount = "",
+                insufficientBalanceA = false
+            )
+            return
+        }
+        
+        _uiState.value = _uiState.value.copy(tokenAAmount = amount)
+        
+        // Check balance
+        val amountBigDecimal = BigDecimal(cleanAmount)
+        val insufficientBalance = amountBigDecimal > _uiState.value.tokenABalance
+        _uiState.value = _uiState.value.copy(insufficientBalanceA = insufficientBalance)
+        
+        // Calculate proportional amount for Token B if pool exists
+        calculateProportionalAmount(amountBigDecimal, isTokenA = true)
+    }
+    
+    fun updateTokenBAmount(amount: String) {
+        val cleanAmount = amount.replace(",", "")
+        if (cleanAmount.isEmpty() || cleanAmount == "." || 
+            (cleanAmount.toDoubleOrNull() ?: 0.0) < 0) {
+            _uiState.value = _uiState.value.copy(
+                tokenBAmount = "",
+                insufficientBalanceB = false
+            )
+            return
+        }
+        
+        _uiState.value = _uiState.value.copy(tokenBAmount = amount)
+        
+        // Check balance
+        val amountBigDecimal = BigDecimal(cleanAmount)
+        val insufficientBalance = amountBigDecimal > _uiState.value.tokenBBalance
+        _uiState.value = _uiState.value.copy(insufficientBalanceB = insufficientBalance)
+        
+        // Calculate proportional amount for Token A if pool exists
+        calculateProportionalAmount(amountBigDecimal, isTokenA = false)
+    }
+    
+    fun updateInitialPrice(price: String) {
+        _uiState.value = _uiState.value.copy(initialPrice = price)
+        
+        // Recalculate Token B amount based on new price
+        val tokenAAmount = _uiState.value.tokenAAmount.replace(",", "")
+        if (tokenAAmount.isNotEmpty() && price.isNotEmpty()) {
+            val priceDecimal = BigDecimal(price)
+            val amountDecimal = BigDecimal(tokenAAmount)
+            val calculatedTokenB = amountDecimal.multiply(priceDecimal)
+            _uiState.value = _uiState.value.copy(
+                tokenBAmount = formatAmount(calculatedTokenB.toDouble(), 6)
+            )
+        }
+    }
+    
+    fun updateSlippage(slippagePercent: Double, isCustom: Boolean) {
+        _uiState.value = _uiState.value.copy(
+            slippagePercent = slippagePercent,
+            useCustomSlippage = isCustom
+        )
+    }
+    
+    fun addLiquidity() {
+        viewModelScope.launch {
+            performAddLiquidity()
+        }
+    }
+    
+    fun createPool() {
+        viewModelScope.launch {
+            performCreatePool()
+        }
+    }
+    
+    fun withdrawLiquidity(positionId: String) {
+        viewModelScope.launch {
+            performWithdrawLiquidity(positionId)
+        }
+    }
+    
+    private suspend fun performAddLiquidity() {
+        val state = _uiState.value
+        val tokenA = state.tokenA ?: return
+        val tokenB = state.tokenB ?: return
+        
+        val tokenAAmount = state.tokenAAmount.replace(",", "").toDoubleOrNull() ?: return
+        val tokenBAmount = state.tokenBAmount.replace(",", "").toDoubleOrNull() ?: return
+        
+        if (tokenAAmount <= 0 || tokenBAmount <= 0) return
+        
+        try {
+            // Step 1: Generate proof
+            _uiState.value = _uiState.value.copy(
+                isAddingLiquidity = true,
+                liquidityStep = LiquidityStep.GENERATING_PROOF,
+                errorMessage = null
+            )
+            
+            // TODO: Implement actual liquidity addition with Anchor IDL
+            // For now, simulate the process
+            _uiState.value = _uiState.value.copy(
+                liquidityStep = LiquidityStep.CONFIRM_TRANSACTION
+            )
+            
+            // Simulate transaction confirmation
+            kotlinx.coroutines.delay(2000)
+            
+            _uiState.value = _uiState.value.copy(
+                liquidityStep = LiquidityStep.PROCESSING
+            )
+            
+            // Simulate processing
+            kotlinx.coroutines.delay(3000)
+            
+            _uiState.value = _uiState.value.copy(
+                isAddingLiquidity = false,
+                liquidityStep = LiquidityStep.COMPLETED,
+                successMessage = "Liquidity added successfully! $tokenAAmount ${tokenA.symbol} + $tokenBAmount ${tokenB.symbol}",
+                tokenAAmount = "",
+                tokenBAmount = ""
+            )
+            
+            // Reload balances and positions
+            loadTokenBalances()
+            loadLiquidityPositions()
+            
+        } catch (e: Exception) {
+            _uiState.value = _uiState.value.copy(
+                isAddingLiquidity = false,
+                liquidityStep = LiquidityStep.FAILED,
+                errorMessage = "Add liquidity failed: ${e.message}"
+            )
+        }
+    }
+    
+    private suspend fun performCreatePool() {
+        val state = _uiState.value
+        val tokenA = state.tokenA ?: return
+        val tokenB = state.tokenB ?: return
+        
+        val tokenAAmount = state.tokenAAmount.replace(",", "").toDoubleOrNull() ?: return
+        val tokenBAmount = state.tokenBAmount.replace(",", "").toDoubleOrNull() ?: return
+        val initialPrice = state.initialPrice.toDoubleOrNull() ?: return
+        
+        if (tokenAAmount <= 0 || tokenBAmount <= 0 || initialPrice <= 0) return
+        
+        try {
+            _uiState.value = _uiState.value.copy(
+                isCreatingPool = true,
+                errorMessage = null
+            )
+            
+            // TODO: Implement actual pool creation with Anchor IDL
+            // For now, simulate the process
+            kotlinx.coroutines.delay(3000)
+            
+            _uiState.value = _uiState.value.copy(
+                isCreatingPool = false,
+                successMessage = "Pool created successfully! Initial deposit: $tokenAAmount ${tokenA.symbol} + $tokenBAmount ${tokenB.symbol}",
+                tokenAAmount = "",
+                tokenBAmount = "",
+                initialPrice = "1.0"
+            )
+            
+            // Reload data
+            loadTokenBalances()
+            loadLiquidityPositions()
+            checkPoolExists()
+            
+        } catch (e: Exception) {
+            _uiState.value = _uiState.value.copy(
+                isCreatingPool = false,
+                errorMessage = "Pool creation failed: ${e.message}"
+            )
+        }
+    }
+    
+    private suspend fun performWithdrawLiquidity(positionId: String) {
+        try {
+            // TODO: Implement actual liquidity withdrawal with Anchor IDL
+            // For now, simulate the process
+            kotlinx.coroutines.delay(2000)
+            
+            _uiState.value = _uiState.value.copy(
+                successMessage = "Liquidity withdrawn successfully!"
+            )
+            
+            // Reload data
+            loadTokenBalances()
+            loadLiquidityPositions()
+            
+        } catch (e: Exception) {
+            _uiState.value = _uiState.value.copy(
+                errorMessage = "Withdraw liquidity failed: ${e.message}"
+            )
+        }
+    }
+    
+    private fun calculateProportionalAmount(amount: BigDecimal, isTokenA: Boolean) {
+        val poolDetails = _uiState.value.poolDetails
+        if (poolDetails?.exists == true && poolDetails.reserveX > BigDecimal.ZERO && poolDetails.reserveY > BigDecimal.ZERO) {
+            // Calculate proportional amount based on pool reserves
+            if (isTokenA) {
+                val ratio = poolDetails.reserveY.divide(poolDetails.reserveX, 6, java.math.RoundingMode.DOWN)
+                val calculatedAmount = amount.multiply(ratio)
+                _uiState.value = _uiState.value.copy(
+                    tokenBAmount = formatAmount(calculatedAmount.toDouble(), 6)
+                )
+            } else {
+                val ratio = poolDetails.reserveX.divide(poolDetails.reserveY, 6, java.math.RoundingMode.DOWN)
+                val calculatedAmount = amount.multiply(ratio)
+                _uiState.value = _uiState.value.copy(
+                    tokenAAmount = formatAmount(calculatedAmount.toDouble(), 9)
+                )
+            }
+        }
+    }
+    
+    private fun loadTokenBalances() {
+        viewModelScope.launch {
+            // TODO: Implement actual balance loading
+            // For now, use mock data
+            _uiState.value = _uiState.value.copy(
+                tokenABalance = BigDecimal("2.9979"), // Mock SOL balance
+                tokenBBalance = BigDecimal("1000.0")  // Mock USDC balance
+            )
+        }
+    }
+    
+    private fun loadLiquidityPositions() {
+        viewModelScope.launch {
+            // TODO: Implement actual liquidity position loading
+            // For now, use mock data
+            val mockPositions = listOf(
+                LiquidityPosition(
+                    id = "position_1",
+                    tokenA = TokenInfo(SOL_MINT, "SOL", "Solana", 9),
+                    tokenB = TokenInfo(getUsdcMint(), "USDC", "USD Coin", 6),
+                    tokenAAmount = BigDecimal("1.5"),
+                    tokenBAmount = BigDecimal("150.0"),
+                    lpTokenBalance = BigDecimal("10.0"),
+                    sharePercentage = 15.5,
+                    usdValue = BigDecimal("300.0")
+                )
+            )
+            
+            _uiState.value = _uiState.value.copy(
+                liquidityPositions = mockPositions,
+                hasLiquidityPositions = mockPositions.isNotEmpty()
+            )
+        }
+    }
+    
+    private fun checkPoolExists() {
+        viewModelScope.launch {
+            val tokenA = _uiState.value.tokenA ?: return@launch
+            val tokenB = _uiState.value.tokenB ?: return@launch
+            
+            // TODO: Implement actual pool existence check
+            // For now, assume SOL/USDC pool exists
+            val poolExists = (tokenA.symbol == "SOL" && tokenB.symbol == "USDC") ||
+                           (tokenA.symbol == "USDC" && tokenB.symbol == "SOL")
+            
+            _uiState.value = _uiState.value.copy(
+                poolDetails = if (poolExists) {
+                    PoolDetails(
+                        exists = true,
+                        tokenXMint = tokenA.address,
+                        tokenYMint = tokenB.address,
+                        poolAddress = "mock_pool_address",
+                        reserveX = BigDecimal("1000.0"),
+                        reserveY = BigDecimal("100000.0"),
+                        totalLpSupply = BigDecimal("10000.0")
+                    )
+                } else {
+                    PoolDetails(exists = false, tokenXMint = tokenA.address, tokenYMint = tokenB.address)
+                }
+            )
+        }
+    }
+    
+    fun clearMessages() {
+        _uiState.value = _uiState.value.copy(
+            errorMessage = null,
+            successMessage = null
+        )
+    }
+    
+    private fun formatAmount(amount: Double, decimals: Int): String {
+        return BigDecimal(amount)
+            .setScale(minOf(decimals, 6), java.math.RoundingMode.DOWN)
+            .stripTrailingZeros()
+            .toPlainString()
+    }
+}

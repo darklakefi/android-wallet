@@ -16,7 +16,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.lifecycle.viewmodel.compose.viewModel
 import fi.darklake.wallet.ui.screens.swap.SwapScreen
-import fi.darklake.wallet.ui.screens.LPScreen
+import fi.darklake.wallet.ui.screens.lp.LpScreen
 import fi.darklake.wallet.ui.wallet.WalletScreen
 import fi.darklake.wallet.ui.wallet.WalletViewModel
 import fi.darklake.wallet.storage.WalletStorageManager
@@ -114,7 +114,10 @@ fun MainScreen(
             }
             
             composable(MainTab.LP.route) {
-                LPScreen()
+                LpScreen(
+                    storageManager = storageManager,
+                    settingsManager = settingsManager
+                )
             }
         }
     }
