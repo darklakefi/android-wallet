@@ -599,8 +599,8 @@ class SwapViewModel(
             // Sign the transaction
             transaction.sign(account)
             
-            // Serialize and encode back to base64
-            Base64.encodeToString(transaction.serialize(), Base64.DEFAULT)
+            // Serialize and encode back to base64 (NO_WRAP to avoid newlines)
+            Base64.encodeToString(transaction.serialize(), Base64.NO_WRAP)
         } catch (e: Exception) {
             throw Exception("Failed to sign transaction: ${e.message}")
         }
