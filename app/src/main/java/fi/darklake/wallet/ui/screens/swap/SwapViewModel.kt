@@ -8,8 +8,14 @@ import fi.darklake.wallet.data.swap.models.*
 import fi.darklake.wallet.data.swap.repository.TokenRepository
 import fi.darklake.wallet.data.swap.repository.PoolRepository
 import fi.darklake.wallet.data.api.SolanaApiService
+import fi.darklake.wallet.data.solana.SolanaKTTransactionService
 import fi.darklake.wallet.storage.WalletStorageManager
+import com.solana.core.HotAccount
+import com.solana.core.Transaction
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+import android.util.Base64
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -70,6 +76,7 @@ class SwapViewModel(
         
     private val tokenRepository = TokenRepository()
     private val poolRepository = PoolRepository()
+    private val transactionService = SolanaKTTransactionService(settingsManager)
         
     private val solanaApiService = SolanaApiService {
         settingsManager.networkSettings.value.let { settings ->
@@ -343,9 +350,12 @@ class SwapViewModel(
                     )
                 )
                 
-                // TODO: Implement transaction signing with proper Solana libraries
-                // For now, we'll simulate the signed transaction
-                val signedTransactionBase64 = swapResponse.unsignedTransaction // Placeholder
+                // Sign the transaction using SolanaKT
+                val signedTransactionBase64 = try {
+                    signTransaction(swapResponse.unsignedTransaction, wallet.privateKey)
+                } catch (e: Exception) {
+                    throw Exception("Failed to sign transaction: ${e.message}")
+                }
                 
                 // Step 3: Submit signed transaction
                 _uiState.value = _uiState.value.copy(swapStep = SwapStep.PROCESSING)
@@ -490,13 +500,6 @@ class SwapViewModel(
         }
     }
     
-    fun clearMessages() {
-        _uiState.value = _uiState.value.copy(
-            errorMessage = null,
-            successMessage = null
-        )
-    }
-    
     fun resetSwap() {
         _uiState.value = _uiState.value.copy(
             swapStep = SwapStep.IDLE,
@@ -565,5 +568,46 @@ class SwapViewModel(
                 _uiState.value = _uiState.value.copy(availableTokens = tokens)
             }
         }
+    }
+    
+    /**
+     * Signs a transaction using SolanaKT libraries
+     * @param unsignedTransactionBase64 The unsigned transaction as base64 string
+     * @param privateKey The wallet's private key
+     * @return The signed transaction as base64 string
+     */
+    private suspend fun signTransaction(
+        unsignedTransactionBase64: String,
+        privateKey: ByteArray
+    ): String = withContext(Dispatchers.IO) {
+        try {
+            // Decode the unsigned transaction from base64
+            val transactionBytes = Base64.decode(unsignedTransactionBase64, Base64.DEFAULT)
+            
+            // Deserialize the transaction
+            val transaction = Transaction.from(transactionBytes)
+            
+            // Create account from private key
+            val account = if (privateKey.size == 32) {
+                // Create keypair from seed
+                val keypair = com.solana.vendor.TweetNaclFast.Signature.keyPair_fromSeed(privateKey)
+                HotAccount(keypair.secretKey)
+            } else {
+                HotAccount(privateKey)
+            }
+            
+            // Sign the transaction
+            transaction.sign(account)
+            
+            // Serialize and encode back to base64
+            Base64.encodeToString(transaction.serialize(), Base64.DEFAULT)
+        } catch (e: Exception) {
+            throw Exception("Failed to sign transaction: ${e.message}")
+        }
+    }
+    
+    override fun onCleared() {
+        super.onCleared()
+        transactionService.close()
     }
 }
