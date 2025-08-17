@@ -37,7 +37,10 @@
       "WebSearch",
       "Bash(adb install:*)",
       "mcp__mobile__mobile_use_default_device",
-      "mcp__mobile__mobile_list_elements_on_screen"
+      "mcp__mobile__mobile_list_elements_on_screen",
+      "Bash(mv:*)",
+      "mcp__mobile__mobile_terminate_app",
+      "mcp__mobile__mobile_press_button"
     ],
     "deny": []
   }
