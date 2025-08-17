@@ -3,11 +3,18 @@ package fi.darklake.wallet.ui.screens.lp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import fi.darklake.wallet.data.preferences.SettingsManager
+import fi.darklake.wallet.data.lp.LpTransactionService
+import fi.darklake.wallet.data.solana.SolanaKTTransactionService
 import fi.darklake.wallet.storage.WalletStorageManager
+import com.solana.core.HotAccount
+import com.solana.core.Transaction
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+import android.util.Base64
 import java.math.BigDecimal
 
 data class TokenInfo(
@@ -79,6 +86,9 @@ class LpViewModel(
     
     private val _uiState = MutableStateFlow(LpUiState())
     val uiState: StateFlow<LpUiState> = _uiState.asStateFlow()
+    
+    private val lpTransactionService = LpTransactionService(settingsManager)
+    private val transactionService = SolanaKTTransactionService(settingsManager)
     
     // Token addresses by network
     private val SOL_MINT = "So11111111111111111111111111111111111111112" // Same on all networks
@@ -255,33 +265,57 @@ class LpViewModel(
                 errorMessage = null
             )
             
-            // TODO: Implement actual liquidity addition with Anchor IDL
-            // For now, simulate the process
-            _uiState.value = _uiState.value.copy(
-                liquidityStep = LiquidityStep.CONFIRM_TRANSACTION
+            val wallet = storageManager.getWallet().getOrNull() ?: throw Exception("Wallet not found")
+            
+            // Sort tokens (matching dex-web pattern)
+            val (tokenXMint, tokenYMint) = sortTokenAddresses(tokenA.address, tokenB.address)
+            val isTokenASellToken = tokenB.address == tokenXMint
+            val maxAmountX = if (isTokenASellToken) tokenAAmount else tokenBAmount
+            val maxAmountY = if (isTokenASellToken) tokenBAmount else tokenAAmount
+            
+            // Create add liquidity transaction
+            val transactionResult = lpTransactionService.createAddLiquidityTransaction(
+                userPrivateKey = wallet.privateKey,
+                tokenXMint = tokenXMint,
+                tokenYMint = tokenYMint,
+                maxAmountX = maxAmountX,
+                maxAmountY = maxAmountY,
+                slippage = state.slippagePercent
             )
             
-            // Simulate transaction confirmation
-            kotlinx.coroutines.delay(2000)
+            transactionResult.onSuccess { unsignedTransactionBase64 ->
+                // Step 2: Sign transaction
+                _uiState.value = _uiState.value.copy(
+                    liquidityStep = LiquidityStep.CONFIRM_TRANSACTION
+                )
+                
+                val signedTransactionBase64 = signTransaction(unsignedTransactionBase64, wallet.privateKey)
+                
+                // Step 3: Submit transaction
+                _uiState.value = _uiState.value.copy(
+                    liquidityStep = LiquidityStep.PROCESSING
+                )
+                
+                // TODO: Submit to Solana network using SolanaKTTransactionService
+                // For now, simulate successful submission
+                kotlinx.coroutines.delay(3000)
+                
+                _uiState.value = _uiState.value.copy(
+                    isAddingLiquidity = false,
+                    liquidityStep = LiquidityStep.COMPLETED,
+                    successMessage = "Liquidity added successfully! $tokenAAmount ${tokenA.symbol} + $tokenBAmount ${tokenB.symbol}",
+                    tokenAAmount = "",
+                    tokenBAmount = ""
+                )
+                
+                // Reload balances and positions
+                loadTokenBalances()
+                loadLiquidityPositions()
+            }
             
-            _uiState.value = _uiState.value.copy(
-                liquidityStep = LiquidityStep.PROCESSING
-            )
-            
-            // Simulate processing
-            kotlinx.coroutines.delay(3000)
-            
-            _uiState.value = _uiState.value.copy(
-                isAddingLiquidity = false,
-                liquidityStep = LiquidityStep.COMPLETED,
-                successMessage = "Liquidity added successfully! $tokenAAmount ${tokenA.symbol} + $tokenBAmount ${tokenB.symbol}",
-                tokenAAmount = "",
-                tokenBAmount = ""
-            )
-            
-            // Reload balances and positions
-            loadTokenBalances()
-            loadLiquidityPositions()
+            transactionResult.onFailure { error ->
+                throw error
+            }
             
         } catch (e: Exception) {
             _uiState.value = _uiState.value.copy(
@@ -306,29 +340,67 @@ class LpViewModel(
         try {
             _uiState.value = _uiState.value.copy(
                 isCreatingPool = true,
+                liquidityStep = LiquidityStep.GENERATING_PROOF,
                 errorMessage = null
             )
             
-            // TODO: Implement actual pool creation with Anchor IDL
-            // For now, simulate the process
-            kotlinx.coroutines.delay(3000)
+            val wallet = storageManager.getWallet().getOrNull() ?: throw Exception("Wallet not found")
             
-            _uiState.value = _uiState.value.copy(
-                isCreatingPool = false,
-                successMessage = "Pool created successfully! Initial deposit: $tokenAAmount ${tokenA.symbol} + $tokenBAmount ${tokenB.symbol}",
-                tokenAAmount = "",
-                tokenBAmount = "",
-                initialPrice = "1.0"
+            // Sort tokens (matching dex-web pattern)
+            val (tokenXMint, tokenYMint) = sortTokenAddresses(tokenA.address, tokenB.address)
+            val isTokenASellToken = tokenB.address == tokenXMint
+            val depositAmountX = if (isTokenASellToken) tokenAAmount else tokenBAmount
+            val depositAmountY = if (isTokenASellToken) tokenBAmount else tokenAAmount
+            
+            // Create pool creation transaction
+            val transactionResult = lpTransactionService.createPoolTransaction(
+                userPrivateKey = wallet.privateKey,
+                tokenXMint = tokenXMint,
+                tokenYMint = tokenYMint,
+                depositAmountX = depositAmountX,
+                depositAmountY = depositAmountY
             )
             
-            // Reload data
-            loadTokenBalances()
-            loadLiquidityPositions()
-            checkPoolExists()
+            transactionResult.onSuccess { unsignedTransactionBase64 ->
+                // Step 2: Sign transaction
+                _uiState.value = _uiState.value.copy(
+                    liquidityStep = LiquidityStep.CONFIRM_TRANSACTION
+                )
+                
+                val signedTransactionBase64 = signTransaction(unsignedTransactionBase64, wallet.privateKey)
+                
+                // Step 3: Submit transaction
+                _uiState.value = _uiState.value.copy(
+                    liquidityStep = LiquidityStep.PROCESSING
+                )
+                
+                // TODO: Submit to Solana network using SolanaKTTransactionService
+                // For now, simulate successful submission
+                kotlinx.coroutines.delay(3000)
+                
+                _uiState.value = _uiState.value.copy(
+                    isCreatingPool = false,
+                    liquidityStep = LiquidityStep.COMPLETED,
+                    successMessage = "Pool created successfully! Initial deposit: $tokenAAmount ${tokenA.symbol} + $tokenBAmount ${tokenB.symbol}",
+                    tokenAAmount = "",
+                    tokenBAmount = "",
+                    initialPrice = "1.0"
+                )
+                
+                // Reload data
+                loadTokenBalances()
+                loadLiquidityPositions()
+                checkPoolExists()
+            }
+            
+            transactionResult.onFailure { error ->
+                throw error
+            }
             
         } catch (e: Exception) {
             _uiState.value = _uiState.value.copy(
                 isCreatingPool = false,
+                liquidityStep = LiquidityStep.FAILED,
                 errorMessage = "Pool creation failed: ${e.message}"
             )
         }
@@ -450,5 +522,55 @@ class LpViewModel(
             .setScale(minOf(decimals, 6), java.math.RoundingMode.DOWN)
             .stripTrailingZeros()
             .toPlainString()
+    }
+    
+    /**
+     * Signs a transaction using SolanaKT libraries (same as SwapViewModel)
+     */
+    private suspend fun signTransaction(
+        unsignedTransactionBase64: String,
+        privateKey: ByteArray
+    ): String = withContext(Dispatchers.IO) {
+        try {
+            // Decode the unsigned transaction from base64
+            val transactionBytes = Base64.decode(unsignedTransactionBase64, Base64.DEFAULT)
+            
+            // Deserialize the transaction
+            val transaction = Transaction.from(transactionBytes)
+            
+            // Create account from private key
+            val account = if (privateKey.size == 32) {
+                // Create keypair from seed
+                val keypair = com.solana.vendor.TweetNaclFast.Signature.keyPair_fromSeed(privateKey)
+                HotAccount(keypair.secretKey)
+            } else {
+                HotAccount(privateKey)
+            }
+            
+            // Sign the transaction
+            transaction.sign(account)
+            
+            // Serialize and encode back to base64 (NO_WRAP to avoid newlines)
+            Base64.encodeToString(transaction.serialize(), Base64.NO_WRAP)
+        } catch (e: Exception) {
+            throw Exception("Failed to sign transaction: ${e.message}")
+        }
+    }
+    
+    /**
+     * Sorts token addresses to determine tokenX and tokenY (matching dex-web pattern)
+     */
+    private fun sortTokenAddresses(tokenA: String, tokenB: String): Pair<String, String> {
+        return if (tokenA < tokenB) {
+            Pair(tokenA, tokenB)
+        } else {
+            Pair(tokenB, tokenA)
+        }
+    }
+    
+    override fun onCleared() {
+        super.onCleared()
+        lpTransactionService.close()
+        transactionService.close()
     }
 }
