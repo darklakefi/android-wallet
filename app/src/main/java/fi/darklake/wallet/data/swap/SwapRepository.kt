@@ -41,6 +41,8 @@ class SwapRepository(
         
         // Production endpoints  
         private const val DEX_GATEWAY_URL_PRODUCTION = "https://dex-gateway-prod.dex.darklake.fi"
+
+        private const val GATEWAY_PORT = 50051
     }
     
     private val dexGatewayUrl: String
@@ -53,6 +55,12 @@ class SwapRepository(
         get() = when (networkSettings.network) {
             fi.darklake.wallet.data.model.SolanaNetwork.MAINNET -> 1 // Mainnet network ID
             fi.darklake.wallet.data.model.SolanaNetwork.DEVNET -> 2  // Devnet network ID  
+        }
+
+    private val gatewayPort: Int
+        get() = when (networkSettings.network) {
+            fi.darklake.wallet.data.model.SolanaNetwork.MAINNET -> GATEWAY_PORT
+            fi.darklake.wallet.data.model.SolanaNetwork.DEVNET -> GATEWAY_PORT
         }
     
     private val httpClient = HttpClient(Android) {
@@ -90,7 +98,7 @@ class SwapRepository(
                 params = request
             )
             
-            val response: HttpResponse = httpClient.post("$dexGatewayUrl/rpc") {
+            val response: HttpResponse = httpClient.post("$dexGatewayUrl:$gatewayPort/rpc") {
                 contentType(ContentType.Application.Json)
                 setBody(rpcRequest)
             }
@@ -132,7 +140,7 @@ class SwapRepository(
                 params = request
             )
             
-            val response: HttpResponse = httpClient.post("$dexGatewayUrl/rpc") {
+            val response: HttpResponse = httpClient.post("$dexGatewayUrl:$gatewayPort/rpc") {
                 contentType(ContentType.Application.Json)
                 setBody(rpcRequest)
             }
@@ -165,7 +173,7 @@ class SwapRepository(
                 params = request
             )
             
-            val response: HttpResponse = httpClient.post("$dexGatewayUrl/rpc") {
+            val response: HttpResponse = httpClient.post("$dexGatewayUrl:$gatewayPort/rpc") {
                 contentType(ContentType.Application.Json)
                 setBody(rpcRequest)
             }
@@ -196,7 +204,7 @@ class SwapRepository(
                 params = request
             )
             
-            val response: HttpResponse = httpClient.post("$dexGatewayUrl/rpc") {
+            val response: HttpResponse = httpClient.post("$dexGatewayUrl:$gatewayPort/rpc") {
                 contentType(ContentType.Application.Json)
                 setBody(rpcRequest)
             }
