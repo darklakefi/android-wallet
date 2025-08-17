@@ -3,6 +3,7 @@ package fi.darklake.wallet.data.swap
 import fi.darklake.wallet.data.swap.models.*
 import fi.darklake.wallet.data.swap.utils.SolanaUtils
 import io.ktor.client.*
+import kotlinx.serialization.Serializable
 import io.ktor.client.call.*
 import io.ktor.client.engine.android.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -15,6 +16,20 @@ import kotlinx.coroutines.delay
 import kotlinx.serialization.json.Json
 import java.math.BigDecimal
 import java.math.RoundingMode
+
+@Serializable
+data class RpcRequest<T>(
+    val method: String,
+    val params: T
+)
+
+@Serializable
+data class SwapRateParams(
+    val amountIn: Double,
+    val isXtoY: Boolean,
+    val tokenXMint: String,
+    val tokenYMint: String
+)
 
 class SwapRepository(
     private val networkSettings: fi.darklake.wallet.data.model.NetworkSettings
@@ -78,12 +93,14 @@ class SwapRepository(
                 tokenYMint = tokenYMint
             )
             
+            val rpcRequest = RpcRequest(
+                method = "swap.getSwapQuote",
+                params = request
+            )
+            
             val response: HttpResponse = httpClient.post("$rpcBaseUrl/rpc") {
                 contentType(ContentType.Application.Json)
-                setBody(mapOf(
-                    "method" to "swap.getSwapQuote",
-                    "params" to request
-                ))
+                setBody(rpcRequest)
             }
             
             if (response.status.isSuccess()) {
@@ -104,17 +121,21 @@ class SwapRepository(
         tokenYMint: String
     ): Result<SwapRateResponse> {
         return try {
+            val params = SwapRateParams(
+                amountIn = amountIn,
+                isXtoY = isXtoY,
+                tokenXMint = tokenXMint,
+                tokenYMint = tokenYMint
+            )
+            
+            val rpcRequest = RpcRequest(
+                method = "swap.getSwapRate",
+                params = params
+            )
+            
             val response: HttpResponse = httpClient.post("$rpcBaseUrl/rpc") {
                 contentType(ContentType.Application.Json)
-                setBody(mapOf(
-                    "method" to "swap.getSwapRate",
-                    "params" to mapOf(
-                        "amountIn" to amountIn,
-                        "isXtoY" to isXtoY,
-                        "tokenXMint" to tokenXMint,
-                        "tokenYMint" to tokenYMint
-                    )
-                ))
+                setBody(rpcRequest)
             }
             
             if (response.status.isSuccess()) {
@@ -149,12 +170,14 @@ class SwapRepository(
                 userAddress = userAddress
             )
             
+            val rpcRequest = RpcRequest(
+                method = "dexGateway.getSwap",
+                params = request
+            )
+            
             val response: HttpResponse = httpClient.post("$rpcBaseUrl/rpc") {
                 contentType(ContentType.Application.Json)
-                setBody(mapOf(
-                    "method" to "dexGateway.getSwap",
-                    "params" to request
-                ))
+                setBody(rpcRequest)
             }
             
             if (response.status.isSuccess()) {
@@ -180,12 +203,14 @@ class SwapRepository(
                 tradeId = tradeId
             )
             
+            val rpcRequest = RpcRequest(
+                method = "dexGateway.submitSignedTransaction",
+                params = request
+            )
+            
             val response: HttpResponse = httpClient.post("$rpcBaseUrl/rpc") {
                 contentType(ContentType.Application.Json)
-                setBody(mapOf(
-                    "method" to "dexGateway.submitSignedTransaction",
-                    "params" to request
-                ))
+                setBody(rpcRequest)
             }
             
             if (response.status.isSuccess()) {
@@ -209,12 +234,14 @@ class SwapRepository(
                 tradeId = tradeId
             )
             
+            val rpcRequest = RpcRequest(
+                method = "dexGateway.checkTradeStatus",
+                params = request
+            )
+            
             val response: HttpResponse = httpClient.post("$rpcBaseUrl/rpc") {
                 contentType(ContentType.Application.Json)
-                setBody(mapOf(
-                    "method" to "dexGateway.checkTradeStatus",
-                    "params" to request
-                ))
+                setBody(rpcRequest)
             }
             
             if (response.status.isSuccess()) {
@@ -274,12 +301,14 @@ class SwapRepository(
                 tokenYMint = tokenYMint
             )
             
+            val rpcRequest = RpcRequest(
+                method = "pools.getPoolDetails",
+                params = request
+            )
+            
             val response: HttpResponse = httpClient.post("$rpcBaseUrl/rpc") {
                 contentType(ContentType.Application.Json)
-                setBody(mapOf(
-                    "method" to "pools.getPoolDetails",
-                    "params" to request
-                ))
+                setBody(rpcRequest)
             }
             
             if (response.status.isSuccess()) {
