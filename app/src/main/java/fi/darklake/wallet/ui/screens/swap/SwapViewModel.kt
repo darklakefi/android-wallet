@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import fi.darklake.wallet.data.preferences.SettingsManager
 import fi.darklake.wallet.data.swap.SwapRepository
 import fi.darklake.wallet.data.swap.models.*
+import fi.darklake.wallet.data.swap.repository.TokenRepository
+import fi.darklake.wallet.data.swap.repository.PoolRepository
 import fi.darklake.wallet.data.api.SolanaApiService
 import fi.darklake.wallet.storage.WalletStorageManager
 import kotlinx.coroutines.Job
@@ -34,8 +36,15 @@ data class SwapUiState(
     val priceImpactWarning: Boolean = false,
     val errorMessage: String? = null,
     val successMessage: String? = null,
-    val trackingDetails: TrackingDetails? = null
+    val trackingDetails: TrackingDetails? = null,
+    val availableTokens: List<fi.darklake.wallet.data.swap.models.Token> = emptyList(),
+    val showTokenSelection: Boolean = false,
+    val tokenSelectionType: TokenSelectionType? = null
 )
+
+enum class TokenSelectionType {
+    TOKEN_A, TOKEN_B
+}
 
 data class TrackingDetails(
     val trackingId: String,
@@ -59,6 +68,9 @@ class SwapViewModel(
     private val swapRepository: SwapRepository
         get() = SwapRepository(settingsManager.networkSettings.value)
         
+    private val tokenRepository = TokenRepository()
+    private val poolRepository = PoolRepository()
+        
     private val solanaApiService = SolanaApiService {
         settingsManager.networkSettings.value.let { settings ->
             settings.heliusApiKey?.let { key ->
@@ -78,35 +90,48 @@ class SwapViewModel(
     private var quoteJob: Job? = null
     private val QUOTE_DEBOUNCE_MS = 500L
     
-    // Token addresses by network
-    private val SOL_MINT = "So11111111111111111111111111111111111111112" // Same on all networks
+    // Default token addresses based on dex-web pattern
+    // Mainnet: Fartcoin-USDC pair
+    // Devnet: DukY-DuX pair (as per dex-web logic)
     
-    private fun getUsdcMint(): String = when (settingsManager.networkSettings.value.network) {
-        fi.darklake.wallet.data.model.SolanaNetwork.MAINNET -> "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" // USDC Mainnet
-        fi.darklake.wallet.data.model.SolanaNetwork.DEVNET -> "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"   // USDC Devnet
+    private fun getDefaultTokenA(): TokenInfo = when (settingsManager.networkSettings.value.network) {
+        fi.darklake.wallet.data.model.SolanaNetwork.MAINNET -> TokenInfo(
+            address = "9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump", // Fartcoin
+            symbol = "Fartcoin",
+            name = "Fartcoin",
+            decimals = 6,
+            logoURI = null
+        )
+        fi.darklake.wallet.data.model.SolanaNetwork.DEVNET -> TokenInfo(
+            address = "HXsKnhXPtGr2mq4uTpxbxyy7ZydYWJwx4zMuYPEDukY", // DukY
+            symbol = "DukY",
+            name = "DukY",
+            decimals = 9,
+            logoURI = null
+        )
     }
     
-    private fun getUsdtMint(): String = when (settingsManager.networkSettings.value.network) {
-        fi.darklake.wallet.data.model.SolanaNetwork.MAINNET -> "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB" // USDT Mainnet  
-        fi.darklake.wallet.data.model.SolanaNetwork.DEVNET -> "EJwZgeZrdC8TXTQbQBoL6bfuAnFUUy1PVCMB4DYPzVaS"   // USDT Devnet
+    private fun getDefaultTokenB(): TokenInfo = when (settingsManager.networkSettings.value.network) {
+        fi.darklake.wallet.data.model.SolanaNetwork.MAINNET -> TokenInfo(
+            address = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", // USDC
+            symbol = "USDC",
+            name = "USD Coin",
+            decimals = 6,
+            logoURI = null
+        )
+        fi.darklake.wallet.data.model.SolanaNetwork.DEVNET -> TokenInfo(
+            address = "DdLxrGFs2sKYbbqVk76eVx9268ASUdTMAhrsqphqDuX", // DuX
+            symbol = "DuX",
+            name = "DuX",
+            decimals = 6,
+            logoURI = null
+        )
     }
     
     init {
-        // Initialize with default tokens (SOL/USDC)
-        setTokenA(TokenInfo(
-            address = SOL_MINT,
-            symbol = "SOL", 
-            name = "Solana",
-            decimals = 9,
-            logoURI = null
-        ))
-        setTokenB(TokenInfo(
-            address = getUsdcMint(),
-            symbol = "USDC",
-            name = "USD Coin", 
-            decimals = 6,
-            logoURI = null
-        ))
+        // Initialize with network-appropriate default tokens
+        setTokenA(getDefaultTokenA())
+        setTokenB(getDefaultTokenB())
         
         // Load balances
         loadTokenBalances()
@@ -114,21 +139,19 @@ class SwapViewModel(
         // Listen for network changes and refresh tokens accordingly
         viewModelScope.launch {
             settingsManager.networkSettings.collect { networkSettings ->
-                // Update token B to use the correct USDC mint for the network
-                val currentTokenB = _uiState.value.tokenB
-                if (currentTokenB?.symbol == "USDC") {
-                    setTokenB(TokenInfo(
-                        address = getUsdcMint(),
-                        symbol = "USDC",
-                        name = "USD Coin",
-                        decimals = 6,
-                        logoURI = null
-                    ))
-                }
+                // Update to network-appropriate default tokens
+                setTokenA(getDefaultTokenA())
+                setTokenB(getDefaultTokenB())
+                
                 // Reload balances with new network settings
                 loadTokenBalances()
+                // Load available tokens for the network
+                loadAvailableTokens()
             }
         }
+        
+        // Load initial tokens
+        loadAvailableTokens()
     }
     
     fun setTokenA(token: TokenInfo) {
@@ -402,6 +425,9 @@ class SwapViewModel(
             val tokenA = _uiState.value.tokenA
             val tokenB = _uiState.value.tokenB
             
+            // SOL mint address (same on all networks)
+            val SOL_MINT = "So11111111111111111111111111111111111111112"
+            
             // Load token A balance
             if (tokenA != null) {
                 if (tokenA.address == SOL_MINT) {
@@ -453,12 +479,14 @@ class SwapViewModel(
             val tokenA = _uiState.value.tokenA ?: return@launch
             val tokenB = _uiState.value.tokenB ?: return@launch
             
-            val (tokenX, tokenY) = swapRepository.sortTokenAddresses(tokenA.address, tokenB.address)
-            
-            val result = swapRepository.getPoolDetails(tokenX, tokenY)
-            _uiState.value = _uiState.value.copy(
-                poolExists = result.isSuccess && result.getOrNull()?.poolAddress != null
+            // Use the new PoolRepository for deterministic pool checking
+            val poolExists = poolRepository.poolExistsLocally(
+                tokenA.address, 
+                tokenB.address, 
+                settingsManager.networkSettings.value.network
             )
+            
+            _uiState.value = _uiState.value.copy(poolExists = poolExists)
         }
     }
     
@@ -488,5 +516,54 @@ class SwapViewModel(
         return BigDecimal(amount)
             .multiply(BigDecimal(10).pow(decimals))
             .toDouble()
+    }
+    
+    // Token Selection Methods
+    fun showTokenSelection(type: TokenSelectionType) {
+        _uiState.value = _uiState.value.copy(
+            showTokenSelection = true,
+            tokenSelectionType = type
+        )
+    }
+    
+    fun hideTokenSelection() {
+        _uiState.value = _uiState.value.copy(
+            showTokenSelection = false,
+            tokenSelectionType = null
+        )
+    }
+    
+    fun selectToken(token: fi.darklake.wallet.data.swap.models.Token) {
+        val selectionType = _uiState.value.tokenSelectionType ?: return
+        val tokenInfo = tokenRepository.convertToTokenInfo(token)
+        
+        when (selectionType) {
+            TokenSelectionType.TOKEN_A -> {
+                // Prevent selecting the same token as Token B
+                if (token.address != _uiState.value.tokenB?.address) {
+                    setTokenA(tokenInfo)
+                }
+            }
+            TokenSelectionType.TOKEN_B -> {
+                // Prevent selecting the same token as Token A
+                if (token.address != _uiState.value.tokenA?.address) {
+                    setTokenB(tokenInfo)
+                }
+            }
+        }
+        
+        hideTokenSelection()
+    }
+    
+    private fun loadAvailableTokens() {
+        viewModelScope.launch {
+            tokenRepository.getTokens(
+                network = settingsManager.networkSettings.value.network,
+                query = "",
+                limit = 100
+            ).collect { tokens ->
+                _uiState.value = _uiState.value.copy(availableTokens = tokens)
+            }
+        }
     }
 }

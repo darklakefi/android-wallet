@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import fi.darklake.wallet.data.preferences.SettingsManager
 import fi.darklake.wallet.storage.WalletStorageManager
+import fi.darklake.wallet.ui.components.TokenSelectionSheet
 import java.math.BigDecimal
 import java.text.DecimalFormat
 
@@ -70,7 +71,7 @@ fun SwapScreen(
                     amount = uiState.tokenAAmount,
                     balance = uiState.tokenABalance,
                     onAmountChange = { viewModel.updateTokenAAmount(it) },
-                    onTokenSelect = { /* TODO: Open token selector */ },
+                    onTokenSelect = { viewModel.showTokenSelection(TokenSelectionType.TOKEN_A) },
                     isReadOnly = false,
                     showInsufficientBalance = uiState.insufficientBalance
                 )
@@ -104,7 +105,7 @@ fun SwapScreen(
                     amount = uiState.tokenBAmount,
                     balance = uiState.tokenBBalance,
                     onAmountChange = { },
-                    onTokenSelect = { /* TODO: Open token selector */ },
+                    onTokenSelect = { viewModel.showTokenSelection(TokenSelectionType.TOKEN_B) },
                     isReadOnly = true,
                     showInsufficientBalance = false
                 )
@@ -222,6 +223,20 @@ fun SwapScreen(
                     textAlign = TextAlign.Center
                 )
             }
+        }
+        
+        // Token Selection Sheet
+        if (uiState.showTokenSelection) {
+            TokenSelectionSheet(
+                tokens = uiState.availableTokens,
+                selectedTokenAddress = when (uiState.tokenSelectionType) {
+                    TokenSelectionType.TOKEN_A -> uiState.tokenA?.address
+                    TokenSelectionType.TOKEN_B -> uiState.tokenB?.address
+                    null -> null
+                },
+                onTokenSelected = { token -> viewModel.selectToken(token) },
+                onDismiss = { viewModel.hideTokenSelection() }
+            )
         }
     }
 }

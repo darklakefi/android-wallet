@@ -1,6 +1,7 @@
 package fi.darklake.wallet.data.swap
 
 import fi.darklake.wallet.data.swap.models.*
+import fi.darklake.wallet.data.swap.utils.SolanaUtils
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.android.*
@@ -292,13 +293,9 @@ class SwapRepository(
         }
     }
     
-    // Helper function to sort token addresses (same as TypeScript sortSolanaAddresses)
+    // Helper function to sort token addresses (matching dex-web sortSolanaAddresses)
     fun sortTokenAddresses(tokenA: String, tokenB: String): Pair<String, String> {
-        return if (tokenA < tokenB) {
-            Pair(tokenA, tokenB)
-        } else {
-            Pair(tokenB, tokenA)
-        }
+        return SolanaUtils.sortSolanaAddresses(tokenA, tokenB)
     }
     
     // Helper to calculate minimum output with slippage
