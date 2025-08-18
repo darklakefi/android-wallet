@@ -358,14 +358,11 @@ class SwapViewModel(
                 quote.amountOut
             }
             
-            // Convert amounts to raw values with decimals
-            val amountInRaw = convertToRawAmount(amountIn, tokenA.decimals)
-            val minOutRaw = convertToRawAmount(minOut, tokenB.decimals)
-            
+            // Pass human-readable amounts - SwapRepository will handle decimal conversion
             val swapResult = swapRepository.createSwapTransaction(
-                amountIn = amountInRaw,
+                amountIn = amountIn, // Keep as human-readable amount
                 isSwapXtoY = isXtoY,
-                minOut = minOutRaw,
+                minOut = minOut, // Keep as human-readable amount  
                 tokenMintX = tokenX,
                 tokenMintY = tokenY,
                 userAddress = wallet.publicKey,
@@ -552,11 +549,6 @@ class SwapViewModel(
             .toPlainString()
     }
     
-    private fun convertToRawAmount(amount: Double, decimals: Int): Double {
-        return BigDecimal(amount)
-            .multiply(BigDecimal(10).pow(decimals))
-            .toDouble()
-    }
     
     // Token Selection Methods
     fun showTokenSelection(type: TokenSelectionType) {
