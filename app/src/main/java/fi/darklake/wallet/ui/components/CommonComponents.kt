@@ -41,9 +41,9 @@ import fi.darklake.wallet.ui.theme.DarklakeWalletTheme
 fun AppButton(
     text: String,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
     isPrimary: Boolean = true,
     hasUnderline: Boolean = false,
-    modifier: Modifier = Modifier,
     enabled: Boolean = true
 ) {
     val buttonColors = if (isPrimary) {
@@ -150,9 +150,9 @@ fun AppLogo(
 @Composable
 fun AppTitle(
     text: String,
+    modifier: Modifier = Modifier,
     fontSize: androidx.compose.ui.unit.TextUnit = DesignTokens.Typography.title,
-    color: Color = Green100,
-    modifier: Modifier = Modifier
+    color: Color = Green100
 ) {
     Text(
         text = text,
@@ -169,9 +169,9 @@ fun AppTitle(
 @Composable
 fun AppBodyText(
     text: String,
+    modifier: Modifier = Modifier,
     fontSize: androidx.compose.ui.unit.TextUnit = DesignTokens.Typography.body,
-    color: Color = Green300,
-    modifier: Modifier = Modifier
+    color: Color = Green300
 ) {
     Text(
         text = text,
@@ -199,10 +199,10 @@ fun AppBodyText(
 fun HighlightedText(
     text: String,
     highlightedWords: List<String>,
+    modifier: Modifier = Modifier,
     highlightColor: Color = Green100,
     baseColor: Color = Green300,
-    textAlign: TextAlign = TextAlign.Center,
-    modifier: Modifier = Modifier
+    textAlign: TextAlign = TextAlign.Center
 ) {
     Text(
         text = buildAnnotatedString {

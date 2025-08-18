@@ -211,7 +211,7 @@ fun TypewriterText(
     startDelay: Int = 0
 ) {
     var displayedText by remember { mutableStateOf("") }
-    var currentIndex by remember { mutableStateOf(0) }
+    var currentIndex by remember { mutableIntStateOf(0) }
     
     LaunchedEffect(text) {
         currentIndex = 0

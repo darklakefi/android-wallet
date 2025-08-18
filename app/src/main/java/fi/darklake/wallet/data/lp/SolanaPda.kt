@@ -208,6 +208,6 @@ object SolanaPda {
         // In a real app, use a proper Base58 encoding library
         
         // For now, we'll use a simple encoding scheme
-        return Base64.getEncoder().encodeToString(input).replace("/", "_").replace("+", "-").take(44)
+        return android.util.Base64.encodeToString(input, android.util.Base64.NO_WRAP).replace("/", "_").replace("+", "-").take(44)
     }
 }

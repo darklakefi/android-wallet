@@ -83,7 +83,7 @@ object SolanaUtils {
      */
     private fun encodeBase58(input: ByteArray): String {
         // Simplified implementation - in production use actual Base58 encoder
-        return Base64.getEncoder().encodeToString(input)
+        return android.util.Base64.encodeToString(input, android.util.Base64.NO_WRAP)
     }
     
     /**

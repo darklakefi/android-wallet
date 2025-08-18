@@ -164,7 +164,7 @@ private fun LiquidityPositionDialog(
     onDismiss: () -> Unit,
     onWithdraw: () -> Unit
 ) {
-    var withdrawPercentage by remember { mutableStateOf(100f) }
+    var withdrawPercentage by remember { mutableFloatStateOf(100f) }
     
     AlertDialog(
         onDismissRequest = onDismiss,

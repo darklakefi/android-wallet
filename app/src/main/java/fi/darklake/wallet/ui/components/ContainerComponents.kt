@@ -180,8 +180,8 @@ fun ThreeSectionLayout(
 @Composable
 fun FlexLayout(
     sections: List<FlexSection>,
-    backgroundBrush: androidx.compose.ui.graphics.Brush? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    backgroundBrush: androidx.compose.ui.graphics.Brush? = null
 ) {
     Box(
         modifier = modifier.fillMaxSize().then(

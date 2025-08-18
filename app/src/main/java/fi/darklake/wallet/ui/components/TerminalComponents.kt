@@ -34,8 +34,8 @@ import fi.darklake.wallet.ui.theme.*
 @Composable
 fun TerminalBalanceDisplay(
     balance: String,
-    currency: String = "SOL",
     modifier: Modifier = Modifier,
+    currency: String = "SOL",
     isLoading: Boolean = false
 ) {
     val glowAnimation by rememberInfiniteTransition(label = "glow").animateFloat(
@@ -100,8 +100,8 @@ fun TerminalBalanceDisplay(
 @Composable
 fun TerminalAddressDisplay(
     address: String,
-    label: String = "ADDRESS",
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    label: String = "ADDRESS"
 ) {
     val clipboardManager = LocalClipboardManager.current
     val haptic = LocalHapticFeedback.current

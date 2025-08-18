@@ -52,6 +52,38 @@ DarklakeWallet is an Android application built with Jetpack Compose and Material
 ./gradlew assembleRelease
 ```
 
+### Ruby/Fastlane Commands
+
+**IMPORTANT**: This project uses RVM for Ruby management. Before running any Ruby/Fastlane commands, you must set the correct PATH:
+
+```bash
+# Set Ruby PATH for current session (required before any Ruby/gem/fastlane commands)
+export PATH="$HOME/.rvm/gems/ruby-3.3.6/bin:$HOME/.rvm/rubies/ruby-3.3.6/bin:$PATH"
+
+# Verify Ruby version (should show 3.3.6)
+ruby --version
+
+# Install Fastlane dependencies
+bundle install
+
+# Run Fastlane commands (examples)
+fastlane android debug
+fastlane android lint
+fastlane android reproducible
+```
+
+**Available Fastlane Lanes**:
+- `fastlane android debug` - Build debug APK
+- `fastlane android release` - Build unsigned release APK for F-Droid
+- `fastlane android reproducible` - Build reproducible APK with consistent timestamps
+- `fastlane android test` - Run unit tests
+- `fastlane android lint` - Run lint checks
+- `fastlane android prepare_fdroid_metadata` - Generate F-Droid metadata
+- `fastlane android verify_reproducible` - Verify build reproducibility
+- `fastlane android clean` - Clean build artifacts
+
+**Ruby Version File**: The project uses `.ruby-version` file set to `3.3.6`
+
 ## Architecture & Structure
 
 ### Technology Stack
