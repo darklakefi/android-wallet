@@ -1,0 +1,27 @@
+DarklakeWallet is a free and open-source Solana wallet designed with privacy and user control in mind.
+
+Features:
+• Full Solana blockchain support
+• Token swaps via integrated DEX
+• Liquidity provision capabilities
+• No tracking or analytics
+• No proprietary dependencies
+• Fully reproducible builds
+• Support for mainnet and devnet
+
+Privacy First:
+DarklakeWallet does not collect any user data, require any accounts, or include any tracking. Your keys, your coins, your control.
+
+Technical Features:
+• Built with Jetpack Compose and Material 3
+• SolanaKT integration for blockchain operations
+• Zero-knowledge proof support for enhanced privacy
+• F-Droid compatible - no Google Play Services required
+
+Security:
+• Keys stored locally with encryption
+• No cloud backup by default
+• Open source for full transparency
+• Reproducible builds for verification
+
+This wallet is perfect for users who value privacy, transparency, and full control over their digital assets.

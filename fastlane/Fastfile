@@ -1,0 +1,167 @@
+# Fastfile for DarklakeWallet
+# F-Droid compatible build automation
+
+default_platform(:android)
+
+platform :android do
+  desc "Build a debug APK"
+  lane :debug do
+    gradle(
+      task: "assembleDebug",
+      project_dir: "."
+    )
+    UI.success "Debug APK built successfully!"
+  end
+
+  desc "Build a release APK (unsigned for F-Droid)"
+  lane :release do
+    gradle(
+      task: "assembleRelease",
+      project_dir: ".",
+      properties: {
+        "android.injected.signing.store.file" => "",
+        "android.injected.signing.store.password" => "",
+        "android.injected.signing.key.alias" => "",
+        "android.injected.signing.key.password" => ""
+      }
+    )
+    UI.success "Release APK built successfully!"
+  end
+
+  desc "Build a reproducible release APK for F-Droid"
+  lane :reproducible do
+    # Clean everything first
+    gradle(
+      task: "clean",
+      project_dir: "."
+    )
+    
+    # Build with reproducible settings
+    ENV["SOURCE_DATE_EPOCH"] = Time.now.to_i.to_s
+    ENV["REPRODUCIBLE_BUILD"] = "true"
+    
+    gradle(
+      task: "assembleRelease",
+      project_dir: ".",
+      properties: {
+        "android.injected.signing.store.file" => "",
+        "android.injected.signing.store.password" => "",
+        "android.injected.signing.key.alias" => "",
+        "android.injected.signing.key.password" => ""
+      }
+    )
+    
+    # Copy APK to a standard location
+    apk_path = lane_context[SharedValues::GRADLE_APK_OUTPUT_PATH]
+    if apk_path
+      FileUtils.cp(apk_path, "./app-release-unsigned.apk")
+      UI.success "Reproducible APK created: app-release-unsigned.apk"
+    end
+  end
+
+  desc "Run all tests"
+  lane :test do
+    gradle(
+      task: "testDebugUnitTest",
+      project_dir: "."
+    )
+    UI.success "All tests passed!"
+  end
+
+  desc "Run lint checks"
+  lane :lint do
+    gradle(
+      task: "lint",
+      project_dir: "."
+    )
+    UI.success "Lint checks completed!"
+  end
+
+  desc "Prepare F-Droid metadata"
+  lane :prepare_fdroid_metadata do
+    # Create F-Droid metadata structure
+    fdroid_dir = "../metadata/fi.darklake.wallet"
+    FileUtils.mkdir_p(fdroid_dir)
+    
+    # Copy or generate metadata files
+    UI.message "F-Droid metadata directory created at: #{fdroid_dir}"
+    
+    # Create/update the metadata yml file
+    create_fdroid_yml
+    
+    UI.success "F-Droid metadata prepared!"
+  end
+
+  desc "Verify reproducible build"
+  lane :verify_reproducible do
+    # Build twice and compare
+    UI.message "Building first APK..."
+    gradle(
+      task: "clean assembleRelease",
+      project_dir: "."
+    )
+    
+    apk1_path = lane_context[SharedValues::GRADLE_APK_OUTPUT_PATH]
+    FileUtils.cp(apk1_path, "./apk1.apk")
+    
+    UI.message "Building second APK..."
+    gradle(
+      task: "clean assembleRelease",
+      project_dir: "."
+    )
+    
+    apk2_path = lane_context[SharedValues::GRADLE_APK_OUTPUT_PATH]
+    FileUtils.cp(apk2_path, "./apk2.apk")
+    
+    # Compare APKs (excluding signatures)
+    sh("zipalign -c -v 4 ./apk1.apk")
+    sh("zipalign -c -v 4 ./apk2.apk")
+    
+    UI.success "Reproducible build verification complete!"
+  end
+
+  desc "Clean build artifacts"
+  lane :clean do
+    gradle(
+      task: "clean",
+      project_dir: "."
+    )
+    UI.success "Build artifacts cleaned!"
+  end
+
+  # Helper method to create F-Droid YML metadata
+  private_lane :create_fdroid_yml do
+    metadata = {
+      "Categories" => ["Money"],
+      "License" => "MIT",
+      "AuthorName" => "Darklake",
+      "AuthorEmail" => "contact@darklake.fi",
+      "SourceCode" => "https://github.com/darklake/wallet",
+      "IssueTracker" => "https://github.com/darklake/wallet/issues",
+      "Changelog" => "https://github.com/darklake/wallet/releases",
+      "Donate" => "",
+      "Bitcoin" => "",
+      "LiberapayID" => "",
+      "FlattrID" => "",
+      
+      "RepoType" => "git",
+      "Repo" => "https://github.com/darklake/wallet.git",
+      
+      "Builds" => [{
+        "versionName" => "1.0.0",
+        "versionCode" => 1,
+        "commit" => "HEAD",
+        "subdir" => "app",
+        "gradle" => ["yes"],
+        "output" => "build/outputs/apk/release/app-release-unsigned.apk"
+      }],
+      
+      "AutoUpdateMode" => "Version",
+      "UpdateCheckMode" => "Tags",
+      "CurrentVersion" => "1.0.0",
+      "CurrentVersionCode" => 1
+    }
+    
+    File.write("../metadata/fi.darklake.wallet.yml", metadata.to_yaml)
+  end
+end

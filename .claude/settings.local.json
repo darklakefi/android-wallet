@@ -42,7 +42,17 @@
       "mcp__mobile__mobile_terminate_app",
       "mcp__mobile__mobile_press_button",
       "mcp__mobile__mobile_get_orientation",
-      "Bash(adb uninstall:*)"
+      "Bash(adb uninstall:*)",
+      "Bash(bundle install:*)",
+      "Bash(rvm use 3.0.0)",
+      "Bash(rvm list:*)",
+      "Bash(rvm use:*)",
+      "Bash(source ~/.rvm/scripts/rvm)",
+      "Bash(export:*)",
+      "Bash(gem install:*)",
+      "Bash(fastlane init)",
+      "Bash(fastlane android debug)",
+      "Bash(fastlane android lint)"
     ],
     "deny": []
   }

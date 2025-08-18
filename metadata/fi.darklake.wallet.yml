@@ -1,0 +1,30 @@
+Categories:
+  - Money
+  - Security
+License: MIT
+AuthorName: Darklake
+AuthorEmail: contact@darklake.fi
+WebSite: https://darklake.fi
+SourceCode: https://github.com/darklake/wallet
+IssueTracker: https://github.com/darklake/wallet/issues
+Changelog: https://github.com/darklake/wallet/blob/main/CHANGELOG.md
+
+AutoName: DarklakeWallet
+
+RepoType: git
+Repo: https://github.com/darklake/wallet.git
+
+Builds:
+  - versionName: '1.0.0'
+    versionCode: 1
+    commit: v1.0.0
+    subdir: app
+    gradle:
+      - yes
+    prebuild: echo "Preparing F-Droid build"
+    output: build/outputs/apk/release/app-release-unsigned.apk
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: '1.0.0'
+CurrentVersionCode: 1

@@ -1,0 +1,8 @@
+# Appfile for DarklakeWallet
+# F-Droid compatible configuration
+
+json_key_file("") # No Google Play services for F-Droid compliance
+package_name("fi.darklake.wallet") # The bundle identifier of your app
+
+# For F-Droid builds, we don't use Play Store or other proprietary services
+# Instead, we focus on reproducible builds and open source distribution
