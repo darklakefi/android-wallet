@@ -12,6 +12,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import fi.darklake.wallet.data.preferences.SettingsManager
 import fi.darklake.wallet.storage.WalletStorageManager
+import fi.darklake.wallet.ui.components.TokenSelectionSheet
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,8 +71,8 @@ fun LpScreen(
             uiState = uiState,
             onTokenAAmountChange = viewModel::updateTokenAAmount,
             onTokenBAmountChange = viewModel::updateTokenBAmount,
-            onTokenASelect = viewModel::setTokenA,
-            onTokenBSelect = viewModel::setTokenB,
+            onTokenASelect = { viewModel.showTokenSelection(TokenSelectionType.TOKEN_A) },
+            onTokenBSelect = { viewModel.showTokenSelection(TokenSelectionType.TOKEN_B) },
             onSwapTokens = viewModel::swapTokens,
             onAddLiquidity = viewModel::addLiquidity,
             onCreatePool = viewModel::createPool,
@@ -117,5 +118,19 @@ fun LpScreen(
                 )
             }
         }
+    }
+    
+    // Token Selection Sheet
+    if (uiState.showTokenSelection) {
+        TokenSelectionSheet(
+            tokens = uiState.availableTokens,
+            selectedTokenAddress = when (uiState.tokenSelectionType) {
+                TokenSelectionType.TOKEN_A -> uiState.tokenA?.address
+                TokenSelectionType.TOKEN_B -> uiState.tokenB?.address
+                null -> null
+            },
+            onTokenSelected = { token -> viewModel.selectToken(token) },
+            onDismiss = { viewModel.hideTokenSelection() }
+        )
     }
 }

@@ -4,7 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import fi.darklake.wallet.data.preferences.SettingsManager
 import fi.darklake.wallet.data.lp.LpTransactionService
+import fi.darklake.wallet.data.lp.LpPositionService
 import fi.darklake.wallet.data.solana.SolanaKTTransactionService
+import fi.darklake.wallet.data.swap.repository.TokenRepository
+import fi.darklake.wallet.data.api.SolanaApiService
 import fi.darklake.wallet.storage.WalletStorageManager
 import com.solana.core.HotAccount
 import com.solana.core.Transaction
@@ -16,14 +19,10 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
 import android.util.Base64
 import java.math.BigDecimal
+import java.math.RoundingMode
 
-data class TokenInfo(
-    val address: String,
-    val symbol: String,
-    val name: String,
-    val decimals: Int,
-    val logoURI: String? = null
-)
+// Use the same TokenInfo from swap module for consistency
+typealias TokenInfo = fi.darklake.wallet.data.swap.models.TokenInfo
 
 data class LiquidityPosition(
     val id: String,
@@ -55,6 +54,10 @@ enum class LiquidityStep {
     FAILED
 }
 
+enum class TokenSelectionType {
+    TOKEN_A, TOKEN_B
+}
+
 data class LpUiState(
     val tokenA: TokenInfo? = null,
     val tokenB: TokenInfo? = null,
@@ -76,7 +79,10 @@ data class LpUiState(
     val insufficientBalanceB: Boolean = false,
     val priceImpactWarning: Boolean = false,
     val errorMessage: String? = null,
-    val successMessage: String? = null
+    val successMessage: String? = null,
+    val availableTokens: List<fi.darklake.wallet.data.swap.models.Token> = emptyList(),
+    val showTokenSelection: Boolean = false,
+    val tokenSelectionType: TokenSelectionType? = null
 )
 
 class LpViewModel(
@@ -87,55 +93,90 @@ class LpViewModel(
     private val _uiState = MutableStateFlow(LpUiState())
     val uiState: StateFlow<LpUiState> = _uiState.asStateFlow()
     
+    private val tokenRepository = TokenRepository()
     private val lpTransactionService = LpTransactionService(settingsManager)
+    private val lpPositionService = LpPositionService(settingsManager)
     private val transactionService = SolanaKTTransactionService(settingsManager)
     
-    // Token addresses by network
-    private val SOL_MINT = "So11111111111111111111111111111111111111112" // Same on all networks
+    private val solanaApiService = SolanaApiService {
+        settingsManager.networkSettings.value.let { settings ->
+            settings.heliusApiKey?.let { key ->
+                when (settings.network) {
+                    fi.darklake.wallet.data.model.SolanaNetwork.MAINNET -> 
+                        "https://mainnet.helius-rpc.com/?api-key=$key"
+                    fi.darklake.wallet.data.model.SolanaNetwork.DEVNET -> 
+                        "https://devnet.helius-rpc.com/?api-key=$key"
+                }
+            } ?: settings.network.rpcUrl
+        }
+    }
     
-    private fun getUsdcMint(): String = when (settingsManager.networkSettings.value.network) {
-        fi.darklake.wallet.data.model.SolanaNetwork.MAINNET -> "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" // USDC Mainnet
-        fi.darklake.wallet.data.model.SolanaNetwork.DEVNET -> "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"   // USDC Devnet
+    // Default token addresses based on dex-web pattern
+    // Mainnet: Fartcoin-USDC pair  
+    // Devnet: DukY-DuX pair (as per dex-web logic)
+    
+    private fun getDefaultTokenA(): TokenInfo = when (settingsManager.networkSettings.value.network) {
+        fi.darklake.wallet.data.model.SolanaNetwork.MAINNET -> TokenInfo(
+            address = "9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump", // Fartcoin
+            symbol = "Fartcoin",
+            name = "Fartcoin",
+            decimals = 6,
+            logoURI = null
+        )
+        fi.darklake.wallet.data.model.SolanaNetwork.DEVNET -> TokenInfo(
+            address = "HXsKnhXPtGr2mq4uTpxbxyy7ZydYWJwx4zMuYPEDukY", // DukY
+            symbol = "DukY",
+            name = "DukY",
+            decimals = 9,
+            logoURI = null
+        )
+    }
+    
+    private fun getDefaultTokenB(): TokenInfo = when (settingsManager.networkSettings.value.network) {
+        fi.darklake.wallet.data.model.SolanaNetwork.MAINNET -> TokenInfo(
+            address = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", // USDC
+            symbol = "USDC",
+            name = "USD Coin",
+            decimals = 6,
+            logoURI = null
+        )
+        fi.darklake.wallet.data.model.SolanaNetwork.DEVNET -> TokenInfo(
+            address = "DdLxrGFs2sKYbbqVk76eVx9268ASUdTMAhrsqphqDuX", // DuX
+            symbol = "DuX",
+            name = "DuX",
+            decimals = 6,
+            logoURI = null
+        )
     }
     
     init {
-        // Initialize with default tokens (SOL/USDC)
-        setTokenA(TokenInfo(
-            address = SOL_MINT,
-            symbol = "SOL", 
-            name = "Solana",
-            decimals = 9
-        ))
-        setTokenB(TokenInfo(
-            address = getUsdcMint(),
-            symbol = "USDC",
-            name = "USD Coin", 
-            decimals = 6
-        ))
+        // Initialize with network-appropriate default tokens
+        setTokenA(getDefaultTokenA())
+        setTokenB(getDefaultTokenB())
         
         // Load balances and liquidity positions
         loadTokenBalances()
         loadLiquidityPositions()
         
-        // Listen for network changes
+        // Listen for network changes and refresh tokens accordingly
         viewModelScope.launch {
             settingsManager.networkSettings.collect { networkSettings ->
-                // Update token B to use the correct USDC mint for the network
-                val currentTokenB = _uiState.value.tokenB
-                if (currentTokenB?.symbol == "USDC") {
-                    setTokenB(TokenInfo(
-                        address = getUsdcMint(),
-                        symbol = "USDC",
-                        name = "USD Coin",
-                        decimals = 6
-                    ))
-                }
-                // Reload data with new network settings
+                // Update to network-appropriate default tokens
+                setTokenA(getDefaultTokenA())
+                setTokenB(getDefaultTokenB())
+                
+                // Reload balances with new network settings
                 loadTokenBalances()
-                loadLiquidityPositions()
                 checkPoolExists()
+                // Load available tokens for the network
+                loadAvailableTokens()
+                // Reload all liquidity positions for the new network
+                loadLiquidityPositions()
             }
         }
+        
+        // Load initial tokens
+        loadAvailableTokens()
     }
     
     fun setTokenA(token: TokenInfo) {
@@ -275,7 +316,7 @@ class LpViewModel(
             
             // Create add liquidity transaction
             val transactionResult = lpTransactionService.createAddLiquidityTransaction(
-                userPrivateKey = wallet.privateKey,
+                userAddress = wallet.publicKey,
                 tokenXMint = tokenXMint,
                 tokenYMint = tokenYMint,
                 maxAmountX = maxAmountX,
@@ -308,7 +349,7 @@ class LpViewModel(
                     tokenBAmount = ""
                 )
                 
-                // Reload balances and positions
+                // Reload balances and positions after successful add liquidity
                 loadTokenBalances()
                 loadLiquidityPositions()
             }
@@ -354,7 +395,7 @@ class LpViewModel(
             
             // Create pool creation transaction
             val transactionResult = lpTransactionService.createPoolTransaction(
-                userPrivateKey = wallet.privateKey,
+                userAddress = wallet.publicKey,
                 tokenXMint = tokenXMint,
                 tokenYMint = tokenYMint,
                 depositAmountX = depositAmountX,
@@ -387,7 +428,7 @@ class LpViewModel(
                     initialPrice = "1.0"
                 )
                 
-                // Reload data
+                // Reload data after successful pool creation
                 loadTokenBalances()
                 loadLiquidityPositions()
                 checkPoolExists()
@@ -416,7 +457,7 @@ class LpViewModel(
                 successMessage = "Liquidity withdrawn successfully!"
             )
             
-            // Reload data
+            // Reload data after successful withdrawal
             loadTokenBalances()
             loadLiquidityPositions()
             
@@ -449,36 +490,94 @@ class LpViewModel(
     
     private fun loadTokenBalances() {
         viewModelScope.launch {
-            // TODO: Implement actual balance loading
-            // For now, use mock data
-            _uiState.value = _uiState.value.copy(
-                tokenABalance = BigDecimal("2.9979"), // Mock SOL balance
-                tokenBBalance = BigDecimal("1000.0")  // Mock USDC balance
-            )
+            val wallet = storageManager.getWallet().getOrNull() ?: return@launch
+            val tokenA = _uiState.value.tokenA
+            val tokenB = _uiState.value.tokenB
+            
+            // SOL mint address (same on all networks)
+            val SOL_MINT = "So11111111111111111111111111111111111111112"
+            
+            // Load token A balance
+            if (tokenA != null) {
+                if (tokenA.address == SOL_MINT) {
+                    // Get SOL balance
+                    val balanceResult = solanaApiService.getBalance(wallet.publicKey)
+                    balanceResult.onSuccess { balance ->
+                        _uiState.value = _uiState.value.copy(
+                            tokenABalance = BigDecimal(balance).divide(BigDecimal(1_000_000_000), 9, RoundingMode.DOWN)
+                        )
+                    }
+                } else {
+                    // Get SPL token balance
+                    val tokensResult = solanaApiService.getTokenAccounts(wallet.publicKey)
+                    tokensResult.onSuccess { tokens ->
+                        val tokenInfo = tokens.find { it.balance.mint == tokenA.address }
+                        _uiState.value = _uiState.value.copy(
+                            tokenABalance = BigDecimal(tokenInfo?.balance?.uiAmount ?: 0.0)
+                        )
+                    }
+                }
+            }
+            
+            // Load token B balance
+            if (tokenB != null) {
+                if (tokenB.address == SOL_MINT) {
+                    // Get SOL balance
+                    val balanceResult = solanaApiService.getBalance(wallet.publicKey)
+                    balanceResult.onSuccess { balance ->
+                        _uiState.value = _uiState.value.copy(
+                            tokenBBalance = BigDecimal(balance).divide(BigDecimal(1_000_000_000), 9, RoundingMode.DOWN)
+                        )
+                    }
+                } else {
+                    // Get SPL token balance
+                    val tokensResult = solanaApiService.getTokenAccounts(wallet.publicKey)
+                    tokensResult.onSuccess { tokens ->
+                        val tokenInfo = tokens.find { it.balance.mint == tokenB.address }
+                        _uiState.value = _uiState.value.copy(
+                            tokenBBalance = BigDecimal(tokenInfo?.balance?.uiAmount ?: 0.0)
+                        )
+                    }
+                }
+            }
         }
     }
     
     private fun loadLiquidityPositions() {
         viewModelScope.launch {
-            // TODO: Implement actual liquidity position loading
-            // For now, use mock data
-            val mockPositions = listOf(
-                LiquidityPosition(
-                    id = "position_1",
-                    tokenA = TokenInfo(SOL_MINT, "SOL", "Solana", 9),
-                    tokenB = TokenInfo(getUsdcMint(), "USDC", "USD Coin", 6),
-                    tokenAAmount = BigDecimal("1.5"),
-                    tokenBAmount = BigDecimal("150.0"),
-                    lpTokenBalance = BigDecimal("10.0"),
-                    sharePercentage = 15.5,
-                    usdValue = BigDecimal("300.0")
-                )
-            )
+            val wallet = storageManager.getWallet().getOrNull() ?: return@launch
             
-            _uiState.value = _uiState.value.copy(
-                liquidityPositions = mockPositions,
-                hasLiquidityPositions = mockPositions.isNotEmpty()
-            )
+            android.util.Log.d("LpViewModel", "Loading liquidity positions for user: ${wallet.publicKey}")
+            
+            try {
+                // Use the new LpPositionService to fetch actual positions from blockchain
+                val positionsResult = lpPositionService.getAllUserLiquidityPositions(wallet.publicKey)
+                
+                positionsResult.fold(
+                    onSuccess = { positions ->
+                        android.util.Log.d("LpViewModel", "Successfully loaded ${positions.size} liquidity positions")
+                        _uiState.value = _uiState.value.copy(
+                            liquidityPositions = positions,
+                            hasLiquidityPositions = positions.isNotEmpty()
+                        )
+                    },
+                    onFailure = { error ->
+                        android.util.Log.e("LpViewModel", "Failed to load liquidity positions", error)
+                        _uiState.value = _uiState.value.copy(
+                            liquidityPositions = emptyList(),
+                            hasLiquidityPositions = false,
+                            errorMessage = "Failed to load liquidity positions: ${error.message}"
+                        )
+                    }
+                )
+            } catch (e: Exception) {
+                android.util.Log.e("LpViewModel", "Exception loading liquidity positions", e)
+                _uiState.value = _uiState.value.copy(
+                    liquidityPositions = emptyList(),
+                    hasLiquidityPositions = false,
+                    errorMessage = "Failed to load liquidity positions: ${e.message}"
+                )
+            }
         }
     }
     
@@ -568,9 +667,57 @@ class LpViewModel(
         }
     }
     
+    // Token Selection Methods (matching SwapViewModel pattern)
+    fun showTokenSelection(type: TokenSelectionType) {
+        _uiState.value = _uiState.value.copy(
+            showTokenSelection = true,
+            tokenSelectionType = type
+        )
+    }
+    
+    fun hideTokenSelection() {
+        _uiState.value = _uiState.value.copy(
+            showTokenSelection = false,
+            tokenSelectionType = null
+        )
+    }
+    
+    fun selectToken(token: fi.darklake.wallet.data.swap.models.Token) {
+        val selectionType = _uiState.value.tokenSelectionType ?: return
+        val tokenInfo = tokenRepository.convertToTokenInfo(token)
+        
+        when (selectionType) {
+            TokenSelectionType.TOKEN_A -> {
+                // Prevent selecting the same token as Token B
+                if (token.address != _uiState.value.tokenB?.address) {
+                    setTokenA(tokenInfo)
+                }
+            }
+            TokenSelectionType.TOKEN_B -> {
+                // Prevent selecting the same token as Token A
+                if (token.address != _uiState.value.tokenA?.address) {
+                    setTokenB(tokenInfo)
+                }
+            }
+        }
+        
+        hideTokenSelection()
+    }
+    
+    private fun loadAvailableTokens() {
+        viewModelScope.launch {
+            tokenRepository.getTokens(
+                network = settingsManager.networkSettings.value.network,
+                query = "",
+                limit = 100
+            ).collect { tokens ->
+                _uiState.value = _uiState.value.copy(availableTokens = tokens)
+            }
+        }
+    }
+    
     override fun onCleared() {
         super.onCleared()
-        lpTransactionService.close()
         transactionService.close()
     }
 }

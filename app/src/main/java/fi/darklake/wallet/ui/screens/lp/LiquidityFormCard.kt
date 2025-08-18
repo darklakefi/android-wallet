@@ -25,8 +25,8 @@ fun LiquidityFormCard(
     uiState: LpUiState,
     onTokenAAmountChange: (String) -> Unit,
     onTokenBAmountChange: (String) -> Unit,
-    onTokenASelect: (TokenInfo) -> Unit,
-    onTokenBSelect: (TokenInfo) -> Unit,
+    onTokenASelect: () -> Unit,
+    onTokenBSelect: () -> Unit,
     onSwapTokens: () -> Unit,
     onAddLiquidity: () -> Unit,
     onCreatePool: () -> Unit,
@@ -70,7 +70,7 @@ fun LiquidityFormCard(
                 amount = uiState.tokenAAmount,
                 balance = uiState.tokenABalance,
                 onAmountChange = onTokenAAmountChange,
-                onTokenSelect = { /* TODO: Open token selection */ },
+                onTokenSelect = onTokenASelect,
                 insufficientBalance = uiState.insufficientBalanceA,
                 isLoading = false
             )
@@ -102,7 +102,7 @@ fun LiquidityFormCard(
                 amount = uiState.tokenBAmount,
                 balance = uiState.tokenBBalance,
                 onAmountChange = onTokenBAmountChange,
-                onTokenSelect = { /* TODO: Open token selection */ },
+                onTokenSelect = onTokenBSelect,
                 insufficientBalance = uiState.insufficientBalanceB,
                 isLoading = false
             )
