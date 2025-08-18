@@ -1,0 +1,3 @@
+Failed to connect (hostname='www.gnu.org', errno=111)
+Failed to connect (hostname='www.gnu.org', errno=101)
+Failed to connect: Connect error
