@@ -9,6 +9,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -28,6 +29,29 @@ import fi.darklake.wallet.storage.WalletStorageManager
 import fi.darklake.wallet.ui.components.TokenSelectionSheet
 import java.math.BigDecimal
 import java.text.DecimalFormat
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontFamily
+import android.widget.Toast
+import androidx.compose.material.icons.filled.ContentCopy
+
+// Helper function to filter numeric input
+private fun filterNumericInput(input: String): String {
+    // Only allow digits, one decimal point, and commas
+    return input.filter { it.isDigit() || it == '.' || it == ',' }
+        .let { filtered ->
+            // Prevent multiple decimal points
+            val dotCount = filtered.count { it == '.' }
+            if (dotCount > 1) {
+                val firstDotIndex = filtered.indexOf('.')
+                filtered.substring(0, firstDotIndex + 1) + 
+                filtered.substring(firstDotIndex + 1).replace(".", "")
+            } else {
+                filtered
+            }
+        }
+}
 
 @Composable
 fun SwapScreen(
@@ -70,7 +94,10 @@ fun SwapScreen(
                     token = uiState.tokenA,
                     amount = uiState.tokenAAmount,
                     balance = uiState.tokenABalance,
-                    onAmountChange = { viewModel.updateTokenAAmount(it) },
+                    onAmountChange = { 
+                        val filteredInput = filterNumericInput(it)
+                        viewModel.updateTokenAAmount(filteredInput) 
+                    },
                     onTokenSelect = { viewModel.showTokenSelection(TokenSelectionType.TOKEN_A) },
                     isReadOnly = false,
                     showInsufficientBalance = uiState.insufficientBalance
@@ -170,20 +197,61 @@ fun SwapScreen(
                 
                 // Error/Success Messages
                 AnimatedVisibility(visible = uiState.errorMessage != null) {
+                    val clipboardManager = LocalClipboardManager.current
+                    val context = LocalContext.current
+                    
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 8.dp),
+                            .padding(vertical = 8.dp)
+                            .clickable {
+                                // Extract tracking ID from error message if present
+                                uiState.trackingDetails?.trackingId?.let { trackingId ->
+                                    clipboardManager.setText(AnnotatedString(trackingId))
+                                    Toast.makeText(context, "Tracking ID copied: $trackingId", Toast.LENGTH_SHORT).show()
+                                }
+                            },
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.errorContainer
                         )
                     ) {
-                        Text(
-                            text = uiState.errorMessage ?: "",
-                            modifier = Modifier.padding(12.dp),
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall
-                        )
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text(
+                                text = uiState.errorMessage ?: "",
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                            
+                            // Show tracking ID separately if available
+                            uiState.trackingDetails?.trackingId?.let { trackingId ->
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(
+                                            MaterialTheme.colorScheme.surface.copy(alpha = 0.3f),
+                                            RoundedCornerShape(4.dp)
+                                        )
+                                        .padding(8.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.ContentCopy,
+                                        contentDescription = "Copy tracking ID",
+                                        modifier = Modifier.size(16.dp),
+                                        tint = MaterialTheme.colorScheme.onErrorContainer
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "ID: $trackingId",
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            fontFamily = FontFamily.Monospace
+                                        ),
+                                        color = MaterialTheme.colorScheme.onErrorContainer
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
                 
@@ -447,8 +515,9 @@ private fun SlippageSettings(
             OutlinedTextField(
                 value = customSlippage,
                 onValueChange = { value ->
-                    customSlippage = value
-                    value.toDoubleOrNull()?.let { slippage ->
+                    val filteredValue = filterNumericInput(value)
+                    customSlippage = filteredValue
+                    filteredValue.toDoubleOrNull()?.let { slippage ->
                         if (slippage in 0.0..50.0) {
                             onSlippageChange(slippage, true)
                         }

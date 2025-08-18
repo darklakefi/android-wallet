@@ -112,23 +112,39 @@ class SwapRepository(
         tradeId: String
     ): Result<SignedTransactionResponse> {
         return try {
+            android.util.Log.d("SwapRepository", "Submitting signed transaction:")
+            android.util.Log.d("SwapRepository", "- TrackingId: $trackingId")
+            android.util.Log.d("SwapRepository", "- TradeId: $tradeId")
+            android.util.Log.d("SwapRepository", "- Transaction length: ${signedTransaction.length}")
+            android.util.Log.d("SwapRepository", "- Transaction preview: ${signedTransaction.take(100)}...")
+            
             val response = grpcClient.sendSignedTransaction(
                 signedTransaction = signedTransaction,
                 trackingId = trackingId,
                 tradeId = tradeId
             )
             
-            Result.success(
-                SignedTransactionResponse(
-                    success = response.success,
-                    message = if (response.errorLogsList.isNotEmpty()) {
-                        response.errorLogsList.joinToString("; ")
-                    } else null,
-                    error = if (!response.success && response.errorLogsList.isNotEmpty()) {
-                        response.errorLogsList.firstOrNull()
-                    } else null
-                )
+            android.util.Log.d("SwapRepository", "Server response received:")
+            android.util.Log.d("SwapRepository", "- Success: ${response.success}")
+            android.util.Log.d("SwapRepository", "- Error logs: ${response.errorLogsList}")
+            
+            val signedTransactionResponse = SignedTransactionResponse(
+                success = response.success,
+                message = if (response.errorLogsList.isNotEmpty()) {
+                    response.errorLogsList.joinToString("; ")
+                } else null,
+                error = if (!response.success && response.errorLogsList.isNotEmpty()) {
+                    response.errorLogsList.firstOrNull()
+                } else null
             )
+            
+            if (!response.success) {
+                android.util.Log.w("SwapRepository", "Transaction submission failed:")
+                android.util.Log.w("SwapRepository", "- Message: ${signedTransactionResponse.message}")
+                android.util.Log.w("SwapRepository", "- Error: ${signedTransactionResponse.error}")
+            }
+            
+            Result.success(signedTransactionResponse)
         } catch (e: Exception) {
             Result.failure(e)
         }

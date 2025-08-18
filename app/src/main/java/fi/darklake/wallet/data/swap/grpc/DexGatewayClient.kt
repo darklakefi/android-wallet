@@ -43,13 +43,37 @@ class DexGatewayClient(
     private var stub: SolanaGatewayServiceGrpcKt.SolanaGatewayServiceCoroutineStub? = null
     
     private fun ensureInitialized() {
-        if (channel == null) {
+        if (channel == null || channel!!.isShutdown || channel!!.isTerminated) {
+            // Properly shutdown existing channel if needed
+            channel?.let { existingChannel ->
+                if (!existingChannel.isShutdown) {
+                    android.util.Log.d("DexGatewayClient", "Shutting down existing channel")
+                    existingChannel.shutdown()
+                    try {
+                        if (!existingChannel.awaitTermination(1, TimeUnit.SECONDS)) {
+                            existingChannel.shutdownNow()
+                        }
+                    } catch (e: InterruptedException) {
+                        existingChannel.shutdownNow()
+                    }
+                }
+            }
+            
+            android.util.Log.d("DexGatewayClient", "Initializing gRPC channel")
+            android.util.Log.d("DexGatewayClient", "- Gateway host: $gatewayHost")
+            android.util.Log.d("DexGatewayClient", "- Gateway port: $GATEWAY_PORT")
+            
             channel = ManagedChannelBuilder
                 .forAddress(gatewayHost, GATEWAY_PORT)
                 .usePlaintext() // Use TLS in production
+                .keepAliveTime(30, TimeUnit.SECONDS)
+                .keepAliveTimeout(5, TimeUnit.SECONDS)
+                .keepAliveWithoutCalls(true)
+                .maxInboundMessageSize(4 * 1024 * 1024) // 4MB max message size
                 .build()
             
             stub = SolanaGatewayServiceGrpcKt.SolanaGatewayServiceCoroutineStub(channel!!)
+            android.util.Log.d("DexGatewayClient", "gRPC channel initialized successfully")
         }
     }
     
@@ -84,13 +108,39 @@ class DexGatewayClient(
     ): SendSignedTransactionResponse = withContext(Dispatchers.IO) {
         ensureInitialized()
         
+        android.util.Log.d("DexGatewayClient", "Building gRPC request for signed transaction")
+        android.util.Log.d("DexGatewayClient", "- gRPC stub initialized: ${stub != null}")
+        
         val request = SendSignedTransactionRequest.newBuilder()
             .setSignedTransaction(signedTransaction)
             .setTrackingId(trackingId)
             .setTradeId(tradeId)
             .build()
         
-        stub!!.sendSignedTransaction(request)
+        android.util.Log.d("DexGatewayClient", "Sending gRPC request...")
+        android.util.Log.d("DexGatewayClient", "- Request size: ${request.serializedSize} bytes")
+        
+        try {
+            val response = stub!!.sendSignedTransaction(request)
+            android.util.Log.d("DexGatewayClient", "gRPC response received successfully")
+            android.util.Log.d("DexGatewayClient", "- Response success: ${response.success}")
+            
+            if (!response.success) {
+                android.util.Log.w("DexGatewayClient", "Server rejected transaction:")
+                android.util.Log.w("DexGatewayClient", "- Error logs count: ${response.errorLogsList.size}")
+                response.errorLogsList.forEachIndexed { index, errorLog ->
+                    android.util.Log.w("DexGatewayClient", "- Error[$index]: $errorLog")
+                }
+                if (response.errorLogsList.isEmpty()) {
+                    android.util.Log.w("DexGatewayClient", "- No specific error logs provided by server")
+                }
+            }
+            
+            response
+        } catch (e: Exception) {
+            android.util.Log.e("DexGatewayClient", "gRPC call failed", e)
+            throw e
+        }
     }
     
     suspend fun checkTradeStatus(
@@ -183,7 +233,19 @@ class DexGatewayClient(
     }
     
     fun shutdown() {
-        channel?.shutdown()?.awaitTermination(5, TimeUnit.SECONDS)
+        channel?.let { existingChannel ->
+            if (!existingChannel.isShutdown) {
+                android.util.Log.d("DexGatewayClient", "Shutting down gRPC channel")
+                existingChannel.shutdown()
+                try {
+                    if (!existingChannel.awaitTermination(5, TimeUnit.SECONDS)) {
+                        existingChannel.shutdownNow()
+                    }
+                } catch (e: InterruptedException) {
+                    existingChannel.shutdownNow()
+                }
+            }
+        }
         channel = null
         stub = null
     }

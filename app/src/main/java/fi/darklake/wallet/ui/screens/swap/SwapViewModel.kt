@@ -97,6 +97,13 @@ class SwapViewModel(
     private var quoteJob: Job? = null
     private val QUOTE_DEBOUNCE_MS = 500L
     
+    // Generate a unique tracking ID for this swap session
+    private var currentTrackingId: String = generateTrackingId()
+    
+    private fun generateTrackingId(): String {
+        return "id${kotlin.random.Random.nextLong().toString(16)}"
+    }
+    
     // Default token addresses based on dex-web pattern
     // Mainnet: Fartcoin-USDC pair
     // Devnet: DukY-DuX pair (as per dex-web logic)
@@ -197,12 +204,24 @@ class SwapViewModel(
     }
     
     fun updateTokenAAmount(amount: String) {
+        // Filter out invalid characters - only allow digits, decimal point, and commas
+        val filteredAmount = amount.filter { it.isDigit() || it == '.' || it == ',' }
+        
+        // Prevent multiple decimal points
+        val dotCount = filteredAmount.count { it == '.' }
+        val validAmount = if (dotCount > 1) {
+            val firstDotIndex = filteredAmount.indexOf('.')
+            filteredAmount.substring(0, firstDotIndex + 1) + 
+            filteredAmount.substring(firstDotIndex + 1).replace(".", "")
+        } else {
+            filteredAmount
+        }
+        
         // Validate input
-        val cleanAmount = amount.replace(",", "")
-        if (cleanAmount.isEmpty() || cleanAmount == "." || 
-            (cleanAmount.toDoubleOrNull() ?: 0.0) < 0) {
+        val cleanAmount = validAmount.replace(",", "")
+        if (cleanAmount.isEmpty() || cleanAmount == "." || cleanAmount == "0.") {
             _uiState.value = _uiState.value.copy(
-                tokenAAmount = "",
+                tokenAAmount = validAmount,
                 tokenBAmount = "",
                 quote = null,
                 insufficientBalance = false
@@ -210,16 +229,28 @@ class SwapViewModel(
             return
         }
         
-        _uiState.value = _uiState.value.copy(tokenAAmount = amount)
+        // Try to parse as number - if it fails, don't update
+        val parsedDouble = cleanAmount.toDoubleOrNull()
+        if (parsedDouble == null || parsedDouble < 0) {
+            // Don't update if invalid
+            return
+        }
         
-        // Check balance
-        val amountBigDecimal = BigDecimal(cleanAmount)
-        val insufficientBalance = amountBigDecimal > _uiState.value.tokenABalance
-        _uiState.value = _uiState.value.copy(insufficientBalance = insufficientBalance)
+        _uiState.value = _uiState.value.copy(tokenAAmount = validAmount)
         
-        // Fetch quote
-        if (!insufficientBalance && amountBigDecimal > BigDecimal.ZERO) {
-            fetchQuoteDebounced()
+        // Check balance safely
+        try {
+            val amountBigDecimal = BigDecimal(cleanAmount)
+            val insufficientBalance = amountBigDecimal > _uiState.value.tokenABalance
+            _uiState.value = _uiState.value.copy(insufficientBalance = insufficientBalance)
+            
+            // Fetch quote
+            if (!insufficientBalance && amountBigDecimal > BigDecimal.ZERO) {
+                fetchQuoteDebounced()
+            }
+        } catch (e: NumberFormatException) {
+            // If parsing fails, just don't update balance check or fetch quote
+            return
         }
     }
     
@@ -304,12 +335,16 @@ class SwapViewModel(
         val amountIn = state.tokenAAmount.replace(",", "").toDoubleOrNull() ?: return
         if (amountIn <= 0) return
         
+        // Generate new tracking ID for this swap
+        currentTrackingId = generateTrackingId()
+        
         try {
             // Step 1: Generate proof
             _uiState.value = _uiState.value.copy(
                 isSwapping = true,
                 swapStep = SwapStep.GENERATING_PROOF,
-                errorMessage = null
+                errorMessage = null,
+                trackingDetails = TrackingDetails(currentTrackingId, "")
             )
             
             val wallet = storageManager.getWallet().getOrNull() ?: throw Exception("Wallet not found")
@@ -333,7 +368,8 @@ class SwapViewModel(
                 minOut = minOutRaw,
                 tokenMintX = tokenX,
                 tokenMintY = tokenY,
-                userAddress = wallet.publicKey
+                userAddress = wallet.publicKey,
+                trackingId = currentTrackingId
             )
             
             swapResult.onSuccess { swapResponse ->
@@ -345,7 +381,7 @@ class SwapViewModel(
                 _uiState.value = _uiState.value.copy(
                     swapStep = SwapStep.CONFIRM_TRANSACTION,
                     trackingDetails = TrackingDetails(
-                        trackingId = swapResponse.trackingId,
+                        trackingId = currentTrackingId,
                         tradeId = swapResponse.tradeId
                     )
                 )
@@ -362,16 +398,16 @@ class SwapViewModel(
                 
                 val submitResult = swapRepository.submitSignedTransaction(
                     signedTransaction = signedTransactionBase64,
-                    trackingId = swapResponse.trackingId,
+                    trackingId = currentTrackingId,
                     tradeId = swapResponse.tradeId
                 )
                 
                 submitResult.onSuccess { submitResponse ->
                     if (submitResponse.success) {
                         // Poll for trade status
-                        pollTradeStatus(swapResponse.trackingId, swapResponse.tradeId)
+                        pollTradeStatus(currentTrackingId, swapResponse.tradeId)
                     } else {
-                        throw Exception(submitResponse.error ?: "Failed to submit transaction")
+                        throw Exception("${submitResponse.error ?: "Failed to submit transaction"}\nTracking ID: $currentTrackingId")
                     }
                 }
                 
@@ -388,7 +424,8 @@ class SwapViewModel(
             _uiState.value = _uiState.value.copy(
                 isSwapping = false,
                 swapStep = SwapStep.FAILED,
-                errorMessage = "Swap failed: ${e.message}"
+                errorMessage = "Swap failed: ${e.message}\n\nTracking ID: $currentTrackingId\n(Long press to copy)",
+                trackingDetails = TrackingDetails(currentTrackingId, _uiState.value.trackingDetails?.tradeId ?: "")
             )
         }
     }
@@ -581,28 +618,76 @@ class SwapViewModel(
         privateKey: ByteArray
     ): String = withContext(Dispatchers.IO) {
         try {
+            android.util.Log.d("SwapViewModel", "Starting transaction signing")
+            android.util.Log.d("SwapViewModel", "- Unsigned transaction length: ${unsignedTransactionBase64.length}")
+            android.util.Log.d("SwapViewModel", "- Unsigned transaction preview: ${unsignedTransactionBase64.take(100)}...")
+            
             // Decode the unsigned transaction from base64
             val transactionBytes = Base64.decode(unsignedTransactionBase64, Base64.DEFAULT)
             
-            // Deserialize the transaction
-            val transaction = Transaction.from(transactionBytes)
+            android.util.Log.d("SwapViewModel", "- Raw transaction bytes length: ${transactionBytes.size}")
+            android.util.Log.d("SwapViewModel", "- First few bytes: ${transactionBytes.take(10).joinToString { "%02x".format(it) }}")
             
-            // Create account from private key
-            val account = if (privateKey.size == 32) {
-                // Create keypair from seed
-                val keypair = com.solana.vendor.TweetNaclFast.Signature.keyPair_fromSeed(privateKey)
-                HotAccount(keypair.secretKey)
+            // Check if this is a versioned transaction (starts with 0x80) or legacy transaction
+            val isVersioned = transactionBytes.isNotEmpty() && (transactionBytes[0].toInt() and 0x80) != 0
+            
+            android.util.Log.d("SwapViewModel", "- Is versioned transaction: $isVersioned")
+            
+            val signedTransactionBase64 = if (isVersioned) {
+                // Handle versioned transaction (keep existing logic)
+                val version = transactionBytes[0].toInt() and 0x7f
+                val numSignatures = transactionBytes[1].toInt() and 0xff
+                val messageStart = 2 + (numSignatures * 64)
+                val message = transactionBytes.sliceArray(messageStart until transactionBytes.size)
+                
+                val account = if (privateKey.size == 32) {
+                    val keypair = com.solana.vendor.TweetNaclFast.Signature.keyPair_fromSeed(privateKey)
+                    HotAccount(keypair.secretKey)
+                } else {
+                    HotAccount(privateKey)
+                }
+                
+                val signature = account.sign(message)
+                val signedTxSize = 1 + 1 + 64 + message.size
+                val signedTransaction = ByteArray(signedTxSize)
+                var offset = 0
+                
+                signedTransaction[offset++] = (0x80 or version).toByte()
+                signedTransaction[offset++] = 1
+                System.arraycopy(signature, 0, signedTransaction, offset, 64)
+                offset += 64
+                System.arraycopy(message, 0, signedTransaction, offset, message.size)
+                
+                Base64.encodeToString(signedTransaction, Base64.NO_WRAP)
             } else {
-                HotAccount(privateKey)
+                // Handle legacy transaction (like dex-web)
+                android.util.Log.d("SwapViewModel", "Processing as legacy transaction")
+                
+                val transaction = Transaction.from(transactionBytes)
+                
+                // Create account from private key
+                val account = if (privateKey.size == 32) {
+                    val keypair = com.solana.vendor.TweetNaclFast.Signature.keyPair_fromSeed(privateKey)
+                    HotAccount(keypair.secretKey)
+                } else {
+                    HotAccount(privateKey)
+                }
+                
+                // Sign the transaction
+                transaction.sign(account)
+                
+                // Serialize and encode back to base64
+                Base64.encodeToString(transaction.serialize(), Base64.NO_WRAP)
             }
             
-            // Sign the transaction
-            transaction.sign(account)
+            android.util.Log.d("SwapViewModel", "Transaction signing completed")
+            android.util.Log.d("SwapViewModel", "- Signed transaction length: ${signedTransactionBase64.length}")
+            android.util.Log.d("SwapViewModel", "- Signed transaction preview: ${signedTransactionBase64.take(100)}...")
             
-            // Serialize and encode back to base64 (NO_WRAP to avoid newlines)
-            Base64.encodeToString(transaction.serialize(), Base64.NO_WRAP)
+            signedTransactionBase64
         } catch (e: Exception) {
-            throw Exception("Failed to sign transaction: ${e.message}")
+            android.util.Log.e("SwapViewModel", "Transaction signing failed", e)
+            throw Exception("Failed to sign versioned transaction: ${e.message}")
         }
     }
     
