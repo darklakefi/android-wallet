@@ -54,7 +54,8 @@
       "Bash(fastlane android debug)",
       "Bash(fastlane android lint)",
       "Bash(emulator:*)",
-      "Bash(adb:*)"
+      "Bash(adb:*)",
+      "Bash(python3:*)"
     ],
     "deny": []
   }
