@@ -160,7 +160,7 @@ dependencies {
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
-    implementation(libs.bitcoinj.core) {
+    implementation(libs.bitcoinjCore) {
         exclude(group = "org.bouncycastle", module = "bcprov-jdk15to18")
         exclude(group = "org.bouncycastle", module = "bcprov-jdk18on")
     }
@@ -184,11 +184,11 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     
     testImplementation(libs.junit)
-    testImplementation("org.mockito:mockito-core:5.8.0")
-    testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    testImplementation("org.mockito:mockito-core:5.19.0")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:6.0.0")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
     testImplementation("androidx.arch.core:core-testing:2.2.0")
-    testImplementation("app.cash.turbine:turbine:1.0.0")
+    testImplementation("app.cash.turbine:turbine:1.2.1")
     
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
