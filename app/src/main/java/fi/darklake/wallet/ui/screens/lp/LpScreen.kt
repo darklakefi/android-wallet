@@ -13,6 +13,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import fi.darklake.wallet.data.preferences.SettingsManager
 import fi.darklake.wallet.storage.WalletStorageManager
 import fi.darklake.wallet.ui.components.TokenSelectionSheet
+import fi.darklake.wallet.ui.components.ErrorMessageCard
+import fi.darklake.wallet.ui.components.InfoMessageCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -90,33 +92,11 @@ fun LpScreen(
         
         // Error/Success Messages
         uiState.errorMessage?.let { message ->
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
-                )
-            ) {
-                Text(
-                    text = message,
-                    modifier = Modifier.padding(16.dp),
-                    color = MaterialTheme.colorScheme.onErrorContainer
-                )
-            }
+            ErrorMessageCard(message = message)
         }
         
         uiState.successMessage?.let { message ->
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.tertiaryContainer
-                )
-            ) {
-                Text(
-                    text = message,
-                    modifier = Modifier.padding(16.dp),
-                    color = MaterialTheme.colorScheme.onTertiaryContainer
-                )
-            }
+            InfoMessageCard(message = message)
         }
     }
     

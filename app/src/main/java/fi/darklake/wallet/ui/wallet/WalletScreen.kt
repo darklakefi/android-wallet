@@ -43,6 +43,7 @@ import fi.darklake.wallet.ui.components.TerminalButton
 import fi.darklake.wallet.ui.components.TerminalNetworkStatus
 import fi.darklake.wallet.ui.components.neonGlow
 import fi.darklake.wallet.ui.components.AssetImage
+import fi.darklake.wallet.ui.components.ErrorMessageCard
 import fi.darklake.wallet.ui.theme.*
 import java.util.Locale
 import androidx.compose.ui.graphics.Color
@@ -96,8 +97,8 @@ fun WalletScreen(
             // Error display
             uiState.error?.let { error ->
                 item {
-                    ErrorCard(
-                        error = error,
+                    ErrorMessageCard(
+                        message = error,
                         onDismiss = { viewModel.clearError() }
                     )
                 }
@@ -249,37 +250,6 @@ private fun TerminalWalletCard(
     }
 }
 
-@Composable
-private fun ErrorCard(
-    error: String,
-    onDismiss: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = error,
-                color = MaterialTheme.colorScheme.onErrorContainer,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.weight(1f)
-            )
-            
-            TextButton(onClick = onDismiss) {
-                Text("DISMISS")
-            }
-        }
-    }
-}
 
 @Composable
 private fun TerminalTokensSection(
@@ -454,48 +424,6 @@ private fun TerminalTokenSkeleton() {
     }
 }
 
-@Composable
-private fun TokenItemSkeleton() {
-    Card(
-        modifier = Modifier
-            .width(160.dp)
-            .height(120.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-        ) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
-                )
-                Box(
-                    modifier = Modifier
-                        .width(80.dp)
-                        .height(16.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
-                )
-                Box(
-                    modifier = Modifier
-                        .width(60.dp)
-                        .height(12.dp)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
-                )
-            }
-        }
-    }
-}
 
 @Composable
 private fun TerminalNftsSection(
@@ -699,48 +627,6 @@ private fun TerminalNftSkeleton() {
     }
 }
 
-@Composable
-private fun NftItemSkeleton() { // This seems to be a duplicate or an alternative skeleton
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .aspectRatio(1f),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
-            )
-            
-            Column(
-                modifier = Modifier.padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(0.8f)
-                        .height(16.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
-                )
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(0.6f)
-                        .height(12.dp)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
-                )
-            }
-        }
-    }
-}
 
 @Preview(showBackground = true)
 @Composable

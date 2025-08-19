@@ -27,8 +27,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import fi.darklake.wallet.data.preferences.SettingsManager
 import fi.darklake.wallet.storage.WalletStorageManager
 import fi.darklake.wallet.ui.components.TokenSelectionSheet
+import fi.darklake.wallet.ui.components.SuccessMessageCard
+import fi.darklake.wallet.ui.utils.FormatUtils
 import java.math.BigDecimal
-import java.text.DecimalFormat
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
@@ -36,22 +37,6 @@ import androidx.compose.ui.text.font.FontFamily
 import android.widget.Toast
 import androidx.compose.material.icons.filled.ContentCopy
 
-// Helper function to filter numeric input
-private fun filterNumericInput(input: String): String {
-    // Only allow digits, one decimal point, and commas
-    return input.filter { it.isDigit() || it == '.' || it == ',' }
-        .let { filtered ->
-            // Prevent multiple decimal points
-            val dotCount = filtered.count { it == '.' }
-            if (dotCount > 1) {
-                val firstDotIndex = filtered.indexOf('.')
-                filtered.substring(0, firstDotIndex + 1) + 
-                filtered.substring(firstDotIndex + 1).replace(".", "")
-            } else {
-                filtered
-            }
-        }
-}
 
 @Composable
 fun SwapScreen(
@@ -95,7 +80,7 @@ fun SwapScreen(
                     amount = uiState.tokenAAmount,
                     balance = uiState.tokenABalance,
                     onAmountChange = { 
-                        val filteredInput = filterNumericInput(it)
+                        val filteredInput = FormatUtils.filterNumericInput(it)
                         viewModel.updateTokenAAmount(filteredInput) 
                     },
                     onTokenSelect = { viewModel.showTokenSelection(TokenSelectionType.TOKEN_A) },
@@ -256,21 +241,10 @@ fun SwapScreen(
                 }
                 
                 AnimatedVisibility(visible = uiState.successMessage != null) {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = Color(0xFF4CAF50).copy(alpha = 0.1f)
-                        )
-                    ) {
-                        Text(
-                            text = uiState.successMessage ?: "",
-                            modifier = Modifier.padding(12.dp),
-                            color = Color(0xFF4CAF50),
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
+                    SuccessMessageCard(
+                        message = uiState.successMessage ?: "",
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
                 }
             }
         }
@@ -433,7 +407,7 @@ private fun TokenInputSection(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "Balance: ${formatBalance(balance)}",
+                        text = "Balance: ${FormatUtils.formatBalance(balance)}",
                         style = MaterialTheme.typography.bodySmall,
                         color = if (showInsufficientBalance)
                             MaterialTheme.colorScheme.error
@@ -515,7 +489,7 @@ private fun SlippageSettings(
             OutlinedTextField(
                 value = customSlippage,
                 onValueChange = { value ->
-                    val filteredValue = filterNumericInput(value)
+                    val filteredValue = FormatUtils.filterNumericInput(value)
                     customSlippage = filteredValue
                     filteredValue.toDoubleOrNull()?.let { slippage ->
                         if (slippage in 0.0..50.0) {
@@ -563,7 +537,7 @@ private fun QuoteDetails(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "1 ${tokenA?.symbol ?: ""} = ${formatAmount(quote.rate)} ${tokenB?.symbol ?: ""}",
+                    text = "1 ${tokenA?.symbol ?: ""} = ${FormatUtils.formatAmount(quote.rate)} ${tokenB?.symbol ?: ""}",
                     style = MaterialTheme.typography.bodySmall
                 )
             }
@@ -579,7 +553,7 @@ private fun QuoteDetails(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "${formatAmount(quote.priceImpactPercentage)}%",
+                    text = FormatUtils.formatPercentage(quote.priceImpactPercentage),
                     style = MaterialTheme.typography.bodySmall,
                     color = when {
                         quote.priceImpactPercentage < 1 -> Color(0xFF4CAF50)
@@ -600,7 +574,7 @@ private fun QuoteDetails(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "~$${formatAmount(quote.estimatedFeesUsd)}",
+                    text = "~$${FormatUtils.formatAmount(quote.estimatedFeesUsd)}",
                     style = MaterialTheme.typography.bodySmall
                 )
             }
@@ -675,16 +649,3 @@ private fun SwapButton(
     }
 }
 
-private fun formatBalance(balance: BigDecimal): String {
-    return if (balance == BigDecimal.ZERO) {
-        "0"
-    } else if (balance < BigDecimal("0.0001")) {
-        "<0.0001"
-    } else {
-        DecimalFormat("#,##0.####").format(balance)
-    }
-}
-
-private fun formatAmount(amount: Double): String {
-    return DecimalFormat("#,##0.######").format(amount)
-}
