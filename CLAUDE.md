@@ -84,13 +84,41 @@ fastlane android reproducible
 
 **Ruby Version File**: The project uses `.ruby-version` file set to `3.3.6`
 
+## GitHub Actions / CI/CD
+
+This project uses Fastlane-powered GitHub Actions workflows:
+
+### Available Workflows
+
+1. **CI/CD (`ci.yml`)** - Main build and test workflow
+   - Triggers: Push/PR to main/develop branches
+   - Jobs: Test, Lint, Build (debug/release), Reproducible build verification
+   - Cross-platform testing on Ubuntu/macOS/Windows
+   
+2. **Release (`release.yml`)** - Create releases 
+   - Triggers: Version tags (v*) or manual dispatch
+   - Creates GitHub releases with unsigned APKs for F-Droid
+   - Generates checksums and F-Droid metadata
+   
+3. **Weekly Reproducible Build (`reproducible-build.yml`)** - Scheduled verification
+   - Triggers: Weekly schedule + manual dispatch
+   - Verifies build reproducibility over time
+
+### Workflow Features
+- **Fastlane Integration**: All builds use Fastlane lanes
+- **Ruby PATH Management**: Automatically configures RVM paths
+- **Reproducible Builds**: Deterministic environment variables
+- **F-Droid Ready**: Generates unsigned APKs and metadata
+- **Cross-Platform**: Tests builds on multiple OS environments
+- **Caching**: Gradle and Bundle caching for faster builds
+
 ## Architecture & Structure
 
 ### Technology Stack
 - **UI Framework**: Jetpack Compose with Material 3
 - **Min SDK**: 24 (Android 7.0)
 - **Target SDK**: 36
-- **Kotlin**: 2.0.21
+- **Kotlin**: 2.2.10
 - **Java**: 11
 
 ### Design

@@ -1,14 +1,11 @@
-name: Reproducible Build Verification
+name: Weekly Reproducible Build Verification
 
 on:
-  push:
-    branches: [ main ]
-    tags: [ 'v*' ]
-  pull_request:
-    branches: [ main ]
   schedule:
     # Weekly verification run
     - cron: '0 2 * * 1'
+  workflow_dispatch:
+    # Allow manual trigger
 
 jobs:
   reproducible-build:

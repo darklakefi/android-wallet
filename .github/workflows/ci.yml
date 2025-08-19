@@ -1,0 +1,383 @@
+name: CI/CD with Fastlane
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  # Deterministic build settings
+  SOURCE_DATE_EPOCH: 1734307200
+  TZ: UTC
+  LC_ALL: C
+  LANG: C
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.caching=true"
+
+jobs:
+  test:
+    name: Test & Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        submodules: true
+    
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+    
+    - name: Cache Gradle packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          gradle-${{ runner.os }}-
+    
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.3.6'
+        bundler-cache: true
+        working-directory: .
+    
+    - name: Setup Ruby PATH
+      run: |
+        export PATH="$HOME/.rvm/gems/ruby-3.3.6/bin:$HOME/.rvm/rubies/ruby-3.3.6/bin:$PATH"
+        echo "PATH=$PATH" >> $GITHUB_ENV
+    
+    - name: Install Fastlane dependencies
+      run: |
+        export PATH="$HOME/.rvm/gems/ruby-3.3.6/bin:$HOME/.rvm/rubies/ruby-3.3.6/bin:$PATH"
+        bundle install
+    
+    - name: Validate Gradle wrapper
+      uses: gradle/wrapper-validation-action@v3
+    
+    - name: Run tests with Fastlane
+      run: |
+        export PATH="$HOME/.rvm/gems/ruby-3.3.6/bin:$HOME/.rvm/rubies/ruby-3.3.6/bin:$PATH"
+        bundle exec fastlane android test
+    
+    - name: Run lint checks with Fastlane
+      run: |
+        export PATH="$HOME/.rvm/gems/ruby-3.3.6/bin:$HOME/.rvm/rubies/ruby-3.3.6/bin:$PATH"
+        bundle exec fastlane android lint
+        
+    - name: Upload lint reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: lint-reports
+        path: |
+          app/build/reports/lint-results-debug.html
+          app/build/reports/lint-results-debug.xml
+        retention-days: 30
+
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: test
+    
+    strategy:
+      matrix:
+        build-type: [debug, release]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        submodules: true
+    
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+    
+    - name: Cache Gradle packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          gradle-${{ runner.os }}-
+    
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.3.6'
+        bundler-cache: true
+        working-directory: .
+    
+    - name: Setup Ruby PATH
+      run: |
+        export PATH="$HOME/.rvm/gems/ruby-3.3.6/bin:$HOME/.rvm/rubies/ruby-3.3.6/bin:$PATH"
+        echo "PATH=$PATH" >> $GITHUB_ENV
+    
+    - name: Install Fastlane dependencies
+      run: |
+        export PATH="$HOME/.rvm/gems/ruby-3.3.6/bin:$HOME/.rvm/rubies/ruby-3.3.6/bin:$PATH"
+        bundle install
+    
+    - name: Build with Fastlane
+      run: |
+        export PATH="$HOME/.rvm/gems/ruby-3.3.6/bin:$HOME/.rvm/rubies/ruby-3.3.6/bin:$PATH"
+        bundle exec fastlane android ${{ matrix.build-type }}
+    
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: apk-${{ matrix.build-type }}
+        path: |
+          app/build/outputs/apk/${{ matrix.build-type }}/*.apk
+        retention-days: 30
+
+  reproducible-build:
+    name: Reproducible Build Verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        submodules: true
+    
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+    
+    - name: Cache Gradle packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          gradle-${{ runner.os }}-
+    
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.3.6'
+        bundler-cache: true
+        working-directory: .
+    
+    - name: Setup Ruby PATH
+      run: |
+        export PATH="$HOME/.rvm/gems/ruby-3.3.6/bin:$HOME/.rvm/rubies/ruby-3.3.6/bin:$PATH"
+        echo "PATH=$PATH" >> $GITHUB_ENV
+    
+    - name: Install Fastlane dependencies
+      run: |
+        export PATH="$HOME/.rvm/gems/ruby-3.3.6/bin:$HOME/.rvm/rubies/ruby-3.3.6/bin:$PATH"
+        bundle install
+    
+    - name: Run reproducible build verification
+      run: |
+        export PATH="$HOME/.rvm/gems/ruby-3.3.6/bin:$HOME/.rvm/rubies/ruby-3.3.6/bin:$PATH"
+        ./verify-reproducible.sh 3
+    
+    - name: Upload reproducible build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: reproducible-builds
+        path: |
+          verification-builds/
+          build-info.json
+        retention-days: 30
+    
+    - name: Upload verification report
+      uses: actions/upload-artifact@v4
+      with:
+        name: verification-report
+        path: verification-builds/verification-report.json
+        retention-days: 90
+
+  cross-platform-build:
+    name: Cross-Platform Build Test
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    needs: test
+    
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        submodules: true
+    
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+    
+    - name: Cache Gradle packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: gradle-${{ matrix.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          gradle-${{ matrix.os }}-
+    
+    - name: Set up Ruby (Unix)
+      if: runner.os != 'Windows'
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.3.6'
+        bundler-cache: true
+        working-directory: .
+    
+    - name: Set up Ruby (Windows)
+      if: runner.os == 'Windows'
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.3.6'
+        bundler-cache: true
+        working-directory: .
+    
+    - name: Setup Ruby PATH (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        export PATH="$HOME/.rvm/gems/ruby-3.3.6/bin:$HOME/.rvm/rubies/ruby-3.3.6/bin:$PATH"
+        echo "PATH=$PATH" >> $GITHUB_ENV
+    
+    - name: Install Fastlane dependencies (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        export PATH="$HOME/.rvm/gems/ruby-3.3.6/bin:$HOME/.rvm/rubies/ruby-3.3.6/bin:$PATH"
+        bundle install
+    
+    - name: Install Fastlane dependencies (Windows)
+      if: runner.os == 'Windows'
+      run: bundle install
+    
+    - name: Build reproducible APK (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        export PATH="$HOME/.rvm/gems/ruby-3.3.6/bin:$HOME/.rvm/rubies/ruby-3.3.6/bin:$PATH"
+        bundle exec fastlane android reproducible
+    
+    - name: Build reproducible APK (Windows)
+      if: runner.os == 'Windows'
+      run: bundle exec fastlane android reproducible
+    
+    - name: Calculate checksum (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        APK_PATH="app/build/outputs/apk/release/app-release-unsigned.apk"
+        if [ -f "$APK_PATH" ]; then
+          CHECKSUM=$(sha256sum "$APK_PATH" | cut -d' ' -f1)
+          echo "APK_CHECKSUM=$CHECKSUM" >> $GITHUB_ENV
+          echo "Cross-platform checksum (${{ matrix.os }}): $CHECKSUM"
+        fi
+    
+    - name: Calculate checksum (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        $APK_PATH = "app/build/outputs/apk/release/app-release-unsigned.apk"
+        if (Test-Path $APK_PATH) {
+          $CHECKSUM = (Get-FileHash $APK_PATH -Algorithm SHA256).Hash.ToLower()
+          echo "APK_CHECKSUM=$CHECKSUM" >> $env:GITHUB_ENV
+          echo "Cross-platform checksum (${{ matrix.os }}): $CHECKSUM"
+        }
+    
+    - name: Upload cross-platform build
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-${{ matrix.os }}
+        path: |
+          app/build/outputs/apk/release/app-release-unsigned.apk
+          build-info.json
+        retention-days: 7
+
+  f-droid-preparation:
+    name: F-Droid Metadata Preparation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [test, build]
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        submodules: true
+    
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.3.6'
+        bundler-cache: true
+        working-directory: .
+    
+    - name: Setup Ruby PATH
+      run: |
+        export PATH="$HOME/.rvm/gems/ruby-3.3.6/bin:$HOME/.rvm/rubies/ruby-3.3.6/bin:$PATH"
+        echo "PATH=$PATH" >> $GITHUB_ENV
+    
+    - name: Install Fastlane dependencies
+      run: |
+        export PATH="$HOME/.rvm/gems/ruby-3.3.6/bin:$HOME/.rvm/rubies/ruby-3.3.6/bin:$PATH"
+        bundle install
+    
+    - name: Prepare F-Droid metadata
+      run: |
+        export PATH="$HOME/.rvm/gems/ruby-3.3.6/bin:$HOME/.rvm/rubies/ruby-3.3.6/bin:$PATH"
+        bundle exec fastlane android prepare_fdroid_metadata
+    
+    - name: Upload F-Droid metadata
+      uses: actions/upload-artifact@v4
+      with:
+        name: fdroid-metadata
+        path: metadata/
+        retention-days: 90
+
+  # Job to verify all builds completed successfully
+  verify-builds:
+    name: Verify All Builds
+    runs-on: ubuntu-latest
+    needs: [build, reproducible-build, cross-platform-build]
+    if: always()
+    
+    steps:
+    - name: Check build results
+      run: |
+        echo "Build job status: ${{ needs.build.result }}"
+        echo "Reproducible build job status: ${{ needs.reproducible-build.result }}"
+        echo "Cross-platform build job status: ${{ needs.cross-platform-build.result }}"
+        
+        if [ "${{ needs.build.result }}" != "success" ] || [ "${{ needs.reproducible-build.result }}" != "success" ] || [ "${{ needs.cross-platform-build.result }}" != "success" ]; then
+          echo "❌ One or more build jobs failed"
+          exit 1
+        else
+          echo "✅ All build jobs completed successfully"
+        fi
