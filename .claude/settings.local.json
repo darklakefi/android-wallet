@@ -52,7 +52,9 @@
       "Bash(gem install:*)",
       "Bash(fastlane init)",
       "Bash(fastlane android debug)",
-      "Bash(fastlane android lint)"
+      "Bash(fastlane android lint)",
+      "Bash(emulator:*)",
+      "Bash(adb:*)"
     ],
     "deny": []
   }
