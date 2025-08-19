@@ -28,7 +28,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
+import fi.darklake.wallet.R
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import fi.darklake.wallet.data.model.DisplayNft
@@ -76,7 +78,7 @@ fun WalletScreen(
             item {
                 TerminalNetworkStatus(
                     isConnected = !uiState.isLoading,
-                    networkName = "DEVNET",
+                    networkName = stringResource(R.string.wallet_devnet),
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
             }
@@ -139,8 +141,9 @@ private fun TerminalWalletCard(
     onSettings: () -> Unit,
     onSendSol: () -> Unit
 ) {
+    val walletStatusTitle = stringResource(R.string.wallet_status_title)
     TerminalCard(
-        title = "WALLET_STATUS",
+        title = walletStatusTitle,
         glowEffect = !isLoading,
         modifier = Modifier
             .fillMaxWidth()
@@ -153,7 +156,7 @@ private fun TerminalWalletCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "[SYSTEM_READY]",
+                text = stringResource(R.string.wallet_system_ready),
                 style = TerminalHeaderStyle,
                 color = NeonGreen,
                 fontSize = 12.sp
@@ -169,7 +172,7 @@ private fun TerminalWalletCard(
                 ) {
                     Icon(
                         Icons.AutoMirrored.Filled.Send,
-                        contentDescription = "Send SOL",
+                        contentDescription = stringResource(R.string.wallet_send_sol),
                         tint = if (solBalance > 0.0 && !isLoading) NeonGreen else TerminalGray,
                         modifier = Modifier.size(16.dp)
                     )
@@ -181,13 +184,13 @@ private fun TerminalWalletCard(
                 ) {
                     AssetImage(
                         assetPath = "icons/png/dark/bullet-list.png",
-                        contentDescription = "Settings",
+                        contentDescription = stringResource(R.string.settings),
                         modifier = Modifier.size(32.dp),
                         tint = NeonGreen,
                         fallback = {
                             Icon(
                                 Icons.Default.Settings,
-                                contentDescription = "Settings",
+                                contentDescription = stringResource(R.string.settings),
                                 tint = NeonGreen,
                                 modifier = Modifier.size(16.dp)
                             )
@@ -210,13 +213,13 @@ private fun TerminalWalletCard(
                     } else {
                         AssetImage(
                             assetPath = "icons/png/dark/refresh.png",
-                            contentDescription = "Refresh",
+                            contentDescription = stringResource(R.string.refresh),
                             modifier = Modifier.size(20.dp),
                             tint = if (!isLoading && !isRefreshing) NeonGreen else TerminalGray,
                             fallback = {
                                 Icon(
                                     Icons.Default.Refresh,
-                                    contentDescription = "Refresh",
+                                    contentDescription = stringResource(R.string.refresh),
                                     tint = if (!isLoading && !isRefreshing) NeonGreen else TerminalGray,
                                     modifier = Modifier.size(16.dp)
                                 )
@@ -243,7 +246,7 @@ private fun TerminalWalletCard(
         publicKey?.let { key ->
             TerminalAddressDisplay(
                 address = key,
-                label = "WALLET_ADDRESS",
+                label = stringResource(R.string.wallet_address_label),
                 modifier = Modifier.fillMaxWidth()
             )
         }
@@ -257,8 +260,9 @@ private fun TerminalTokensSection(
     isLoading: Boolean,
     onTokenClick: (String) -> Unit = {}
 ) {
+    val tokenInventoryTitle = stringResource(R.string.wallet_token_inventory)
     TerminalCard(
-        title = "TOKEN_INVENTORY",
+        title = tokenInventoryTitle,
         modifier = Modifier.fillMaxWidth()
     ) {
         if (isLoading && tokens.isEmpty()) {
@@ -277,7 +281,7 @@ private fun TerminalTokensSection(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "[NO_TOKENS_DETECTED]",
+                    text = stringResource(R.string.wallet_no_tokens),
                     style = TerminalTextStyle,
                     color = TerminalGray,
                     fontSize = 12.sp
@@ -340,7 +344,7 @@ private fun TerminalTokenItem(
                 )
                 if (token.compressed) {
                     Text(
-                        text = "⚡",
+                        text = stringResource(R.string.token_compressed_indicator),
                         color = BrightCyan,
                         fontSize = 8.sp
                     )
@@ -431,8 +435,9 @@ private fun TerminalNftsSection(
     isLoading: Boolean,
     onNftClick: (String) -> Unit = {}
 ) {
+    val nftCollectionTitle = stringResource(R.string.wallet_nft_collection)
     TerminalCard(
-        title = "NFT_COLLECTION",
+        title = nftCollectionTitle,
         modifier = Modifier.fillMaxWidth()
     ) {
         if (isLoading && nfts.isEmpty()) {
@@ -454,7 +459,7 @@ private fun TerminalNftsSection(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "[NO_NFT_ASSETS_FOUND]",
+                    text = stringResource(R.string.wallet_no_nfts),
                     style = TerminalTextStyle,
                     color = TerminalGray,
                     fontSize = 12.sp
@@ -550,7 +555,7 @@ private fun TerminalNftItem(
                     )
                     if (nft.compressed) {
                         Text(
-                            text = "⚡",
+                            text = stringResource(R.string.token_compressed_indicator),
                             color = BrightCyan,
                             fontSize = 8.sp
                         )

@@ -32,6 +32,7 @@ import fi.darklake.wallet.ui.components.AppLogo
 import fi.darklake.wallet.ui.components.NumberedList
 import fi.darklake.wallet.ui.components.createHighlightedItem
 import fi.darklake.wallet.ui.components.AppHeader
+import androidx.compose.ui.res.stringResource
 import fi.darklake.wallet.R
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,7 +70,7 @@ fun CreateWalletScreen(
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            AppTitle(text = "Create your Secure Wallet")
+                            AppTitle(text = stringResource(R.string.create_wallet_title))
                             
                             Spacer(modifier = Modifier.height(DesignTokens.Spacing.xxl))
                             
@@ -85,14 +86,14 @@ fun CreateWalletScreen(
                                         // Warning icon
                     Icon(
                                             Icons.Default.Warning,
-                                            contentDescription = "Warning",
+                                            contentDescription = stringResource(R.string.warning),
                                             tint = DesignTokens.Colors.Warning,
                                             modifier = Modifier.size(DesignTokens.Spacing.xl)
                                         )
                                         
                                         Spacer(modifier = Modifier.height(DesignTokens.Spacing.sm))
                                         
-                                                                                    AppTitle(text = "Important")
+                                                                                    AppTitle(text = stringResource(R.string.mnemonic_display_warning_important))
                                             
                                             Spacer(modifier = Modifier.height(DesignTokens.Spacing.xl))
                                         
@@ -116,7 +117,7 @@ fun CreateWalletScreen(
                 FlexSection(
                     content = {
                         AppButton(
-                            text = if (uiState.isLoading) "GENERATING..." else "GENERATE SECURE WALLET",
+                            text = if (uiState.isLoading) stringResource(R.string.create_wallet_generating) else stringResource(R.string.create_wallet_button),
                             onClick = { viewModel.createWallet() },
                             isPrimary = true,
                             enabled = !uiState.isLoading

@@ -29,6 +29,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import fi.darklake.wallet.ui.theme.Green100
 import fi.darklake.wallet.ui.theme.Green300
 
@@ -55,16 +56,16 @@ fun WelcomeScreen(
                     content = {
                         AppLogo(
                             logoResId = R.drawable.darklake_logo,
-                            contentDescription = "Darklake Logo"
+                            contentDescription = stringResource(R.string.app_name)
                         )
                         
                         Spacer(modifier = Modifier.height(DesignTokens.Layout.componentGap))
                         
-                        AppTitle(text = "DARKLAKE WALLET")
+                        AppTitle(text = stringResource(R.string.welcome_title))
                         
                         Spacer(modifier = Modifier.height(DesignTokens.Layout.componentGap))
                         
-                        AppBodyText(text = "SECURE • PRIVATE • DECENTRALIZED")
+                        AppBodyText(text = stringResource(R.string.welcome_subtitle))
                     },
                     position = FlexPosition.Top,
                     topSpacing = DesignTokens.Spacing.top,
@@ -96,7 +97,7 @@ fun WelcomeScreen(
                 FlexSection(
                     content = {
                         AppButton(
-                            text = "CREATE NEW WALLET",
+                            text = stringResource(R.string.welcome_create_wallet),
                             onClick = onCreateWallet,
                             isPrimary = true
                         )
@@ -104,7 +105,7 @@ fun WelcomeScreen(
                         Spacer(modifier = Modifier.height(DesignTokens.Layout.buttonGap))
                         
                         AppButton(
-                            text = "IMPORT EXISTING WALLET",
+                            text = stringResource(R.string.welcome_import_wallet),
                             onClick = onImportWallet,
                             isPrimary = false,
                             hasUnderline = true

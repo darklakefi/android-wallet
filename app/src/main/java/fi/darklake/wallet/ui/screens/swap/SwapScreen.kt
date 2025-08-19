@@ -36,7 +36,8 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import android.widget.Toast
 import androidx.compose.material.icons.filled.ContentCopy
-
+import androidx.compose.ui.res.stringResource
+import fi.darklake.wallet.R
 
 @Composable
 fun SwapScreen(
@@ -75,7 +76,7 @@ fun SwapScreen(
             ) {
                 // From Token Section
                 TokenInputSection(
-                    label = "From",
+                    label = stringResource(R.string.swap_from),
                     token = uiState.tokenA,
                     amount = uiState.tokenAAmount,
                     balance = uiState.tokenABalance,
@@ -104,7 +105,7 @@ fun SwapScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.SwapVert,
-                            contentDescription = "Swap tokens",
+                            contentDescription = stringResource(R.string.swap_tokens),
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
@@ -112,7 +113,7 @@ fun SwapScreen(
                 
                 // To Token Section
                 TokenInputSection(
-                    label = "To",
+                    label = stringResource(R.string.swap_to),
                     token = uiState.tokenB,
                     amount = uiState.tokenBAmount,
                     balance = uiState.tokenBBalance,
@@ -158,13 +159,13 @@ fun SwapScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Warning,
-                                contentDescription = "Warning",
+                                contentDescription = stringResource(R.string.warning),
                                 tint = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.size(20.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "High price impact! Your swap may result in significant loss.",
+                                text = stringResource(R.string.swap_high_price_impact),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.error
                             )
@@ -184,6 +185,9 @@ fun SwapScreen(
                 AnimatedVisibility(visible = uiState.errorMessage != null) {
                     val clipboardManager = LocalClipboardManager.current
                     val context = LocalContext.current
+                    val trackingCopiedMessage = uiState.trackingDetails?.trackingId?.let { trackingId ->
+                        stringResource(R.string.swap_tracking_copied, trackingId)
+                    } ?: ""
                     
                     Card(
                         modifier = Modifier
@@ -193,7 +197,7 @@ fun SwapScreen(
                                 // Extract tracking ID from error message if present
                                 uiState.trackingDetails?.trackingId?.let { trackingId ->
                                     clipboardManager.setText(AnnotatedString(trackingId))
-                                    Toast.makeText(context, "Tracking ID copied: $trackingId", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, trackingCopiedMessage, Toast.LENGTH_SHORT).show()
                                 }
                             },
                         colors = CardDefaults.cardColors(
@@ -222,13 +226,13 @@ fun SwapScreen(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.ContentCopy,
-                                        contentDescription = "Copy tracking ID",
+                                        contentDescription = stringResource(R.string.copy),
                                         modifier = Modifier.size(16.dp),
                                         tint = MaterialTheme.colorScheme.onErrorContainer
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = "ID: $trackingId",
+                                        text = stringResource(R.string.swap_tracking_id, trackingId),
                                         style = MaterialTheme.typography.labelSmall.copy(
                                             fontFamily = FontFamily.Monospace
                                         ),
@@ -259,7 +263,7 @@ fun SwapScreen(
                 )
             ) {
                 Text(
-                    text = "No liquidity pool exists for this pair. Create a pool to enable swapping.",
+                    text = stringResource(R.string.swap_no_pool_message),
                     modifier = Modifier.padding(16.dp),
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center
@@ -293,7 +297,7 @@ private fun SwapHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "Swap",
+            text = stringResource(R.string.swap_title),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold
         )
@@ -301,7 +305,7 @@ private fun SwapHeader(
         IconButton(onClick = onSettingsClick) {
             Icon(
                 imageVector = Icons.Default.Settings,
-                contentDescription = "Settings"
+                contentDescription = stringResource(R.string.settings)
             )
         }
     }
@@ -366,14 +370,14 @@ private fun TokenInputSection(
                         )
                     } else {
                         Text(
-                            text = "Select",
+                            text = stringResource(R.string.swap_select_token),
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
                     Spacer(modifier = Modifier.width(4.dp))
                     Icon(
                         imageVector = Icons.Default.ArrowDropDown,
-                        contentDescription = "Select token",
+                        contentDescription = stringResource(R.string.swap_select_token),
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -387,7 +391,7 @@ private fun TokenInputSection(
                     value = amount,
                     onValueChange = onAmountChange,
                     readOnly = isReadOnly,
-                    placeholder = { Text("0.0") },
+                    placeholder = { Text(stringResource(R.string.swap_amount_placeholder)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
@@ -407,7 +411,7 @@ private fun TokenInputSection(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "Balance: ${FormatUtils.formatBalance(balance)}",
+                        text = stringResource(R.string.swap_balance, FormatUtils.formatBalance(balance)),
                         style = MaterialTheme.typography.bodySmall,
                         color = if (showInsufficientBalance)
                             MaterialTheme.colorScheme.error
@@ -416,7 +420,7 @@ private fun TokenInputSection(
                     
                     if (!isReadOnly && balance > BigDecimal.ZERO) {
                         Text(
-                            text = "MAX",
+                            text = stringResource(R.string.swap_max),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold,
@@ -446,7 +450,7 @@ private fun SlippageSettings(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Slippage Tolerance",
+                text = stringResource(R.string.swap_slippage_tolerance),
                 style = MaterialTheme.typography.labelMedium
             )
             
@@ -480,7 +484,7 @@ private fun SlippageSettings(
             FilterChip(
                 selected = showCustom,
                 onClick = { showCustom = !showCustom },
-                label = { Text("Custom") },
+                label = { Text(stringResource(R.string.swap_slippage_custom)) },
                 modifier = Modifier.weight(1f)
             )
         }
@@ -497,7 +501,7 @@ private fun SlippageSettings(
                         }
                     }
                 },
-                label = { Text("Custom slippage (%)") },
+                label = { Text(stringResource(R.string.swap_slippage_custom_label)) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -532,7 +536,7 @@ private fun QuoteDetails(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "Rate",
+                    text = stringResource(R.string.swap_rate),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -548,7 +552,7 @@ private fun QuoteDetails(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "Price Impact",
+                    text = stringResource(R.string.swap_price_impact),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -569,7 +573,7 @@ private fun QuoteDetails(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "Network Fee",
+                    text = stringResource(R.string.swap_network_fee),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -591,19 +595,19 @@ private fun SwapButton(
     val buttonText = when (uiState.swapStep) {
         SwapStep.IDLE -> {
             when {
-                uiState.tokenAAmount.isEmpty() -> "Enter an amount"
-                uiState.insufficientBalance -> "Insufficient ${uiState.tokenA?.symbol ?: "balance"}"
-                !uiState.poolExists -> "No liquidity pool"
-                uiState.isLoadingQuote -> "Loading..."
-                uiState.priceImpactWarning -> "Swap anyway (High impact!)"
-                else -> "Swap"
+                uiState.tokenAAmount.isEmpty() -> stringResource(R.string.swap_button_enter_amount)
+                uiState.insufficientBalance -> stringResource(R.string.swap_button_insufficient, uiState.tokenA?.symbol ?: "")
+                !uiState.poolExists -> stringResource(R.string.swap_button_no_pool)
+                uiState.isLoadingQuote -> stringResource(R.string.swap_button_loading)
+                uiState.priceImpactWarning -> stringResource(R.string.swap_button_high_impact)
+                else -> stringResource(R.string.swap_button_swap)
             }
         }
-        SwapStep.GENERATING_PROOF -> "Generating proof [1/3]..."
-        SwapStep.CONFIRM_TRANSACTION -> "Confirm in wallet [2/3]..."
-        SwapStep.PROCESSING -> "Processing [3/3]..."
-        SwapStep.COMPLETED -> "Swap completed!"
-        SwapStep.FAILED -> "Swap failed - Try again"
+        SwapStep.GENERATING_PROOF -> stringResource(R.string.swap_generating_proof)
+        SwapStep.CONFIRM_TRANSACTION -> stringResource(R.string.swap_confirm_wallet)
+        SwapStep.PROCESSING -> stringResource(R.string.swap_processing)
+        SwapStep.COMPLETED -> stringResource(R.string.swap_completed)
+        SwapStep.FAILED -> stringResource(R.string.swap_failed)
     }
     
     val isEnabled = when (uiState.swapStep) {

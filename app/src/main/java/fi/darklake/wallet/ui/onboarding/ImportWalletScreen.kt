@@ -15,7 +15,9 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
+import fi.darklake.wallet.R
 import fi.darklake.wallet.ui.theme.DarklakeWalletTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -38,10 +40,10 @@ fun ImportWalletScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Import Wallet") },
+                title = { Text(stringResource(R.string.import_wallet_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 }
             )
@@ -55,14 +57,14 @@ fun ImportWalletScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Enter Recovery Phrase",
+                text = stringResource(R.string.import_wallet_title),
                 style = MaterialTheme.typography.headlineMedium
             )
             
             Spacer(modifier = Modifier.height(16.dp))
             
             Text(
-                text = "Enter your 12-word recovery phrase to restore your wallet",
+                text = stringResource(R.string.import_wallet_description),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -72,8 +74,8 @@ fun ImportWalletScreen(
             OutlinedTextField(
                 value = mnemonicInput,
                 onValueChange = { mnemonicInput = it },
-                label = { Text("Recovery phrase") },
-                placeholder = { Text("Enter 12 words separated by spaces") },
+                label = { Text(stringResource(R.string.import_wallet_mnemonic_label)) },
+                placeholder = { Text(stringResource(R.string.import_wallet_mnemonic_placeholder)) },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 3,
                 maxLines = 5,
@@ -82,7 +84,7 @@ fun ImportWalletScreen(
                     IconButton(onClick = { showMnemonic = !showMnemonic }) {
                         Icon(
                             imageVector = if (showMnemonic) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                            contentDescription = if (showMnemonic) "Hide" else "Show"
+                            contentDescription = if (showMnemonic) stringResource(R.string.accessibility_hide_password) else stringResource(R.string.accessibility_show_password)
                         )
                     }
                 },
@@ -118,7 +120,7 @@ fun ImportWalletScreen(
                     )
                 } else {
                     Text(
-                        text = "Import Wallet",
+                        text = stringResource(R.string.import_wallet_button),
                         style = MaterialTheme.typography.bodyLarge
                     )
                 }

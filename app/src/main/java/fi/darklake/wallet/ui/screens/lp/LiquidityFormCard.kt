@@ -17,6 +17,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import fi.darklake.wallet.R
 import java.math.BigDecimal
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -53,19 +55,19 @@ fun LiquidityFormCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = if (uiState.poolDetails?.exists == true) "Add Liquidity" else "Create Pool",
+                    text = if (uiState.poolDetails?.exists == true) stringResource(R.string.lp_add_liquidity) else stringResource(R.string.lp_create_pool),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
                 
                 IconButton(onClick = { showSlippageDialog = true }) {
-                    Icon(Icons.Default.Settings, contentDescription = "Settings")
+                    Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.settings))
                 }
             }
             
             // Token A Input
             TokenInputSection(
-                label = "Token A Amount",
+                label = stringResource(R.string.lp_token_a) + " " + stringResource(R.string.lp_amount),
                 token = uiState.tokenA,
                 amount = uiState.tokenAAmount,
                 balance = uiState.tokenABalance,
@@ -89,7 +91,7 @@ fun LiquidityFormCard(
                 ) {
                     Icon(
                         if (uiState.poolDetails?.exists == true) Icons.Default.SwapVert else Icons.Default.Add,
-                        contentDescription = "Swap tokens",
+                        contentDescription = stringResource(R.string.swap_tokens),
                         tint = MaterialTheme.colorScheme.onPrimary
                     )
                 }
@@ -97,7 +99,7 @@ fun LiquidityFormCard(
             
             // Token B Input
             TokenInputSection(
-                label = "Token B Amount",
+                label = stringResource(R.string.lp_token_b) + " " + stringResource(R.string.lp_amount),
                 token = uiState.tokenB,
                 amount = uiState.tokenBAmount,
                 balance = uiState.tokenBBalance,
@@ -157,13 +159,13 @@ fun LiquidityFormCard(
                 Text(
                     text = when {
                         isLoading && uiState.liquidityStep == LiquidityStep.GENERATING_PROOF -> 
-                            "Generating Proof [1/3]"
+                            stringResource(R.string.swap_generating_proof)
                         isLoading && uiState.liquidityStep == LiquidityStep.CONFIRM_TRANSACTION -> 
-                            "Confirm Transaction [2/3]"
+                            stringResource(R.string.swap_confirm_wallet)
                         isLoading && uiState.liquidityStep == LiquidityStep.PROCESSING -> 
-                            "Processing [3/3]"
-                        uiState.poolDetails?.exists == true -> "Add Liquidity"
-                        else -> "Create Pool"
+                            stringResource(R.string.swap_processing)
+                        uiState.poolDetails?.exists == true -> stringResource(R.string.lp_add_liquidity)
+                        else -> stringResource(R.string.lp_create_pool)
                     }
                 )
             }
@@ -221,7 +223,7 @@ private fun TokenInputSection(
                 )
                 
                 Text(
-                    text = "Balance: ${balance.stripTrailingZeros().toPlainString()}",
+                    text = stringResource(R.string.swap_balance, balance.stripTrailingZeros().toPlainString()),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -240,12 +242,12 @@ private fun TokenInputSection(
                     if (token != null) {
                         Text(token.symbol)
                     } else {
-                        Text("Select Token")
+                        Text(stringResource(R.string.lp_select_token))
                     }
                     Spacer(modifier = Modifier.width(4.dp))
                     Icon(
                         Icons.Default.KeyboardArrowDown,
-                        contentDescription = "Select token",
+                        contentDescription = stringResource(R.string.lp_select_token),
                         modifier = Modifier.size(16.dp)
                     )
                 }
@@ -255,7 +257,7 @@ private fun TokenInputSection(
                     value = amount,
                     onValueChange = onAmountChange,
                     modifier = Modifier.weight(2f),
-                    placeholder = { Text("0.0") },
+                    placeholder = { Text(stringResource(R.string.swap_amount_placeholder)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     singleLine = true,
                     isError = insufficientBalance,
@@ -265,7 +267,7 @@ private fun TokenInputSection(
             
             if (insufficientBalance) {
                 Text(
-                    text = "Insufficient ${token?.symbol ?: "token"} balance",
+                    text = stringResource(R.string.swap_button_insufficient, token?.symbol ?: ""),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error
                 )
@@ -293,7 +295,7 @@ private fun InitialPriceSection(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
-                text = "Set Initial Price",
+                text = stringResource(R.string.lp_initial_price),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onTertiaryContainer
             )
@@ -304,7 +306,7 @@ private fun InitialPriceSection(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = "1 ${tokenA?.symbol ?: "Token A"} =",
+                    text = "1 ${tokenA?.symbol ?: stringResource(R.string.lp_token_a)} =",
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.weight(1f)
                 )
@@ -316,12 +318,12 @@ private fun InitialPriceSection(
                     placeholder = { Text("1.0") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     singleLine = true,
-                    suffix = { Text(tokenB?.symbol ?: "Token B") }
+                    suffix = { Text(tokenB?.symbol ?: stringResource(R.string.lp_token_b)) }
                 )
             }
             
             Text(
-                text = "Warning: Bots will arbitrage any mispricing. You'll lose tokens if your rate is off-market.",
+                text = stringResource(R.string.lp_initial_price_warning),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
             )

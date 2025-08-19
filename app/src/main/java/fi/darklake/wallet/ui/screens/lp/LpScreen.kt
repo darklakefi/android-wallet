@@ -9,7 +9,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
+import fi.darklake.wallet.R
 import fi.darklake.wallet.data.preferences.SettingsManager
 import fi.darklake.wallet.storage.WalletStorageManager
 import fi.darklake.wallet.ui.components.TokenSelectionSheet
@@ -48,19 +50,19 @@ fun LpScreen(
                 modifier = Modifier.padding(16.dp)
             ) {
                 Text(
-                    text = "LIQUIDITY",
+                    text = stringResource(R.string.lp_title),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "MEV profits recovered:",
+                    text = stringResource(R.string.lp_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
                 Text(
-                    text = "Higher yields.",
+                    text = stringResource(R.string.lp_subtitle2),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Medium
