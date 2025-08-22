@@ -9,21 +9,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import fi.darklake.wallet.ui.theme.*
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import android.widget.Toast
-import fi.darklake.wallet.R
-
-val BitsumishiFontAddress = FontFamily(
-    Font(R.font.bitsumishi)
-)
+import fi.darklake.wallet.ui.theme.*
 
 @Composable
 fun WalletAddress(
@@ -58,11 +49,8 @@ fun WalletAddress(
         // Address text
         Text(
             text = displayAddress,
-            color = DarklakeTextMuted,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Normal,
-            letterSpacing = 0.18.sp,
-            fontFamily = BitsumishiFontAddress
+            style = WalletAddressStyle,
+            color = DarklakeTextMuted
         )
         
         // Copy icon

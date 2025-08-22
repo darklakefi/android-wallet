@@ -11,18 +11,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import fi.darklake.wallet.ui.theme.*
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import fi.darklake.wallet.R
-
-val BitsumishiFont = FontFamily(
-    Font(R.font.bitsumishi)
-)
+import fi.darklake.wallet.ui.theme.*
 
 @Composable
 fun TokenBalanceCard(
@@ -79,30 +72,24 @@ fun TokenBalanceCard(
                         color = iconTextColor,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        fontFamily = BitsumishiFont
+                        fontFamily = BitsumishiFontFamily
                     )
                 }
                 
                 // Just Token Symbol
                 Text(
                     text = tokenSymbol.uppercase(),
-                    color = DarklakeTextSecondary,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Normal,
-                    letterSpacing = 0.18.sp,
-                    fontFamily = BitsumishiFont
+                    style = TokenSymbolStyle,
+                    color = DarklakeTextSecondary
                 )
             }
             
             // Right side - Balance (simplified)
             Text(
                 text = balance,
-                color = Color(0xFF35D688),
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Normal,
-                letterSpacing = 0.18.sp,
-                textAlign = TextAlign.End,
-                fontFamily = BitsumishiFont
+                style = TokenBalanceStyle,
+                color = DarklakeTextSecondary,
+                textAlign = TextAlign.End
             )
         }
     }

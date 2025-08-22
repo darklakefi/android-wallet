@@ -16,15 +16,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import fi.darklake.wallet.R
 import fi.darklake.wallet.data.model.DisplayToken
 import fi.darklake.wallet.data.model.DisplayNft
 import fi.darklake.wallet.data.preferences.SettingsManager
@@ -32,10 +30,6 @@ import fi.darklake.wallet.storage.WalletStorageManager
 import fi.darklake.wallet.ui.components.*
 import fi.darklake.wallet.ui.theme.*
 import java.text.DecimalFormat
-
-val BitsumishiFontWallet = FontFamily(
-    Font(R.font.bitsumishi)
-)
 
 @Composable
 fun WalletScreen(
@@ -141,11 +135,8 @@ private fun TabSelector(
         ) {
             Text(
                 text = "[ TOKENS ]",
-                color = if (selectedTab == 0) DarklakeTabTextActive else DarklakeTabTextInactive,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Normal,
-                letterSpacing = 1.sp,
-                fontFamily = BitsumishiFontWallet
+                style = TabTextStyle,
+                color = if (selectedTab == 0) DarklakeTabTextActive else DarklakeTabTextInactive
             )
         }
         
@@ -160,11 +151,8 @@ private fun TabSelector(
         ) {
             Text(
                 text = "[ NFTS ]",
-                color = if (selectedTab == 1) DarklakeTabTextActive else DarklakeTabTextInactive,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Normal,
-                letterSpacing = 1.sp,
-                fontFamily = BitsumishiFontWallet
+                style = TabTextStyle,
+                color = if (selectedTab == 1) DarklakeTabTextActive else DarklakeTabTextInactive
             )
         }
     }
@@ -211,9 +199,9 @@ private fun TokensList(
                     ) {
                         Text(
                             text = "No tokens found",
+                            style = TerminalTextStyle,
                             color = DarklakeTextTertiary,
-                            fontSize = 14.sp,
-                            fontFamily = BitsumishiFontWallet
+                            textAlign = TextAlign.Center
                         )
                     }
                 }
@@ -244,9 +232,9 @@ private fun NftsGrid(
             ) {
                 Text(
                     text = "No NFTs found",
-                    color = Color(0xFF1A9A56),
-                    fontSize = 14.sp,
-                    fontFamily = BitsumishiFontWallet
+                    style = TerminalTextStyle,
+                    color = DarklakeTextTertiary,
+                    textAlign = TextAlign.Center
                 )
             }
         } else {
@@ -292,24 +280,142 @@ private fun NftCard(
             ) {
                 Text(
                     text = nft.name.take(20),
+                    style = NftTitleStyle,
                     color = DarklakeTextSecondary,
-                    fontSize = 12.sp,
                     textAlign = TextAlign.Center,
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    fontFamily = BitsumishiFontWallet
+                    overflow = TextOverflow.Ellipsis
                 )
                 if (nft.compressed) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "COMPRESSED",
-                        color = DarklakeTextTertiary,
-                        fontSize = 8.sp,
-                        fontFamily = BitsumishiFontWallet
+                        style = CompressedLabelStyle,
+                        color = DarklakeTextTertiary
                     )
                 }
             }
         }
+    }
+}
+
+// Preview functions
+@Preview(showBackground = true, backgroundColor = 0xFF010F06)
+@Composable
+fun PreviewWalletScreen() {
+    val mockTokens = listOf(
+        DisplayToken(
+            mint = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+            symbol = "USDC",
+            name = "USD Coin",
+            balance = "123,333.12",
+            imageUrl = null,
+            usdValue = null
+        ),
+        DisplayToken(
+            mint = "So11111111111111111111111111111111111111112",
+            symbol = "SOL",
+            name = "Solana",
+            balance = "123,333.12",
+            imageUrl = null,
+            usdValue = null
+        ),
+        DisplayToken(
+            mint = "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+            symbol = "BONK",
+            name = "Bonk",
+            balance = "123,333.12",
+            imageUrl = null,
+            usdValue = null
+        )
+    )
+    
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(DarklakeBackground)
+    ) {
+        TokensList(
+            tokens = mockTokens,
+            isLoading = false,
+            onTokenClick = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF010F06)
+@Composable
+fun PreviewMainBalanceCard() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(DarklakeBackground)
+            .padding(16.dp)
+    ) {
+        MainBalanceCard(
+            balance = "123,553.12 SOL",
+            onReceiveClick = {},
+            onSendClick = {},
+            onRefreshClick = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF010F06)
+@Composable
+fun PreviewTokenBalanceCard() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(DarklakeBackground)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        TokenBalanceCard(
+            tokenSymbol = "USDC",
+            tokenName = "USD Coin",
+            tokenAddress = null,
+            balance = "123,333.12",
+            balanceUsd = null,
+            onClick = {}
+        )
+        TokenBalanceCard(
+            tokenSymbol = "SOL",
+            tokenName = "Solana",
+            tokenAddress = null,
+            balance = "123,333.12",
+            balanceUsd = null,
+            onClick = {}
+        )
+        TokenBalanceCard(
+            tokenSymbol = "BONK",
+            tokenName = "Bonk",
+            tokenAddress = null,
+            balance = "123,333.12",
+            balanceUsd = null,
+            onClick = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF010F06)
+@Composable
+fun PreviewNftCard() {
+    val mockNft = DisplayNft(
+        mint = "mock123",
+        name = "Cool NFT #1234",
+        imageUrl = null,
+        collectionName = "Cool Collection",
+        compressed = false
+    )
+    
+    Box(
+        modifier = Modifier
+            .size(200.dp)
+            .background(DarklakeBackground)
+            .padding(16.dp)
+    ) {
+        NftCard(nft = mockNft, onClick = {})
     }
 }
 

@@ -12,18 +12,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import fi.darklake.wallet.ui.theme.*
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import fi.darklake.wallet.R
-
-val BitsumishiFontMain = FontFamily(
-    Font(R.font.bitsumishi)
-)
+import fi.darklake.wallet.ui.theme.*
 
 @Composable
 fun MainBalanceCard(
@@ -64,10 +55,7 @@ fun MainBalanceCard(
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "RECEIVE",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Normal,
-                    letterSpacing = 0.18.sp,
-                    fontFamily = BitsumishiFontMain
+                    style = ButtonTextStyle
                 )
             }
             
@@ -91,10 +79,7 @@ fun MainBalanceCard(
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "SEND",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Normal,
-                    letterSpacing = 0.18.sp,
-                    fontFamily = BitsumishiFontMain
+                    style = ButtonTextStyle
                 )
             }
             
@@ -127,13 +112,10 @@ fun MainBalanceCard(
         ) {
             Text(
                 text = balance,
-                fontSize = 56.sp,  // Reduced to fit properly within 74dp
-                fontWeight = FontWeight.Normal,  // Figma uses 400 weight (Normal)
+                style = BalanceDisplayStyle,
                 color = DarklakeBalanceText,
-                modifier = Modifier
-                    .padding(horizontal = 20.dp),
+                modifier = Modifier.padding(horizontal = 20.dp),
                 textAlign = TextAlign.Start,
-                fontFamily = BitsumishiFontMain,
                 maxLines = 1
             )
         }
