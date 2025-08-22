@@ -123,6 +123,7 @@ This project uses Fastlane-powered GitHub Actions workflows:
 
 ### Design
 - Use the files in `./assets` and follow the instructions on `./assets/style-guide.md`
+- **Color Management**: All colors MUST be defined in `/app/src/main/java/fi/darklake/wallet/ui/theme/Color.kt` with semantic names (e.g., `DarklakeButtonBg`, `DarklakeTextPrimary`, `TokenSolBackground`). Never hardcode colors directly in components or screens (no `Color(0xFF...)` inline). Components should import colors from the theme: `import fi.darklake.wallet.ui.theme.*`
 
 ### Code Organization
 ```

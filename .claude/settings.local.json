@@ -57,7 +57,10 @@
       "Bash(adb:*)",
       "Bash(python3:*)",
       "Bash(bundle exec fastlane android:*)",
-      "Bash(timeout 60 bundle exec fastlane android debug)"
+      "Bash(timeout 60 bundle exec fastlane android debug)",
+      "mcp__Framelink_Figma_MCP__get_figma_data",
+      "mcp__mobile__mobile_save_screenshot",
+      "mcp__Framelink_Figma_MCP__download_figma_images"
     ],
     "deny": []
   }

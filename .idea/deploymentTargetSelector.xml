@@ -4,10 +4,10 @@
     <selectionStates>
       <SelectionState runConfigName="app">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2025-08-13T19:58:20.408307735Z">
+        <DropdownSelection timestamp="2025-08-22T17:29:54.855630773Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=/home/vitorpy/.android/avd/Pixel_Fold_API_35.avd" />
+              <DeviceId pluginId="LocalEmulator" identifier="path=/home/vitorpy/.android/avd/Pixel_9a.avd" />
             </handle>
           </Target>
         </DropdownSelection>
