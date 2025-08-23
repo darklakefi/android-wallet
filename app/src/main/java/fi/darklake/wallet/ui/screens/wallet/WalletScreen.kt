@@ -26,6 +26,7 @@ fun WalletScreen(
     onNavigateToSendSol: () -> Unit = {},
     onNavigateToSendToken: (String) -> Unit = {},
     onNavigateToSendNft: (String) -> Unit = {},
+    onNavigateToReceive: () -> Unit = {},
     viewModel: WalletViewModel = viewModel { WalletViewModel(storageManager, settingsManager) }
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -66,7 +67,7 @@ fun WalletScreen(
             MainBalanceCard(
                 balance = String.format("%.2f SOL", uiState.solBalance),
                 onSendClick = onNavigateToSendSol,
-                onReceiveClick = { /* TODO: Implement receive */ },
+                onReceiveClick = onNavigateToReceive,
                 onRefreshClick = { viewModel.refresh() }
             )
             

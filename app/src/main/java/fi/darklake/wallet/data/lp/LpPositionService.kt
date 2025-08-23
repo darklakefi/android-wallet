@@ -193,11 +193,11 @@ class LpPositionService(
             id = "${tokenAMint}_${tokenBMint}_position",
             tokenA = tokenAInfo,
             tokenB = tokenBInfo,
-            tokenAAmount = tokenAAmount,
-            tokenBAmount = tokenBAmount,
+            amountA = tokenAAmount,
+            amountB = tokenBAmount,
             lpTokenBalance = BigDecimal(lpTokenBalance),
-            sharePercentage = sharePercentage,
-            usdValue = usdValue
+            poolShare = sharePercentage,
+            totalValue = usdValue
         )
     }
     

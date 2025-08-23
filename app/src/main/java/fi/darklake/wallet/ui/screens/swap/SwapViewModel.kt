@@ -599,6 +599,24 @@ class SwapViewModel(
         }
     }
     
+    fun loadTokens() {
+        loadAvailableTokens()
+    }
+    
+    fun refreshQuote() {
+        viewModelScope.launch {
+            fetchQuote()
+        }
+    }
+    
+    fun clearError() {
+        _uiState.value = _uiState.value.copy(errorMessage = null)
+    }
+    
+    fun clearSuccess() {
+        _uiState.value = _uiState.value.copy(successMessage = null)
+    }
+    
     /**
      * Signs a transaction using SolanaKT libraries
      * @param unsignedTransactionBase64 The unsigned transaction as base64 string

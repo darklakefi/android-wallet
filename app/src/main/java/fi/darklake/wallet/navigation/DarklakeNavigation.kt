@@ -17,6 +17,7 @@ import fi.darklake.wallet.ui.screens.wallet.WalletViewModel
 import fi.darklake.wallet.ui.screens.send.SendSolScreen
 import fi.darklake.wallet.ui.screens.send.SendTokenScreen
 import fi.darklake.wallet.ui.screens.send.SendNftScreen
+import fi.darklake.wallet.ui.screens.receive.ReceiveScreen
 import fi.darklake.wallet.storage.WalletStorageManager
 import fi.darklake.wallet.data.preferences.SettingsManager
 
@@ -30,6 +31,7 @@ sealed class Screen(val route: String) {
     data object SendSol : Screen("send_sol")
     data object SendToken : Screen("send_token/{tokenMint}")
     data object SendNft : Screen("send_nft/{nftMint}")
+    data object Receive : Screen("receive")
     
     companion object {
         fun sendToken(tokenMint: String) = "send_token/$tokenMint"
@@ -124,6 +126,9 @@ fun DarklakeNavigation(
                 },
                 onNavigateToSendNft = { nftMint ->
                     navController.navigate(Screen.sendNft(nftMint))
+                },
+                onNavigateToReceive = {
+                    navController.navigate(Screen.Receive.route)
                 }
             )
         }
@@ -168,6 +173,15 @@ fun DarklakeNavigation(
                 },
                 storageManager = storageManager,
                 settingsManager = settingsManager
+            )
+        }
+        
+        composable(Screen.Receive.route) {
+            ReceiveScreen(
+                onBack = {
+                    navController.popBackStack()
+                },
+                storageManager = storageManager
             )
         }
     }

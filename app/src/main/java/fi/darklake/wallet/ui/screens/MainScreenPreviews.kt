@@ -28,7 +28,8 @@ fun PreviewMainScreen() {
             settingsManager = settingsManager,
             onNavigateToSendSol = {},
             onNavigateToSendToken = {},
-            onNavigateToSendNft = {}
+            onNavigateToSendNft = {},
+            onNavigateToReceive = {}
         )
     }
 }

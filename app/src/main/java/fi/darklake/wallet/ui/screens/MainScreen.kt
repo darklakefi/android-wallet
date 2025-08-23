@@ -26,7 +26,8 @@ fun MainScreen(
     settingsManager: SettingsManager,
     onNavigateToSendSol: () -> Unit,
     onNavigateToSendToken: (String) -> Unit,
-    onNavigateToSendNft: (String) -> Unit
+    onNavigateToSendNft: (String) -> Unit,
+    onNavigateToReceive: () -> Unit
 ) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -59,7 +60,8 @@ fun MainScreen(
                         },
                         onNavigateToSendSol = onNavigateToSendSol,
                         onNavigateToSendToken = onNavigateToSendToken,
-                        onNavigateToSendNft = onNavigateToSendNft
+                        onNavigateToSendNft = onNavigateToSendNft,
+                        onNavigateToReceive = onNavigateToReceive
                     )
                     
                     // Override bottom navigation

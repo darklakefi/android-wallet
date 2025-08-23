@@ -28,11 +28,11 @@ data class LiquidityPosition(
     val id: String,
     val tokenA: TokenInfo,
     val tokenB: TokenInfo,
-    val tokenAAmount: BigDecimal,
-    val tokenBAmount: BigDecimal,
+    val amountA: BigDecimal,
+    val amountB: BigDecimal,
     val lpTokenBalance: BigDecimal,
-    val sharePercentage: Double,
-    val usdValue: BigDecimal
+    val poolShare: Double,
+    val totalValue: BigDecimal
 )
 
 data class PoolDetails(
@@ -42,7 +42,11 @@ data class PoolDetails(
     val poolAddress: String? = null,
     val reserveX: BigDecimal = BigDecimal.ZERO,
     val reserveY: BigDecimal = BigDecimal.ZERO,
-    val totalLpSupply: BigDecimal = BigDecimal.ZERO
+    val totalLpSupply: BigDecimal = BigDecimal.ZERO,
+    val currentPrice: Double = 0.0,
+    val poolShare: Double = 0.0,
+    val apr: Double = 0.0,
+    val tvl: BigDecimal = BigDecimal.ZERO
 )
 
 enum class LiquidityStep {
@@ -74,6 +78,7 @@ data class LpUiState(
     val isLoadingQuote: Boolean = false,
     val isAddingLiquidity: Boolean = false,
     val isCreatingPool: Boolean = false,
+    val isProcessing: Boolean = false,
     val liquidityStep: LiquidityStep = LiquidityStep.IDLE,
     val insufficientBalanceA: Boolean = false,
     val insufficientBalanceB: Boolean = false,
@@ -302,6 +307,7 @@ class LpViewModel(
             // Step 1: Generate proof
             _uiState.value = _uiState.value.copy(
                 isAddingLiquidity = true,
+                isProcessing = true,
                 liquidityStep = LiquidityStep.GENERATING_PROOF,
                 errorMessage = null
             )
@@ -343,6 +349,7 @@ class LpViewModel(
                 
                 _uiState.value = _uiState.value.copy(
                     isAddingLiquidity = false,
+                    isProcessing = false,
                     liquidityStep = LiquidityStep.COMPLETED,
                     successMessage = "Liquidity added successfully! $tokenAAmount ${tokenA.symbol} + $tokenBAmount ${tokenB.symbol}",
                     tokenAAmount = "",
@@ -361,6 +368,7 @@ class LpViewModel(
         } catch (e: Exception) {
             _uiState.value = _uiState.value.copy(
                 isAddingLiquidity = false,
+                isProcessing = false,
                 liquidityStep = LiquidityStep.FAILED,
                 errorMessage = "Add liquidity failed: ${e.message}"
             )
@@ -381,6 +389,7 @@ class LpViewModel(
         try {
             _uiState.value = _uiState.value.copy(
                 isCreatingPool = true,
+                isProcessing = true,
                 liquidityStep = LiquidityStep.GENERATING_PROOF,
                 errorMessage = null
             )
@@ -421,6 +430,7 @@ class LpViewModel(
                 
                 _uiState.value = _uiState.value.copy(
                     isCreatingPool = false,
+                    isProcessing = false,
                     liquidityStep = LiquidityStep.COMPLETED,
                     successMessage = "Pool created successfully! Initial deposit: $tokenAAmount ${tokenA.symbol} + $tokenBAmount ${tokenB.symbol}",
                     tokenAAmount = "",
@@ -441,6 +451,7 @@ class LpViewModel(
         } catch (e: Exception) {
             _uiState.value = _uiState.value.copy(
                 isCreatingPool = false,
+                isProcessing = false,
                 liquidityStep = LiquidityStep.FAILED,
                 errorMessage = "Pool creation failed: ${e.message}"
             )
@@ -614,6 +625,26 @@ class LpViewModel(
             errorMessage = null,
             successMessage = null
         )
+    }
+    
+    fun clearError() {
+        _uiState.value = _uiState.value.copy(errorMessage = null)
+    }
+    
+    fun loadTokens() {
+        loadAvailableTokens()
+    }
+    
+    fun loadPositions() {
+        loadLiquidityPositions()
+    }
+    
+    fun refreshPoolDetails() {
+        checkPoolExists()
+    }
+    
+    fun withdrawLiquidity(position: LiquidityPosition) {
+        withdrawLiquidity(position.id)
     }
     
     private fun formatAmount(amount: Double, decimals: Int): String {
