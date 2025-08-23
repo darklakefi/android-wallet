@@ -3,20 +3,15 @@ package fi.darklake.wallet.ui.screens.send
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
-import androidx.compose.ui.layout.ContentScale
 import fi.darklake.wallet.data.preferences.SettingsManager
 import fi.darklake.wallet.data.model.getHeliusRpcUrl
 import fi.darklake.wallet.storage.WalletStorageManager
@@ -89,99 +84,19 @@ fun SendTokenScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-                
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.Send,
-                        contentDescription = "Send",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = "SEND ${uiState.tokenSymbol ?: "TOKEN"}",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
+            SendHeader(
+                title = "SEND ${uiState.tokenSymbol ?: "TOKEN"}",
+                icon = Icons.AutoMirrored.Filled.Send,
+                onBack = onBack
+            )
 
             // Token info card
-            TerminalCard(
-                title = "TOKEN_INFO",
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Token icon
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .padding(4.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (uiState.tokenImageUrl != null) {
-                            AsyncImage(
-                                model = ImageRequest.Builder(LocalContext.current)
-                                    .data(uiState.tokenImageUrl)
-                                    .crossfade(true)
-                                    .build(),
-                                contentDescription = uiState.tokenName,
-                                modifier = Modifier.size(32.dp),
-                                contentScale = ContentScale.Fit
-                            )
-                        } else {
-                            Text(
-                                text = uiState.tokenSymbol?.take(1) ?: "T",
-                                style = TerminalHeaderStyle,
-                                color = NeonGreen
-                            )
-                        }
-                    }
-                    
-                    Column {
-                        Text(
-                            text = "[${uiState.tokenSymbol ?: "UNKNOWN"}]",
-                            style = TerminalHeaderStyle,
-                            color = NeonGreen,
-                            fontWeight = FontWeight.Bold
-                        )
-                        uiState.tokenName?.let { tokenName ->
-                            if (tokenName != uiState.tokenSymbol) {
-                                Text(
-                                    text = tokenName,
-                                    style = TerminalTextStyle,
-                                    color = TerminalGray.copy(alpha = 0.8f),
-                                    maxLines = 1,
-                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                                )
-                            }
-                        }
-                        Text(
-                            text = "BALANCE: ${uiState.tokenBalance ?: "0"}",
-                            style = TerminalTextStyle,
-                            color = TerminalGray
-                        )
-                    }
-                }
-            }
+            TokenInfoCard(
+                tokenSymbol = uiState.tokenSymbol,
+                tokenName = uiState.tokenName,
+                tokenBalance = uiState.tokenBalance,
+                tokenImageUrl = uiState.tokenImageUrl
+            )
 
             // Send form
             TerminalCard(

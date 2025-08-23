@@ -1,25 +1,15 @@
 package fi.darklake.wallet.ui.screens.send
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
 import fi.darklake.wallet.data.preferences.SettingsManager
 import fi.darklake.wallet.data.model.getHeliusRpcUrl
 import fi.darklake.wallet.storage.WalletStorageManager
@@ -87,119 +77,18 @@ fun SendNftScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-                
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.Send,
-                        contentDescription = "Send",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = "SEND NFT",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
+            SendHeader(
+                title = "SEND NFT",
+                icon = Icons.AutoMirrored.Filled.Send,
+                onBack = onBack
+            )
 
             // NFT preview card
-            TerminalCard(
-                title = "NFT_ASSET",
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    // NFT image
-                    Box(
-                        modifier = Modifier
-                            .size(120.dp)
-                            .background(
-                                color = TerminalBlack,
-                                shape = RoundedCornerShape(8.dp)
-                            )
-                            .border(
-                                width = 1.dp,
-                                color = BrightCyan.copy(alpha = 0.6f),
-                                shape = RoundedCornerShape(8.dp)
-                            )
-                            .clip(RoundedCornerShape(8.dp)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (uiState.nftImageUrl != null) {
-                            AsyncImage(
-                                model = ImageRequest.Builder(LocalContext.current)
-                                    .data(uiState.nftImageUrl)
-                                    .crossfade(true)
-                                    .build(),
-                                contentDescription = uiState.nftName,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            Text(
-                                text = "[NFT]",
-                                style = TerminalHeaderStyle,
-                                color = BrightCyan
-                            )
-                        }
-                    }
-                    
-                    // NFT details
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(
-                            text = "[${uiState.nftName ?: "UNKNOWN_NFT"}]",
-                            style = TerminalHeaderStyle,
-                            color = BrightCyan,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        
-                        Text(
-                            text = "MINT: ${nftMint.take(8)}...${nftMint.takeLast(8)}",
-                            style = TerminalTextStyle,
-                            color = TerminalGray,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        
-                        Card(
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-                            )
-                        ) {
-                            Text(
-                                text = "✓ UNIQUE ASSET",
-                                modifier = Modifier.padding(8.dp),
-                                style = TerminalTextStyle,
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                }
-            }
+            NftPreviewCard(
+                nftName = uiState.nftName,
+                nftImageUrl = uiState.nftImageUrl,
+                nftMint = nftMint
+            )
 
             // Send form
             TerminalCard(
