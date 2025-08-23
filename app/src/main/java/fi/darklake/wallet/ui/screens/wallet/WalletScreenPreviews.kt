@@ -8,8 +8,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import fi.darklake.wallet.data.model.DisplayToken
 import fi.darklake.wallet.data.model.DisplayNft
-import fi.darklake.wallet.ui.components.MainBalanceCard
-import fi.darklake.wallet.ui.components.TokenBalanceCard
 import fi.darklake.wallet.ui.design.DarklakeBackground
 
 @Preview(showBackground = true, backgroundColor = 0xFF010F06)

@@ -15,7 +15,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import fi.darklake.wallet.data.model.NetworkSettings
 import fi.darklake.wallet.data.model.SolanaNetwork
-import fi.darklake.wallet.ui.components.TerminalButton
+import fi.darklake.wallet.ui.components.AppButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -100,12 +100,11 @@ internal fun NetworkSettingsCard(
                     )
                     
                     if (apiKeyInput != networkSettings.heliusApiKey) {
-                        TerminalButton(
+                        AppButton(
+                            text = "Save API Key",
                             onClick = { onApiKeyChange(apiKeyInput) },
                             modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Save API Key")
-                        }
+                        )
                     }
                     
                     if (networkSettings.heliusApiKey.isNullOrBlank()) {

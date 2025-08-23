@@ -9,6 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import fi.darklake.wallet.ui.components.AppButton
 import java.math.BigDecimal
 
 @Composable
@@ -144,15 +145,12 @@ private fun LiquidityPositionItem(
                     )
                 }
                 
-                OutlinedButton(
+                AppButton(
+                    text = "Withdraw",
                     onClick = onWithdraw,
-                    modifier = Modifier.size(width = 100.dp, height = 36.dp)
-                ) {
-                    Text(
-                        text = "Withdraw",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
+                    modifier = Modifier.size(width = 100.dp, height = 36.dp),
+                    isPrimary = false
+                )
             }
         }
     }
@@ -283,12 +281,11 @@ private fun LiquidityPositionDialog(
             }
         },
         confirmButton = {
-            Button(
+            AppButton(
+                text = "Withdraw ${withdrawPercentage.toInt()}%",
                 onClick = onWithdraw,
                 enabled = withdrawPercentage > 0
-            ) {
-                Text("Withdraw ${withdrawPercentage.toInt()}%")
-            }
+            )
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {

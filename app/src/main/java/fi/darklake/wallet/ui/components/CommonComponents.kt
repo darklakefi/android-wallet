@@ -9,6 +9,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.buildAnnotatedString
@@ -36,6 +38,11 @@ import fi.darklake.wallet.ui.design.DarklakeWalletTheme
  * @param hasUnderline Whether to show an underline on the text (for secondary buttons)
  * @param modifier Optional modifier for the button
  * @param enabled Whether the button is enabled and clickable
+ * @param isLoading Whether to show a loading indicator
+ * @param leadingIcon Optional icon to show before the text
+ * @param trailingIcon Optional icon to show after the text
+ * @param iconTint Optional tint color for the icons
+ * @param contentPadding Optional padding for the button content
  */
 @Composable
 fun AppButton(
@@ -44,7 +51,12 @@ fun AppButton(
     modifier: Modifier = Modifier,
     isPrimary: Boolean = true,
     hasUnderline: Boolean = false,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    isLoading: Boolean = false,
+    leadingIcon: ImageVector? = null,
+    trailingIcon: ImageVector? = null,
+    iconTint: Color? = null,
+    contentPadding: PaddingValues = ButtonDefaults.ContentPadding
 ) {
     val buttonColors = if (isPrimary) {
         ButtonDefaults.buttonColors(
@@ -68,20 +80,55 @@ fun AppButton(
     
     val buttonShape = RoundedCornerShape(0.dp)
     
+    val buttonContent: @Composable RowScope.() -> Unit = {
+        if (isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(16.dp),
+                color = if (isPrimary) Color(DesignTokens.Colors.BUTTON_TEXT_COLOR) else Green100,
+                strokeWidth = 2.dp
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+        }
+        
+        leadingIcon?.let { icon ->
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = iconTint ?: LocalContentColor.current
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+        }
+        
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelLarge.copy(
+                fontSize = DesignTokens.Typography.button,
+                textDecoration = if (hasUnderline && !isPrimary) androidx.compose.ui.text.style.TextDecoration.Underline else null
+            )
+        )
+        
+        trailingIcon?.let { icon ->
+            Spacer(modifier = Modifier.width(8.dp))
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = iconTint ?: LocalContentColor.current
+            )
+        }
+    }
+    
     if (isPrimary) {
         Button(
             onClick = onClick,
             modifier = modifier.fillMaxWidth(),
             colors = buttonColors,
             shape = buttonShape,
-            enabled = enabled
+            enabled = enabled && !isLoading,
+            contentPadding = contentPadding
         ) {
-            Text(
-                text = text,
-                style = MaterialTheme.typography.labelLarge.copy(
-                    fontSize = DesignTokens.Typography.button
-                )
-            )
+            buttonContent()
         }
     } else {
         OutlinedButton(
@@ -90,15 +137,10 @@ fun AppButton(
             colors = buttonColors,
             border = buttonBorder,
             shape = buttonShape,
-            enabled = enabled
+            enabled = enabled && !isLoading,
+            contentPadding = contentPadding
         ) {
-            Text(
-                text = text,
-                style = MaterialTheme.typography.labelLarge.copy(
-                    fontSize = DesignTokens.Typography.button,
-                    textDecoration = if (hasUnderline) androidx.compose.ui.text.style.TextDecoration.Underline else null
-                )
-            )
+            buttonContent()
         }
     }
 }
@@ -135,12 +177,15 @@ fun MessageBox(
 fun AppLogo(
     logoResId: Int,
     size: Dp = DesignTokens.Sizing.logo,
-    contentDescription: String = "App Logo"
+    contentDescription: String = "App Logo",
+    modifier: Modifier = Modifier,
+    tint: Color? = null
 ) {
     Image(
         painter = painterResource(id = logoResId),
         contentDescription = contentDescription,
-        modifier = Modifier.size(size)
+        modifier = modifier.size(size),
+        colorFilter = tint?.let { ColorFilter.tint(it) }
     )
 }
 

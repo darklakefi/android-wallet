@@ -8,6 +8,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import fi.darklake.wallet.R
+import fi.darklake.wallet.ui.components.AppButton
 
 @Composable
 internal fun SwapButton(
@@ -46,32 +47,52 @@ internal fun SwapButton(
         else -> false
     }
     
-    Button(
-        onClick = {
-            when (uiState.swapStep) {
-                SwapStep.IDLE -> onSwap()
-                SwapStep.COMPLETED, SwapStep.FAILED -> onReset()
-                else -> {}
-            }
-        },
-        enabled = isEnabled,
-        modifier = Modifier.fillMaxWidth(),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = when (uiState.swapStep) {
-                SwapStep.COMPLETED -> Color(0xFF4CAF50)
-                SwapStep.FAILED -> MaterialTheme.colorScheme.error
-                else -> MaterialTheme.colorScheme.primary
-            }
-        )
-    ) {
-        if (uiState.isSwapping && uiState.swapStep != SwapStep.COMPLETED && uiState.swapStep != SwapStep.FAILED) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(16.dp),
-                color = MaterialTheme.colorScheme.onPrimary,
-                strokeWidth = 2.dp
+    // Custom colors for special states
+    val containerColor = when (uiState.swapStep) {
+        SwapStep.COMPLETED -> Color(0xFF4CAF50)
+        SwapStep.FAILED -> MaterialTheme.colorScheme.error
+        else -> null // Use default AppButton color
+    }
+    
+    // Need to handle custom background color separately since AppButton doesn't support it
+    if (containerColor != null) {
+        Button(
+            onClick = {
+                when (uiState.swapStep) {
+                    SwapStep.IDLE -> onSwap()
+                    SwapStep.COMPLETED, SwapStep.FAILED -> onReset()
+                    else -> {}
+                }
+            },
+            enabled = isEnabled,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = containerColor
             )
-            Spacer(modifier = Modifier.width(8.dp))
+        ) {
+            if (uiState.isSwapping && uiState.swapStep != SwapStep.COMPLETED && uiState.swapStep != SwapStep.FAILED) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    strokeWidth = 2.dp
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+            Text(buttonText)
         }
-        Text(buttonText)
+    } else {
+        AppButton(
+            text = buttonText,
+            onClick = {
+                when (uiState.swapStep) {
+                    SwapStep.IDLE -> onSwap()
+                    SwapStep.COMPLETED, SwapStep.FAILED -> onReset()
+                    else -> {}
+                }
+            },
+            enabled = isEnabled,
+            modifier = Modifier.fillMaxWidth(),
+            isLoading = uiState.isSwapping && uiState.swapStep != SwapStep.COMPLETED && uiState.swapStep != SwapStep.FAILED
+        )
     }
 }

@@ -13,8 +13,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import fi.darklake.wallet.data.preferences.SettingsManager
 import fi.darklake.wallet.data.model.getHeliusRpcUrl
 import fi.darklake.wallet.storage.WalletStorageManager
-import fi.darklake.wallet.ui.components.RetroGridBackground
-import fi.darklake.wallet.ui.components.TerminalButton
+import fi.darklake.wallet.ui.components.AppButton
 import fi.darklake.wallet.ui.components.TerminalCard
 import fi.darklake.wallet.ui.design.*
 import java.util.Locale
@@ -69,13 +68,12 @@ fun SendNftScreen(
         }
     }
     
-    RetroGridBackground {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
             // Header
             SendHeader(
                 title = "SEND NFT",
@@ -171,30 +169,15 @@ fun SendNftScreen(
             Spacer(modifier = Modifier.weight(1f))
             
             // Send button
-            TerminalButton(
+            AppButton(
+                text = if (uiState.isLoading) "BROADCASTING..." else "SEND NFT",
                 onClick = { viewModel.sendNft() },
                 enabled = uiState.recipientAddress.isNotBlank() && 
                          uiState.recipientAddressError == null && 
                          !uiState.isLoading && 
                          uiState.estimatedFee <= uiState.solBalance,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                if (uiState.isLoading) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp,
-                            color = TerminalGray
-                        )
-                        Text("BROADCASTING...")
-                    }
-                } else {
-                    Text("SEND NFT")
-                }
-            }
+                modifier = Modifier.fillMaxWidth(),
+                isLoading = uiState.isLoading
+            )
         }
     }
-}

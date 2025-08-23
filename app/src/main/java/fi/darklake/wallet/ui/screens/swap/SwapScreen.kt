@@ -29,6 +29,7 @@ import fi.darklake.wallet.data.preferences.SettingsManager
 import fi.darklake.wallet.storage.WalletStorageManager
 import fi.darklake.wallet.ui.components.TokenSelectionSheet
 import fi.darklake.wallet.ui.components.SuccessMessageCard
+import fi.darklake.wallet.ui.components.BackgroundWithOverlay
 import fi.darklake.wallet.ui.utils.FormatUtils
 
 @Composable
@@ -41,13 +42,14 @@ fun SwapScreen(
     }
     val uiState by viewModel.uiState.collectAsState()
     
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
+    BackgroundWithOverlay {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
         // Header
         SwapHeader(
             onSettingsClick = { /* TODO: Open swap settings */ }
@@ -275,6 +277,7 @@ fun SwapScreen(
                 onTokenSelected = { token -> viewModel.selectToken(token) },
                 onDismiss = { viewModel.hideTokenSelection() }
             )
+        }
         }
     }
 }

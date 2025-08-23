@@ -7,7 +7,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import fi.darklake.wallet.data.preferences.SettingsManager
-import fi.darklake.wallet.ui.components.RetroGridBackground
+import fi.darklake.wallet.ui.components.BackgroundWithOverlay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -17,7 +17,7 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    RetroGridBackground {
+    BackgroundWithOverlay {
         Column(
             modifier = Modifier
                 .fillMaxSize()

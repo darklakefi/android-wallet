@@ -17,6 +17,7 @@ import fi.darklake.wallet.storage.WalletStorageManager
 import fi.darklake.wallet.ui.components.TokenSelectionSheet
 import fi.darklake.wallet.ui.components.ErrorMessageCard
 import fi.darklake.wallet.ui.components.InfoMessageCard
+import fi.darklake.wallet.ui.components.BackgroundWithOverlay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,13 +33,14 @@ fun LpScreen(
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
     
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(scrollState)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
+    BackgroundWithOverlay {
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .verticalScroll(scrollState)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
         // Header
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -99,6 +101,7 @@ fun LpScreen(
         
         uiState.successMessage?.let { message ->
             InfoMessageCard(message = message)
+        }
         }
     }
     

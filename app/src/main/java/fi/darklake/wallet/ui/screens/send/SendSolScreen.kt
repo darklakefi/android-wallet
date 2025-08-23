@@ -14,8 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import fi.darklake.wallet.data.preferences.SettingsManager
 import fi.darklake.wallet.storage.WalletStorageManager
-import fi.darklake.wallet.ui.components.RetroGridBackground
-import fi.darklake.wallet.ui.components.TerminalButton
+import fi.darklake.wallet.ui.components.AppButton
 import fi.darklake.wallet.ui.components.TerminalCard
 import fi.darklake.wallet.ui.design.*
 import java.util.Locale
@@ -39,13 +38,12 @@ fun SendSolScreen(
         }
     }
     
-    RetroGridBackground {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
             // Header
             SendHeader(
                 title = "SEND SOL",
@@ -147,27 +145,12 @@ fun SendSolScreen(
             Spacer(modifier = Modifier.weight(1f))
             
             // Send button
-            TerminalButton(
+            AppButton(
+                text = if (uiState.isLoading) "BROADCASTING..." else "SEND SOL",
                 onClick = { viewModel.sendSol() },
                 enabled = uiState.canSend && !uiState.isLoading,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                if (uiState.isLoading) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp,
-                            color = TerminalGray
-                        )
-                        Text("BROADCASTING...")
-                    }
-                } else {
-                    Text("SEND SOL")
-                }
-            }
+                modifier = Modifier.fillMaxWidth(),
+                isLoading = uiState.isLoading
+            )
         }
     }
-}

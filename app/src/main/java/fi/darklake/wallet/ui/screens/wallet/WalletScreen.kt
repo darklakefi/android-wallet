@@ -15,6 +15,7 @@ import fi.darklake.wallet.data.preferences.SettingsManager
 import fi.darklake.wallet.storage.WalletStorageManager
 import fi.darklake.wallet.ui.components.*
 import fi.darklake.wallet.ui.design.*
+import fi.darklake.wallet.R
 
 @Composable
 fun WalletScreen(
@@ -33,11 +34,7 @@ fun WalletScreen(
         viewModel.loadWalletData()
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(DarklakeBackground)
-    ) {
+    BackgroundWithOverlay {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -51,7 +48,12 @@ fun WalletScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                DarklakeLogo(size = 40.dp)
+                AppLogo(
+                    logoResId = R.drawable.darklake_logo,
+                    size = 40.dp,
+                    contentDescription = "Darklake Logo",
+                    tint = DarklakePrimary
+                )
                 
                 WalletAddress(
                     address = uiState.publicKey ?: "Not connected"

@@ -1,4 +1,4 @@
-package fi.darklake.wallet.ui.components
+package fi.darklake.wallet.ui.screens.wallet
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -15,6 +15,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import fi.darklake.wallet.ui.design.*
+import fi.darklake.wallet.ui.components.AppButton
 
 @Composable
 fun MainBalanceCard(
@@ -36,52 +37,24 @@ fun MainBalanceCard(
             horizontalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             // Receive Button
-            Button(
+            AppButton(
+                text = "RECEIVE",
                 onClick = onReceiveClick,
                 modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = DarklakeButtonBg,
-                    contentColor = DarklakeButtonText
-                ),
-                contentPadding = PaddingValues(10.dp),
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.ArrowDownward,
-                    contentDescription = "Receive",
-                    modifier = Modifier.size(20.dp),
-                    tint = DarklakeButtonIcon
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "RECEIVE",
-                    style = ButtonTextStyle
-                )
-            }
+                leadingIcon = Icons.Default.ArrowDownward,
+                iconTint = DarklakeButtonIcon,
+                contentPadding = PaddingValues(10.dp)
+            )
             
             // Send Button
-            Button(
+            AppButton(
+                text = "SEND",
                 onClick = onSendClick,
                 modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = DarklakeButtonBg,
-                    contentColor = DarklakeButtonText
-                ),
-                contentPadding = PaddingValues(10.dp),
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.ArrowUpward,
-                    contentDescription = "Send",
-                    modifier = Modifier.size(20.dp),
-                    tint = DarklakeButtonIcon
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "SEND",
-                    style = ButtonTextStyle
-                )
-            }
+                leadingIcon = Icons.Default.ArrowUpward,
+                iconTint = DarklakeButtonIcon,
+                contentPadding = PaddingValues(10.dp)
+            )
             
             // Refresh Button
             IconButton(

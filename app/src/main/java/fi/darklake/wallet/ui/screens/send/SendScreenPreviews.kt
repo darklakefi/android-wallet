@@ -14,7 +14,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import fi.darklake.wallet.data.preferences.SettingsManager
 import fi.darklake.wallet.storage.WalletStorageManager
-import fi.darklake.wallet.ui.components.TerminalButton
+import fi.darklake.wallet.ui.components.AppButton
 import fi.darklake.wallet.ui.design.*
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -181,41 +181,29 @@ fun PreviewSendButton() {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Enabled state
-            TerminalButton(
+            AppButton(
+                text = "SEND SOL",
                 onClick = {},
                 enabled = true,
                 modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("SEND SOL")
-            }
+            )
             
             // Loading state
-            TerminalButton(
+            AppButton(
+                text = "BROADCASTING...",
                 onClick = {},
                 enabled = false,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp,
-                        color = TerminalGray
-                    )
-                    Text("BROADCASTING...")
-                }
-            }
+                modifier = Modifier.fillMaxWidth(),
+                isLoading = true
+            )
             
             // Disabled state
-            TerminalButton(
+            AppButton(
+                text = "SEND TOKEN",
                 onClick = {},
                 enabled = false,
                 modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("SEND TOKEN")
-            }
+            )
         }
     }
 }

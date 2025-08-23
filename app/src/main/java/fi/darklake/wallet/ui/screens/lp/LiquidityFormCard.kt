@@ -19,6 +19,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import fi.darklake.wallet.R
+import fi.darklake.wallet.ui.components.AppButton
 import java.math.BigDecimal
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -137,7 +138,19 @@ fun LiquidityFormCard(
                           uiState.tokenAAmount.isNotEmpty() && uiState.tokenBAmount.isNotEmpty() &&
                           !uiState.insufficientBalanceA && !uiState.insufficientBalanceB
             
-            Button(
+            val buttonText = when {
+                isLoading && uiState.liquidityStep == LiquidityStep.GENERATING_PROOF -> 
+                    stringResource(R.string.swap_generating_proof)
+                isLoading && uiState.liquidityStep == LiquidityStep.CONFIRM_TRANSACTION -> 
+                    stringResource(R.string.swap_confirm_wallet)
+                isLoading && uiState.liquidityStep == LiquidityStep.PROCESSING -> 
+                    stringResource(R.string.swap_processing)
+                uiState.poolDetails?.exists == true -> stringResource(R.string.lp_add_liquidity)
+                else -> stringResource(R.string.lp_create_pool)
+            }
+            
+            AppButton(
+                text = buttonText,
                 onClick = {
                     if (uiState.poolDetails?.exists == true) {
                         onAddLiquidity()
@@ -146,29 +159,9 @@ fun LiquidityFormCard(
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = canSubmit && !isLoading
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                }
-                
-                Text(
-                    text = when {
-                        isLoading && uiState.liquidityStep == LiquidityStep.GENERATING_PROOF -> 
-                            stringResource(R.string.swap_generating_proof)
-                        isLoading && uiState.liquidityStep == LiquidityStep.CONFIRM_TRANSACTION -> 
-                            stringResource(R.string.swap_confirm_wallet)
-                        isLoading && uiState.liquidityStep == LiquidityStep.PROCESSING -> 
-                            stringResource(R.string.swap_processing)
-                        uiState.poolDetails?.exists == true -> stringResource(R.string.lp_add_liquidity)
-                        else -> stringResource(R.string.lp_create_pool)
-                    }
-                )
-            }
+                enabled = canSubmit && !isLoading,
+                isLoading = isLoading
+            )
         }
     }
     

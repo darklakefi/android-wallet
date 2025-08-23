@@ -11,7 +11,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import fi.darklake.wallet.data.model.DisplayToken
-import fi.darklake.wallet.ui.components.TokenBalanceCard
 import fi.darklake.wallet.ui.design.*
 
 @Composable
