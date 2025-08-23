@@ -1,4 +1,4 @@
-package fi.darklake.wallet.ui.theme
+package fi.darklake.wallet.ui.design
 
 import androidx.compose.ui.graphics.Color
 

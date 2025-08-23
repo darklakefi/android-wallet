@@ -17,7 +17,7 @@ import fi.darklake.wallet.data.preferences.SettingsManager
 import fi.darklake.wallet.navigation.DarklakeNavigation
 import fi.darklake.wallet.navigation.Screen
 import fi.darklake.wallet.storage.WalletStorageManager
-import fi.darklake.wallet.ui.theme.DarklakeWalletTheme
+import fi.darklake.wallet.ui.design.DarklakeWalletTheme
 import fi.darklake.wallet.util.LocalConfig
 import kotlinx.coroutines.launch
 

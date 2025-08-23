@@ -9,7 +9,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import fi.darklake.wallet.R
-import fi.darklake.wallet.ui.theme.DarklakeWalletTheme
+import fi.darklake.wallet.ui.design.DarklakeWalletTheme
 import fi.darklake.wallet.ui.design.DesignTokens
 import fi.darklake.wallet.ui.components.FlexLayout
 import fi.darklake.wallet.ui.components.FlexSection
@@ -30,8 +30,8 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import fi.darklake.wallet.ui.theme.Green100
-import fi.darklake.wallet.ui.theme.Green300
+import fi.darklake.wallet.ui.design.Green100
+import fi.darklake.wallet.ui.design.Green300
 
 /**
  * Welcome screen for the Darklake wallet onboarding flow.

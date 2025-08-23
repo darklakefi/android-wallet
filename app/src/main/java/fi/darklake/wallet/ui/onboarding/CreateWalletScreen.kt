@@ -16,8 +16,8 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import fi.darklake.wallet.ui.theme.DarklakeWalletTheme
-import fi.darklake.wallet.ui.theme.Green100
+import fi.darklake.wallet.ui.design.DarklakeWalletTheme
+import fi.darklake.wallet.ui.design.Green100
 import fi.darklake.wallet.ui.design.DesignTokens
 import fi.darklake.wallet.ui.components.FlexLayout
 import fi.darklake.wallet.ui.components.FlexSection

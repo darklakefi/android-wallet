@@ -26,7 +26,7 @@ import fi.darklake.wallet.ui.components.RetroGridBackground
 import fi.darklake.wallet.ui.components.TerminalCard
 import fi.darklake.wallet.ui.components.TerminalButton
 import fi.darklake.wallet.ui.components.neonGlow
-import fi.darklake.wallet.ui.theme.*
+import fi.darklake.wallet.ui.design.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

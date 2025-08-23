@@ -11,7 +11,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import fi.darklake.wallet.R
 import fi.darklake.wallet.ui.design.DesignTokens
-import fi.darklake.wallet.ui.theme.Green100
+import fi.darklake.wallet.ui.design.Green100
 
 /**
  * Reusable header component for screens with back button and logo.

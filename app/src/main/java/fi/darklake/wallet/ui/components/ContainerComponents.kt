@@ -11,7 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import fi.darklake.wallet.ui.design.DesignTokens
-import fi.darklake.wallet.ui.theme.Green700
+import fi.darklake.wallet.ui.design.Green700
 
 /**
  * Flexible container component for semantic sections

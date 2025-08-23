@@ -11,7 +11,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.graphics.Color
 import fi.darklake.wallet.ui.design.DesignTokens
-import fi.darklake.wallet.ui.theme.Green100
+import fi.darklake.wallet.ui.design.Green100
 
 /**
  * Reusable component for displaying numbered list items with consistent styling.

@@ -23,7 +23,7 @@ import fi.darklake.wallet.storage.WalletStorageManager
 import fi.darklake.wallet.ui.components.RetroGridBackground
 import fi.darklake.wallet.ui.components.TerminalButton
 import fi.darklake.wallet.ui.components.TerminalCard
-import fi.darklake.wallet.ui.theme.*
+import fi.darklake.wallet.ui.design.*
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)

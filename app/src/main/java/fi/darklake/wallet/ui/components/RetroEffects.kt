@@ -15,7 +15,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import fi.darklake.wallet.ui.theme.*
+import fi.darklake.wallet.ui.design.*
 import kotlin.math.sin
 import kotlin.random.Random
 

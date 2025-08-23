@@ -19,6 +19,7 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
@@ -33,7 +34,7 @@ import fi.darklake.wallet.ui.wallet.WalletScreen
 import fi.darklake.wallet.ui.wallet.WalletViewModel
 import fi.darklake.wallet.storage.WalletStorageManager
 import fi.darklake.wallet.data.preferences.SettingsManager
-import fi.darklake.wallet.ui.theme.*
+import fi.darklake.wallet.ui.design.*
 
 sealed class MainTab(
     val route: String,
@@ -242,4 +243,49 @@ fun Modifier.noRippleClickable(onClick: () -> Unit): Modifier = composed {
     ) {
         onClick()
     }
+}
+
+// Preview functions
+@Preview(showBackground = true, backgroundColor = 0xFF010F06)
+@Composable
+fun PreviewDarklakeBottomNavigation() {
+    val tabs = listOf(MainTab.Wallet, MainTab.Swap, MainTab.LP, MainTab.More)
+    DarklakeBottomNavigation(
+        currentRoute = MainTab.Wallet.route,
+        tabs = tabs,
+        onTabSelected = {}
+    )
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF010F06)
+@Composable
+fun PreviewDarklakeBottomNavigationSwapSelected() {
+    val tabs = listOf(MainTab.Wallet, MainTab.Swap, MainTab.LP, MainTab.More)
+    DarklakeBottomNavigation(
+        currentRoute = MainTab.Swap.route,
+        tabs = tabs,
+        onTabSelected = {}
+    )
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF010F06)
+@Composable
+fun PreviewDarklakeNavItemSelected() {
+    DarklakeNavItem(
+        icon = Icons.Default.AccountBalanceWallet,
+        label = "WALLET",
+        selected = true,
+        onClick = {}
+    )
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF010F06)
+@Composable
+fun PreviewDarklakeNavItemUnselected() {
+    DarklakeNavItem(
+        icon = Icons.Default.SwapHoriz,
+        label = "SWAP",
+        selected = false,
+        onClick = {}
+    )
 }

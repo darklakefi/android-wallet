@@ -28,7 +28,7 @@ import fi.darklake.wallet.data.model.DisplayNft
 import fi.darklake.wallet.data.preferences.SettingsManager
 import fi.darklake.wallet.storage.WalletStorageManager
 import fi.darklake.wallet.ui.components.*
-import fi.darklake.wallet.ui.theme.*
+import fi.darklake.wallet.ui.design.*
 import java.text.DecimalFormat
 
 @Composable

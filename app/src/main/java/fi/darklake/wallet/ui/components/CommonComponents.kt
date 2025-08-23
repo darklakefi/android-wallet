@@ -17,12 +17,12 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
 import fi.darklake.wallet.ui.design.DesignTokens
-import fi.darklake.wallet.ui.theme.Green100
-import fi.darklake.wallet.ui.theme.Green300
-import fi.darklake.wallet.ui.theme.Green700
+import fi.darklake.wallet.ui.design.Green100
+import fi.darklake.wallet.ui.design.Green300
+import fi.darklake.wallet.ui.design.Green700
 import fi.darklake.wallet.R
 import androidx.compose.ui.tooling.preview.Preview
-import fi.darklake.wallet.ui.theme.DarklakeWalletTheme
+import fi.darklake.wallet.ui.design.DarklakeWalletTheme
 
 /**
  * Reusable button component with consistent styling and accessibility support.

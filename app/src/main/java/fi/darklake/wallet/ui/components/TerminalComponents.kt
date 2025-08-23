@@ -28,7 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import fi.darklake.wallet.ui.theme.*
+import fi.darklake.wallet.ui.design.*
 
 // Terminal-style balance display with glow effects
 @Composable

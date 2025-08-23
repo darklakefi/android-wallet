@@ -14,7 +14,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import android.widget.Toast
-import fi.darklake.wallet.ui.theme.*
+import fi.darklake.wallet.ui.design.*
 
 @Composable
 fun WalletAddress(

@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import fi.darklake.wallet.R
-import fi.darklake.wallet.ui.theme.DarklakeWalletTheme
+import fi.darklake.wallet.ui.design.DarklakeWalletTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
