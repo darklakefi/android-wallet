@@ -31,39 +31,6 @@ import androidx.compose.ui.unit.sp
 import fi.darklake.wallet.ui.design.*
 
 
-// Terminal loading indicator with matrix-style animation
-@Composable
-fun TerminalLoadingIndicator(
-    modifier: Modifier = Modifier,
-    size: androidx.compose.ui.unit.Dp = 24.dp
-) {
-    val infiniteTransition = rememberInfiniteTransition(label = "loading")
-    val rotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ), label = "rotation"
-    )
-
-    Box(
-        modifier = modifier.size(size),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = "◢",
-            style = TerminalTextStyle.copy(
-                fontSize = (size.value * 0.8f).sp,
-                color = NeonGreen
-            ),
-            modifier = Modifier.graphicsLayer {
-                rotationZ = rotation
-            }
-        )
-    }
-}
-
 // Terminal-style card with ASCII borders
 @Composable
 fun TerminalCard(

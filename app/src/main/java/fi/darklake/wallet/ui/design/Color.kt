@@ -69,6 +69,11 @@ val ErrorRed = DarklakeError                   // Alias for compatibility
 val DarklakeInfo = Color(0xFF2196F3)           // Info state
 
 // ====================
+// Input Field Colors
+// ====================
+val DarklakeInputBackground = Color(0xFF03160B) // Background for input fields
+
+// ====================
 // Swap Screen Colors
 // ====================
 val SwapPriceImpactLow = Color(0xFF4CAF50)     // < 1% price impact

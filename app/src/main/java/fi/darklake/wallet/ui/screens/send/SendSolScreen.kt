@@ -1,22 +1,37 @@
 package fi.darklake.wallet.ui.screens.send
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import fi.darklake.wallet.data.preferences.SettingsManager
 import fi.darklake.wallet.storage.WalletStorageManager
 import fi.darklake.wallet.ui.components.AppButton
-import fi.darklake.wallet.ui.components.TerminalCard
+import fi.darklake.wallet.ui.components.AppLogo
+import fi.darklake.wallet.ui.components.BackgroundWithOverlay
 import fi.darklake.wallet.ui.design.*
+import fi.darklake.wallet.R
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -29,6 +44,7 @@ fun SendSolScreen(
     viewModel: SendViewModel = viewModel { SendViewModel(storageManager, settingsManager) }
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val scrollState = rememberScrollState()
     
     // Handle success state - navigate back and trigger refresh
     LaunchedEffect(uiState.transactionSuccess) {
@@ -38,119 +54,310 @@ fun SendSolScreen(
         }
     }
     
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-            // Header
-            SendHeader(
-                title = "SEND SOL",
-                icon = Icons.AutoMirrored.Filled.Send,
-                onBack = onBack
-            )
-
-            // Send form
-            TerminalCard(
-                title = "TRANSFER_PARAMETERS",
-                modifier = Modifier.fillMaxWidth()
+    BackgroundWithOverlay {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            // Top content
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .verticalScroll(scrollState),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                // Header with logo and back arrow
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Available balance display
-                    Text(
-                        text = "AVAILABLE: ${String.format(Locale.US, "%.4f", uiState.solBalance)} SOL",
-                        style = TerminalTextStyle,
-                        color = NeonGreen,
-                        fontWeight = FontWeight.Bold
-                    )
-                    
-                    // Recipient address
-                    OutlinedTextField(
-                        value = uiState.recipientAddress,
-                        onValueChange = viewModel::updateRecipientAddress,
-                        label = { Text("Recipient Address") },
-                        placeholder = { Text("Enter Solana wallet address") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        isError = uiState.recipientAddressError != null,
-                        supportingText = uiState.recipientAddressError?.let { error ->
-                            { Text(error, color = MaterialTheme.colorScheme.error) }
-                        }
-                    )
-                    
-                    // Amount input
-                    OutlinedTextField(
-                        value = uiState.amountInput,
-                        onValueChange = viewModel::updateAmount,
-                        label = { Text("Amount (SOL)") },
-                        placeholder = { Text("0.0000") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        isError = uiState.amountError != null,
-                        supportingText = uiState.amountError?.let { error ->
-                            { Text(error, color = MaterialTheme.colorScheme.error) }
+                    IconButton(
+                        onClick = { 
+                            println("SendSolScreen: Back button clicked")
+                            onBack()
                         },
-                        trailingIcon = {
-                            TextButton(
-                                onClick = { viewModel.setMaxAmount() }
-                            ) {
-                                Text("MAX", style = TerminalTextStyle, color = BrightCyan)
-                            }
-                        }
-                    )
-                    
-                    // Transaction fee estimate
-                    if (uiState.estimatedFee > 0.0) {
-                        Text(
-                            text = "ESTIMATED_FEE: ${String.format(Locale.US, "%.6f", uiState.estimatedFee)} SOL",
-                            style = TerminalTextStyle,
-                            color = TerminalGray
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = DarklakePrimary,
+                            modifier = Modifier.size(24.dp)
                         )
                     }
                     
-                    // Total to be deducted
-                    val totalDeduction = uiState.amount + uiState.estimatedFee
-                    if (totalDeduction > 0.0) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        AppLogo(
+                            logoResId = R.drawable.darklake_logo,
+                            size = 40.dp,
+                            contentDescription = "Darklake Logo",
+                            tint = DarklakePrimary
+                        )
+                    }
+                    
+                    // Spacer to balance the layout
+                    Spacer(modifier = Modifier.size(48.dp))
+                }
+                
+                // Token Info Section
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Token details
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // SOL Logo
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(Color.Black),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            // SOL gradient icon placeholder
+                            Text(
+                                text = "S",
+                                color = DarklakePrimary,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp
+                            )
+                        }
+                        
+                        Column {
+                            Text(
+                                text = "SOL",
+                                style = MaterialTheme.typography.headlineSmall.copy(
+                                    fontSize = 28.sp,
+                                    fontFamily = BitsumishiFontFamily
+                                ),
+                                color = DarklakePrimary
+                            )
+                            Text(
+                                text = "SOLANA",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontSize = 18.sp,
+                                    letterSpacing = 1.sp
+                                ),
+                                color = DarklakeTextSecondary
+                            )
+                        }
+                    }
+                    
+                    // Contract address badge
+                    Row(
+                        modifier = Modifier
+                            .background(
+                                color = DarklakeCardBackground,
+                                shape = RoundedCornerShape(4.dp)
+                            )
+                            .padding(horizontal = 4.dp, vertical = 2.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Text(
-                            text = "TOTAL_DEDUCTION: ${String.format(Locale.US, "%.6f", totalDeduction)} SOL",
-                            style = TerminalTextStyle,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Bold
+                            text = "So11...1112",
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 14.sp),
+                            color = DarklakePrimary
+                        )
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                            contentDescription = "Open in explorer",
+                            modifier = Modifier.size(10.dp),
+                            tint = DarklakePrimary
                         )
                     }
                 }
-            }
-            
-            // Error display
-            uiState.error?.let { error ->
+                
+                // Balance Card
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer
-                    )
+                        containerColor = DarklakeCardBackground
+                    ),
+                    shape = RoundedCornerShape(0.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "BALANCE",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontSize = 18.sp,
+                                letterSpacing = 1.sp
+                            ),
+                            color = DarklakePrimary,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Text(
+                            text = String.format(Locale.US, "%.2f", uiState.solBalance),
+                            style = MaterialTheme.typography.headlineMedium.copy(
+                                fontSize = 28.sp,
+                                letterSpacing = 2.sp
+                            ),
+                            color = DarklakePrimary,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+                
+                // Send Form Section
+                Column(
+                    modifier = Modifier.padding(top = 40.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
                     Text(
-                        text = error,
-                        modifier = Modifier.padding(16.dp),
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                        style = MaterialTheme.typography.bodyMedium
+                        text = "Send sol",
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            fontSize = 28.sp,
+                            fontFamily = BitsumishiFontFamily
+                        ),
+                        color = DarklakePrimary,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
                     )
+                    
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = DarklakeCardBackground
+                        ),
+                        shape = RoundedCornerShape(0.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                            verticalArrangement = Arrangement.spacedBy(24.dp)
+                        ) {
+                            // Recipient address field
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    text = "RECIPIENT ADDRESS",
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontSize = 18.sp,
+                                        letterSpacing = 1.sp
+                                    ),
+                                    color = DarklakePrimary,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                OutlinedTextField(
+                                    value = uiState.recipientAddress,
+                                    onValueChange = viewModel::updateRecipientAddress,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true,
+                                    isError = uiState.recipientAddressError != null,
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        unfocusedBorderColor = DarklakeTextSecondary,
+                                        focusedBorderColor = DarklakePrimary,
+                                        errorBorderColor = MaterialTheme.colorScheme.error,
+                                        unfocusedContainerColor = DarklakeInputBackground,
+                                        focusedContainerColor = DarklakeInputBackground
+                                    ),
+                                    shape = RoundedCornerShape(0.dp),
+                                    supportingText = uiState.recipientAddressError?.let { error ->
+                                        { Text(error, color = MaterialTheme.colorScheme.error) }
+                                    }
+                                )
+                            }
+                            
+                            // Amount field
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "AMOUNT (SOL)",
+                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                            fontSize = 18.sp,
+                                            letterSpacing = 1.sp
+                                        ),
+                                        color = DarklakePrimary
+                                    )
+                                    Text(
+                                        text = "MAX",
+                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                            fontSize = 18.sp,
+                                            letterSpacing = 1.sp
+                                        ),
+                                        color = DarklakePrimary,
+                                        modifier = Modifier.clickable { viewModel.setMaxAmount() }
+                                    )
+                                }
+                                OutlinedTextField(
+                                    value = uiState.amountInput,
+                                    onValueChange = viewModel::updateAmount,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true,
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                    isError = uiState.amountError != null,
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        unfocusedBorderColor = DarklakeTextSecondary,
+                                        focusedBorderColor = DarklakePrimary,
+                                        errorBorderColor = MaterialTheme.colorScheme.error,
+                                        unfocusedContainerColor = DarklakeInputBackground,
+                                        focusedContainerColor = DarklakeInputBackground
+                                    ),
+                                    shape = RoundedCornerShape(0.dp),
+                                    supportingText = uiState.amountError?.let { error ->
+                                        { Text(error, color = MaterialTheme.colorScheme.error) }
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+                
+                // Error display
+                uiState.error?.let { error ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        )
+                    ) {
+                        Text(
+                            text = error,
+                            modifier = Modifier.padding(16.dp),
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
                 }
             }
             
-            Spacer(modifier = Modifier.weight(1f))
-            
-            // Send button
+            // Send button at bottom
             AppButton(
                 text = if (uiState.isLoading) "BROADCASTING..." else "SEND SOL",
                 onClick = { viewModel.sendSol() },
                 enabled = uiState.canSend && !uiState.isLoading,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 20.dp),
                 isLoading = uiState.isLoading
             )
         }
     }
+}
