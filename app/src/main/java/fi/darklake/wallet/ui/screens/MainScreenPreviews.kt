@@ -26,7 +26,6 @@ fun PreviewMainScreen() {
         MainScreen(
             storageManager = storageManager,
             settingsManager = settingsManager,
-            onNavigateToSettings = {},
             onNavigateToSendSol = {},
             onNavigateToSendToken = {},
             onNavigateToSendNft = {}

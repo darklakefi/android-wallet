@@ -123,9 +123,7 @@ fun PreviewSettingsHeader() {
                 .background(DarklakeBackground)
                 .padding(16.dp)
         ) {
-            SettingsHeader(
-                onBack = {}
-            )
+            SettingsHeader()
         }
     }
 }
@@ -138,8 +136,7 @@ fun PreviewSettingsScreen() {
         val settingsManager = remember { SettingsManager(context) }
         
         SettingsScreen(
-            settingsManager = settingsManager,
-            onBack = {}
+            settingsManager = settingsManager
         )
     }
 }

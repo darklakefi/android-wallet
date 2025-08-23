@@ -13,7 +13,6 @@ import fi.darklake.wallet.ui.components.RetroGridBackground
 @Composable
 fun SettingsScreen(
     settingsManager: SettingsManager,
-    onBack: () -> Unit,
     viewModel: SettingsViewModel = viewModel { SettingsViewModel(settingsManager) }
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -26,7 +25,7 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Header
-            SettingsHeader(onBack = onBack)
+            SettingsHeader()
 
             // Network Settings Card
             NetworkSettingsCard(

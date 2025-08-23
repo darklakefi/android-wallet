@@ -15,6 +15,7 @@ import fi.darklake.wallet.ui.screens.swap.SwapScreen
 import fi.darklake.wallet.ui.screens.lp.LpScreen
 import fi.darklake.wallet.ui.screens.wallet.WalletScreen
 import fi.darklake.wallet.ui.screens.wallet.WalletViewModel
+import fi.darklake.wallet.ui.screens.settings.SettingsScreen
 import fi.darklake.wallet.storage.WalletStorageManager
 import fi.darklake.wallet.data.preferences.SettingsManager
 import fi.darklake.wallet.ui.design.*
@@ -23,7 +24,6 @@ import fi.darklake.wallet.ui.design.*
 fun MainScreen(
     storageManager: WalletStorageManager,
     settingsManager: SettingsManager,
-    onNavigateToSettings: () -> Unit,
     onNavigateToSendSol: () -> Unit,
     onNavigateToSendToken: (String) -> Unit,
     onNavigateToSendNft: (String) -> Unit
@@ -55,11 +55,7 @@ fun MainScreen(
                         settingsManager = settingsManager,
                         viewModel = walletViewModel,
                         onNavigateToSettings = {
-                            if (currentRoute == MainTab.More.route) {
-                                onNavigateToSettings()
-                            } else {
-                                navController.navigate(MainTab.More.route)
-                            }
+                            navController.navigate(MainTab.More.route)
                         },
                         onNavigateToSendSol = onNavigateToSendSol,
                         onNavigateToSendToken = onNavigateToSendToken,
@@ -71,16 +67,12 @@ fun MainScreen(
                         currentRoute = currentRoute,
                         tabs = tabs,
                         onTabSelected = { tab ->
-                            if (tab == MainTab.More) {
-                                onNavigateToSettings()
-                            } else {
-                                navController.navigate(tab.route) {
-                                    popUpTo(navController.graph.startDestinationId) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
+                            navController.navigate(tab.route) {
+                                popUpTo(navController.graph.startDestinationId) {
+                                    saveState = true
                                 }
+                                launchSingleTop = true
+                                restoreState = true
                             }
                         },
                         modifier = Modifier.align(Alignment.BottomCenter)
@@ -99,16 +91,12 @@ fun MainScreen(
                         currentRoute = currentRoute,
                         tabs = tabs,
                         onTabSelected = { tab ->
-                            if (tab == MainTab.More) {
-                                onNavigateToSettings()
-                            } else {
-                                navController.navigate(tab.route) {
-                                    popUpTo(navController.graph.startDestinationId) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
+                            navController.navigate(tab.route) {
+                                popUpTo(navController.graph.startDestinationId) {
+                                    saveState = true
                                 }
+                                launchSingleTop = true
+                                restoreState = true
                             }
                         },
                         modifier = Modifier.align(Alignment.BottomCenter)
@@ -127,16 +115,35 @@ fun MainScreen(
                         currentRoute = currentRoute,
                         tabs = tabs,
                         onTabSelected = { tab ->
-                            if (tab == MainTab.More) {
-                                onNavigateToSettings()
-                            } else {
-                                navController.navigate(tab.route) {
-                                    popUpTo(navController.graph.startDestinationId) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
+                            navController.navigate(tab.route) {
+                                popUpTo(navController.graph.startDestinationId) {
+                                    saveState = true
                                 }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                        modifier = Modifier.align(Alignment.BottomCenter)
+                    )
+                }
+            }
+            
+            composable(MainTab.More.route) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    SettingsScreen(
+                        settingsManager = settingsManager
+                    )
+                    
+                    DarklakeBottomNavigation(
+                        currentRoute = currentRoute,
+                        tabs = tabs,
+                        onTabSelected = { tab ->
+                            navController.navigate(tab.route) {
+                                popUpTo(navController.graph.startDestinationId) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
                             }
                         },
                         modifier = Modifier.align(Alignment.BottomCenter)

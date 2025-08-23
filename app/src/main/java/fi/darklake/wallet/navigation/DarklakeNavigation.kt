@@ -14,7 +14,6 @@ import fi.darklake.wallet.ui.screens.onboarding.MnemonicVerificationScreen
 import fi.darklake.wallet.ui.screens.onboarding.SharedWalletViewModel
 import fi.darklake.wallet.ui.screens.MainScreen
 import fi.darklake.wallet.ui.screens.wallet.WalletViewModel
-import fi.darklake.wallet.ui.screens.settings.SettingsScreen
 import fi.darklake.wallet.ui.screens.send.SendSolScreen
 import fi.darklake.wallet.ui.screens.send.SendTokenScreen
 import fi.darklake.wallet.ui.screens.send.SendNftScreen
@@ -28,7 +27,6 @@ sealed class Screen(val route: String) {
     data object MnemonicDisplay : Screen("mnemonic_display")
     data object MnemonicVerification : Screen("mnemonic_verification")
     data object Wallet : Screen("wallet")
-    data object Settings : Screen("settings")
     data object SendSol : Screen("send_sol")
     data object SendToken : Screen("send_token/{tokenMint}")
     data object SendNft : Screen("send_nft/{nftMint}")
@@ -118,9 +116,6 @@ fun DarklakeNavigation(
             MainScreen(
                 storageManager = storageManager,
                 settingsManager = settingsManager,
-                onNavigateToSettings = {
-                    navController.navigate(Screen.Settings.route)
-                },
                 onNavigateToSendSol = {
                     navController.navigate(Screen.SendSol.route)
                 },
@@ -129,15 +124,6 @@ fun DarklakeNavigation(
                 },
                 onNavigateToSendNft = { nftMint ->
                     navController.navigate(Screen.sendNft(nftMint))
-                }
-            )
-        }
-        
-        composable(Screen.Settings.route) {
-            SettingsScreen(
-                settingsManager = settingsManager,
-                onBack = {
-                    navController.popBackStack()
                 }
             )
         }
