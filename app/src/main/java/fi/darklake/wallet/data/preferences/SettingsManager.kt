@@ -56,8 +56,20 @@ class SettingsManager(context: Context) {
         updateNetworkSettings(newSettings)
     }
     
+    fun getSlippageTolerance(): Float {
+        return prefs.getFloat(KEY_SLIPPAGE_TOLERANCE, DEFAULT_SLIPPAGE_TOLERANCE)
+    }
+    
+    fun saveSlippageTolerance(slippage: Float) {
+        prefs.edit()
+            .putFloat(KEY_SLIPPAGE_TOLERANCE, slippage)
+            .apply()
+    }
+    
     companion object {
         private const val PREFS_NAME = "darklake_wallet_settings"
         private const val KEY_NETWORK_SETTINGS = "network_settings"
+        private const val KEY_SLIPPAGE_TOLERANCE = "slippage_tolerance"
+        private const val DEFAULT_SLIPPAGE_TOLERANCE = 1.0f
     }
 }

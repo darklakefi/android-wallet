@@ -27,7 +27,8 @@ fun MainScreen(
     onNavigateToSendSol: () -> Unit,
     onNavigateToSendToken: (String) -> Unit,
     onNavigateToSendNft: (String) -> Unit,
-    onNavigateToReceive: () -> Unit
+    onNavigateToReceive: () -> Unit,
+    onNavigateToSlippageSettings: () -> Unit = {}
 ) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -86,7 +87,8 @@ fun MainScreen(
                 Box(modifier = Modifier.fillMaxSize()) {
                     SwapScreen(
                         storageManager = storageManager,
-                        settingsManager = settingsManager
+                        settingsManager = settingsManager,
+                        onNavigateToSlippageSettings = onNavigateToSlippageSettings
                     )
                     
                     DarklakeBottomNavigation(

@@ -40,7 +40,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun SwapScreen(
     storageManager: WalletStorageManager,
-    settingsManager: SettingsManager
+    settingsManager: SettingsManager,
+    onNavigateToSlippageSettings: () -> Unit = {}
 ) {
     val viewModel: SwapViewModel = viewModel {
         SwapViewModel(storageManager, settingsManager)
@@ -88,7 +89,7 @@ fun SwapScreen(
                 ) {
                     // Settings button
                     IconButton(
-                        onClick = { /* TODO: Open swap settings */ },
+                        onClick = onNavigateToSlippageSettings,
                         modifier = Modifier
                             .size(40.dp)
                             .background(
