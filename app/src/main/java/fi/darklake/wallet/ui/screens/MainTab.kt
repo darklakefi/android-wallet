@@ -1,19 +1,31 @@
 package fi.darklake.wallet.ui.screens
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBalanceWallet
-import androidx.compose.material.icons.filled.SwapHoriz
-import androidx.compose.material.icons.filled.Layers
-import androidx.compose.material.icons.filled.MoreHoriz
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.annotation.DrawableRes
+import fi.darklake.wallet.R
 
 sealed class MainTab(
     val route: String,
     val title: String,
-    val icon: ImageVector
+    @DrawableRes val iconRes: Int
 ) {
-    data object Wallet : MainTab("main_wallet", "WALLET", Icons.Default.AccountBalanceWallet)
-    data object Swap : MainTab("main_swap", "SWAP", Icons.Default.SwapHoriz)
-    data object LP : MainTab("main_lp", "LIQUIDITY", Icons.Default.Layers)
-    data object More : MainTab("main_more", "SETTINGS", Icons.Default.MoreHoriz)
+    data object Wallet : MainTab(
+        "main_wallet", 
+        "wallet", 
+        R.drawable.ic_nav_wallet
+    )
+    data object Swap : MainTab(
+        "main_swap", 
+        "swap", 
+        R.drawable.ic_nav_swap
+    )
+    data object LP : MainTab(
+        "main_lp", 
+        "liquidity", 
+        R.drawable.ic_nav_liquidity
+    )
+    data object More : MainTab(
+        "main_more", 
+        "settings", 
+        R.drawable.ic_nav_settings
+    )
 }

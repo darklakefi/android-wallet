@@ -1,0 +1,15 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="23dp"
+    android:viewportWidth="24"
+    android:viewportHeight="23">
+    <!-- Outer gear -->
+    <path
+        android:fillColor="#1A9A56"
+        android:pathData="M8,0.96 L16,0.96 L16,1.96 L17,1.96 L17,2.96 L18,2.96 L18,4.96 L19,4.96 L19,5.96 L20,5.96 L20,6.96 L22,6.96 L22,7.96 L23,7.96 L23,15.04 L22,15.04 L22,16.04 L20,16.04 L20,17.04 L19,17.04 L19,18.04 L18,18.04 L18,20.04 L17,20.04 L17,21.04 L16,21.04 L16,22.04 L8,22.04 L8,21.04 L7,21.04 L7,20.04 L6,20.04 L6,18.04 L5,18.04 L5,17.04 L4,17.04 L4,16.04 L2,16.04 L2,15.04 L1,15.04 L1,7.96 L2,7.96 L2,6.96 L4,6.96 L4,5.96 L5,5.96 L5,4.96 L6,4.96 L6,2.96 L7,2.96 L7,1.96 L8,1.96 L8,0.96 Z" />
+    
+    <!-- Inner circle (hole) -->
+    <path
+        android:fillColor="#1A9A56"
+        android:pathData="M10,7.71 L14,7.71 L14,8.29 L15,8.29 L15,8.71 L16,8.71 L16,9.29 L17,9.29 L17,13.29 L16,13.29 L16,13.87 L15,13.87 L15,14.29 L14,14.29 L14,14.87 L10,14.87 L10,14.29 L9,14.29 L9,13.87 L8,13.87 L8,13.29 L7,13.29 L7,9.29 L8,9.29 L8,8.71 L9,8.71 L9,8.29 L10,8.29 L10,7.71 Z" />
+</vector>

@@ -2,14 +2,12 @@ package fi.darklake.wallet.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBalanceWallet
-import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import fi.darklake.wallet.R
 import fi.darklake.wallet.data.preferences.SettingsManager
 import fi.darklake.wallet.storage.WalletStorageManager
 import fi.darklake.wallet.ui.design.DarklakeBackground
@@ -124,7 +122,7 @@ fun PreviewDarklakeNavItemSelected() {
                 .padding(16.dp)
         ) {
             DarklakeNavItem(
-                icon = Icons.Default.AccountBalanceWallet,
+                iconRes = R.drawable.ic_nav_wallet,
                 label = "WALLET",
                 selected = true,
                 onClick = {}
@@ -143,7 +141,7 @@ fun PreviewDarklakeNavItemUnselected() {
                 .padding(16.dp)
         ) {
             DarklakeNavItem(
-                icon = Icons.Default.SwapHoriz,
+                iconRes = R.drawable.ic_nav_swap,
                 label = "SWAP",
                 selected = false,
                 onClick = {}
@@ -164,25 +162,25 @@ fun PreviewAllNavItems() {
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             DarklakeNavItem(
-                icon = Icons.Default.AccountBalanceWallet,
+                iconRes = R.drawable.ic_nav_wallet,
                 label = "WALLET",
                 selected = true,
                 onClick = {}
             )
             DarklakeNavItem(
-                icon = Icons.Default.SwapHoriz,
+                iconRes = R.drawable.ic_nav_swap,
                 label = "SWAP",
                 selected = false,
                 onClick = {}
             )
             DarklakeNavItem(
-                icon = MainTab.LP.icon,
+                iconRes = R.drawable.ic_nav_liquidity,
                 label = "LIQUIDITY",
                 selected = false,
                 onClick = {}
             )
             DarklakeNavItem(
-                icon = MainTab.More.icon,
+                iconRes = R.drawable.ic_nav_settings,
                 label = "SETTINGS",
                 selected = false,
                 onClick = {}
