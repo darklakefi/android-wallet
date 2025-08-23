@@ -1,4 +1,4 @@
-package fi.darklake.wallet.ui.settings
+package fi.darklake.wallet.ui.screens.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*

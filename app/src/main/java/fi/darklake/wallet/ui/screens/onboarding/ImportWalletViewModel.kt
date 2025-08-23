@@ -1,4 +1,4 @@
-package fi.darklake.wallet.ui.onboarding
+package fi.darklake.wallet.ui.screens.onboarding
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
@@ -10,25 +10,46 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-data class CreateWalletUiState(
+data class ImportWalletUiState(
     val isLoading: Boolean = false,
-    val mnemonic: List<String>? = null,
-    val walletCreated: Boolean = false,
+    val walletImported: Boolean = false,
+    val validationError: String? = null,
     val error: String? = null
 )
 
-class CreateWalletViewModel(application: Application) : AndroidViewModel(application) {
+class ImportWalletViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = WalletRepositoryProvider.getInstance(application)
     
-    private val _uiState = MutableStateFlow(CreateWalletUiState())
-    val uiState: StateFlow<CreateWalletUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(ImportWalletUiState())
+    val uiState: StateFlow<ImportWalletUiState> = _uiState.asStateFlow()
     
-    fun createWallet() {
+    fun importWallet(mnemonic: List<String>) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+            _uiState.value = _uiState.value.copy(
+                isLoading = true, 
+                error = null,
+                validationError = null
+            )
+            
+            // Validate mnemonic format
+            if (mnemonic.size != 12) {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    validationError = "Recovery phrase must be exactly 12 words"
+                )
+                return@launch
+            }
+            
+            // Validate words
+            if (!SolanaWalletManager.validateMnemonic(mnemonic)) {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    validationError = "Invalid recovery phrase. Please check your words."
+                )
+                return@launch
+            }
             
             try {
-                val mnemonic = SolanaWalletManager.generateMnemonic()
                 val wallet = SolanaWalletManager.createWalletFromMnemonic(mnemonic)
                 
                 // Store wallet securely
@@ -37,8 +58,7 @@ class CreateWalletViewModel(application: Application) : AndroidViewModel(applica
                 if (saveResult.isSuccess) {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        mnemonic = mnemonic,
-                        walletCreated = true
+                        walletImported = true
                     )
                 } else {
                     _uiState.value = _uiState.value.copy(
@@ -49,7 +69,7 @@ class CreateWalletViewModel(application: Application) : AndroidViewModel(applica
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    error = "Failed to create wallet: ${e.message}"
+                    error = "Failed to import wallet: ${e.message}"
                 )
             }
         }

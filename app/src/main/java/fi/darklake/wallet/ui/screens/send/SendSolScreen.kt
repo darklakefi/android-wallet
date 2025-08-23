@@ -1,4 +1,4 @@
-package fi.darklake.wallet.ui.send
+package fi.darklake.wallet.ui.screens.send
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions

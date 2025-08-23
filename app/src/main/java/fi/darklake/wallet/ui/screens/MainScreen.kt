@@ -1,4 +1,4 @@
-package fi.darklake.wallet.ui
+package fi.darklake.wallet.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -30,8 +30,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.lifecycle.viewmodel.compose.viewModel
 import fi.darklake.wallet.ui.screens.swap.SwapScreen
 import fi.darklake.wallet.ui.screens.lp.LpScreen
-import fi.darklake.wallet.ui.wallet.WalletScreen
-import fi.darklake.wallet.ui.wallet.WalletViewModel
+import fi.darklake.wallet.ui.screens.wallet.WalletScreen
+import fi.darklake.wallet.ui.screens.wallet.WalletViewModel
 import fi.darklake.wallet.storage.WalletStorageManager
 import fi.darklake.wallet.data.preferences.SettingsManager
 import fi.darklake.wallet.ui.design.*

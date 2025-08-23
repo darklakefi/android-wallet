@@ -1,4 +1,4 @@
-package fi.darklake.wallet.ui.onboarding
+package fi.darklake.wallet.ui.screens.onboarding
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions

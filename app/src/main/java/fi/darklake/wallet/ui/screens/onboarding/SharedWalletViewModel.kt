@@ -1,4 +1,4 @@
-package fi.darklake.wallet.ui.onboarding
+package fi.darklake.wallet.ui.screens.onboarding
 
 import androidx.lifecycle.ViewModel
 import fi.darklake.wallet.crypto.SolanaWallet

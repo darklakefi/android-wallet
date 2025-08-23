@@ -1,4 +1,4 @@
-package fi.darklake.wallet.ui.send
+package fi.darklake.wallet.ui.screens.send
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border

@@ -1,4 +1,4 @@
-package fi.darklake.wallet.ui.wallet
+package fi.darklake.wallet.ui.screens.wallet
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
