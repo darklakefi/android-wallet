@@ -6,26 +6,21 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
 import android.widget.Toast
 import fi.darklake.wallet.R
@@ -34,8 +29,6 @@ import fi.darklake.wallet.storage.WalletStorageManager
 import fi.darklake.wallet.ui.components.*
 import fi.darklake.wallet.ui.design.*
 import fi.darklake.wallet.ui.utils.FormatUtils
-import fi.darklake.wallet.data.swap.models.TokenInfo
-import kotlinx.coroutines.launch
 
 @Composable
 fun SwapScreen(
@@ -47,9 +40,7 @@ fun SwapScreen(
         SwapViewModel(storageManager, settingsManager)
     }
     val uiState by viewModel.uiState.collectAsState()
-    val clipboardManager = LocalClipboardManager.current
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     
     var hasWallet by remember { mutableStateOf(false) }
     var walletAddress by remember { mutableStateOf("") }
@@ -148,17 +139,28 @@ fun SwapScreen(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                // Swap Input Group
-                TerminalCard(
+                // Swap Input Group - separate cards for FROM and TO
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    glowEffect = uiState.isLoadingQuote || uiState.isSwapping
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    // From Token Section (Selling)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                color = DarklakeCardBackground,
+                                shape = RoundedCornerShape(4.dp)
+                            )
+                            .border(
+                                width = 1.dp,
+                                color = DarklakeBorder,
+                                shape = RoundedCornerShape(4.dp)
+                            )
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
                     ) {
-                        // From Token Section
-                        SwapTokenInput(
-                            label = "FROM",
+                        TokenAmountInput(
+                            label = "SELLING",
                             token = uiState.tokenA,
                             amount = uiState.tokenAAmount,
                             balance = uiState.tokenABalance,
@@ -170,35 +172,55 @@ fun SwapScreen(
                             isReadOnly = false,
                             showInsufficientBalance = uiState.insufficientBalance
                         )
-                        
-                        // Swap Direction Button
+                    }
+                    
+                    // Swap Direction Button
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Box(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
+                                .size(34.dp, 32.dp)
+                                .background(
+                                    color = Color(0xFF03160B),
+                                    shape = RoundedCornerShape(4.dp)
+                                )
+                                .border(
+                                    width = 1.dp,
+                                    color = DarklakeCardBackground,
+                                    shape = RoundedCornerShape(4.dp)
+                                )
+                                .clickable { viewModel.swapTokens() },
                             contentAlignment = Alignment.Center
                         ) {
-                            IconButton(
-                                onClick = { viewModel.swapTokens() },
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .background(
-                                        color = DarklakeCardBackground,
-                                        shape = RoundedCornerShape(4.dp)
-                                    )
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.SwapVert,
-                                    contentDescription = "Swap tokens",
-                                    tint = DarklakePrimary,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
+                            Icon(
+                                imageVector = ImageVector.vectorResource(id = R.drawable.ic_swap_arrows),
+                                contentDescription = "Swap tokens",
+                                tint = DarklakePrimary,
+                                modifier = Modifier.size(24.dp)
+                            )
                         }
-                        
-                        // To Token Section
-                        SwapTokenInput(
-                            label = "TO",
+                    }
+                    
+                    // To Token Section (Buying)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                color = DarklakeCardBackground,
+                                shape = RoundedCornerShape(4.dp)
+                            )
+                            .border(
+                                width = 1.dp,
+                                color = DarklakeBorder,
+                                shape = RoundedCornerShape(4.dp)
+                            )
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
+                        TokenAmountInput(
+                            label = "BUYING",
                             token = uiState.tokenB,
                             amount = uiState.tokenBAmount,
                             balance = uiState.tokenBBalance,
@@ -434,159 +456,19 @@ fun SwapScreen(
     }
 }
 
+
+@Preview(showBackground = true, backgroundColor = 0xFF010F06)
 @Composable
-private fun SwapTokenInput(
-    label: String,
-    token: TokenInfo?,
-    amount: String,
-    balance: java.math.BigDecimal,
-    onAmountChange: (String) -> Unit,
-    onTokenSelect: () -> Unit,
-    isReadOnly: Boolean,
-    showInsufficientBalance: Boolean
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        // Label
-        Text(
-            text = label,
-            style = TerminalTextStyle,
-            color = DarklakeTextTertiary,
-            fontSize = 10.sp
-        )
+fun PreviewSwapScreen() {
+    DarklakeWalletTheme {
+        val context = LocalContext.current
+        val settingsManager = remember { SettingsManager(context) }
+        val storageManager = remember { WalletStorageManager(context) }
         
-        // Input Row
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Token Selector
-            Box(
-                modifier = Modifier
-                    .clickable { onTokenSelect() }
-                    .background(
-                        color = DarklakeCardBackgroundAlt,
-                        shape = RoundedCornerShape(4.dp)
-                    )
-                    .padding(horizontal = 12.dp, vertical = 8.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    if (token != null) {
-                        // Token icon as first letter
-                        Box(
-                            modifier = Modifier
-                                .size(24.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    when(token.symbol) {
-                                        "SOL" -> TokenSolBackground
-                                        "USDC" -> TokenUsdcBackground
-                                        "BONK" -> TokenBonkBackground
-                                        else -> DarklakeTokenDefaultBg
-                                    }
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = token.symbol.first().toString(),
-                                style = TerminalTextStyle,
-                                color = DarklakeTextPrimary,
-                                fontSize = 12.sp
-                            )
-                        }
-                        Text(
-                            text = token.symbol,
-                            style = ButtonTextStyle,
-                            color = DarklakeTextPrimary,
-                            fontSize = 14.sp
-                        )
-                    } else {
-                        Text(
-                            text = "SELECT",
-                            style = ButtonTextStyle,
-                            color = DarklakeTextTertiary,
-                            fontSize = 14.sp
-                        )
-                    }
-                    Icon(
-                        imageVector = Icons.Default.ArrowDropDown,
-                        contentDescription = "Select token",
-                        tint = DarklakeTextTertiary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
-            
-            // Amount Input
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                OutlinedTextField(
-                    value = amount,
-                    onValueChange = onAmountChange,
-                    readOnly = isReadOnly,
-                    placeholder = { 
-                        Text(
-                            "0.00",
-                            color = DarklakeTextTertiary.copy(alpha = 0.5f)
-                        )
-                    },
-                    textStyle = TerminalTextStyle.copy(
-                        fontSize = 16.sp,
-                        color = DarklakeTextPrimary
-                    ),
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    isError = showInsufficientBalance,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = if (showInsufficientBalance) 
-                            DarklakeError 
-                        else DarklakePrimary,
-                        unfocusedBorderColor = DarklakeBorder,
-                        errorBorderColor = DarklakeError,
-                        cursorColor = DarklakePrimary,
-                        focusedContainerColor = DarklakeInputBackground,
-                        unfocusedContainerColor = DarklakeInputBackground,
-                        errorContainerColor = DarklakeInputBackground
-                    ),
-                    shape = RoundedCornerShape(4.dp)
-                )
-                
-                // Balance
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "Balance: ${FormatUtils.formatBalance(balance)}",
-                        style = TerminalTextStyle,
-                        color = if (showInsufficientBalance)
-                            DarklakeError
-                        else DarklakeTextTertiary,
-                        fontSize = 10.sp
-                    )
-                    
-                    if (!isReadOnly && balance > java.math.BigDecimal.ZERO) {
-                        Text(
-                            text = "MAX",
-                            style = TerminalTextStyle,
-                            color = DarklakePrimary,
-                            fontSize = 10.sp,
-                            modifier = Modifier.clickable {
-                                onAmountChange(balance.toPlainString())
-                            }
-                        )
-                    }
-                }
-            }
-        }
+        SwapScreen(
+            storageManager = storageManager,
+            settingsManager = settingsManager,
+            onNavigateToSlippageSettings = {}
+        )
     }
 }
