@@ -1,4 +1,4 @@
-package fi.darklake.wallet.ui.screens.wallet
+package fi.darklake.wallet.ui.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*

@@ -28,8 +28,20 @@ class WalletStorageManager(context: Context) {
     }
     
     private fun selectBestProvider() {
+        Log.d(TAG, "Selecting best storage provider...")
+        
+        // Try each provider and log availability
+        providers.forEach { provider ->
+            Log.d(TAG, "Provider ${provider.providerName}: available=${provider.isAvailable}")
+        }
+        
         _currentProvider.value = providers.firstOrNull { it.isAvailable }
-        Log.d(TAG, "Selected storage provider: ${_currentProvider.value?.providerName ?: "None"}")
+        
+        if (_currentProvider.value == null) {
+            Log.e(TAG, "No storage provider available!")
+        } else {
+            Log.d(TAG, "Selected storage provider: ${_currentProvider.value?.providerName}")
+        }
     }
     
     suspend fun storeWallet(wallet: SolanaWallet): Result<Unit> {

@@ -1,6 +1,7 @@
 package fi.darklake.wallet.data
 
 import android.content.Context
+import android.util.Log
 import fi.darklake.wallet.crypto.SolanaWallet
 import fi.darklake.wallet.storage.WalletStorageManager
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -9,7 +10,15 @@ import kotlinx.coroutines.flow.asStateFlow
 
 class WalletRepository(context: Context) {
     
+    companion object {
+        private const val TAG = "WalletRepository"
+    }
+    
     private val storageManager = WalletStorageManager(context)
+    
+    init {
+        Log.d(TAG, "WalletRepository initialized with context: ${context.javaClass.simpleName}")
+    }
     
     private val _currentWallet = MutableStateFlow<SolanaWallet?>(null)
     val currentWallet: StateFlow<SolanaWallet?> = _currentWallet.asStateFlow()
@@ -32,13 +41,18 @@ class WalletRepository(context: Context) {
     
     suspend fun saveWallet(wallet: SolanaWallet): Result<Unit> {
         return try {
+            Log.d(TAG, "Saving wallet with public key: ${wallet.publicKey}")
             val result = storageManager.storeWallet(wallet)
             if (result.isSuccess) {
+                Log.d(TAG, "Wallet saved successfully in repository")
                 _currentWallet.value = wallet
                 _isWalletLoaded.value = true
+            } else {
+                Log.e(TAG, "Failed to save wallet: ${result.exceptionOrNull()?.message}")
             }
             result
         } catch (e: Exception) {
+            Log.e(TAG, "Exception while saving wallet", e)
             Result.failure(e)
         }
     }

@@ -17,6 +17,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.platform.LocalContext
 import fi.darklake.wallet.R
 import fi.darklake.wallet.ui.design.DarklakeWalletTheme
 
@@ -24,9 +25,12 @@ import fi.darklake.wallet.ui.design.DarklakeWalletTheme
 @Composable
 fun ImportWalletScreen(
     onWalletImported: () -> Unit,
-    onBack: () -> Unit,
-    viewModel: ImportWalletViewModel = viewModel()
+    onBack: () -> Unit
 ) {
+    val context = LocalContext.current
+    val viewModel: ImportWalletViewModel = viewModel(
+        factory = ImportWalletViewModelFactory(context.applicationContext as android.app.Application)
+    )
     val uiState by viewModel.uiState.collectAsState()
     var mnemonicInput by remember { mutableStateOf("") }
     var showMnemonic by remember { mutableStateOf(false) }

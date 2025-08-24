@@ -135,7 +135,8 @@ fun MainScreen(
             composable(MainTab.More.route) {
                 Box(modifier = Modifier.fillMaxSize()) {
                     SettingsScreen(
-                        settingsManager = settingsManager
+                        settingsManager = settingsManager,
+                        storageManager = storageManager
                     )
                     
                     DarklakeBottomNavigation(

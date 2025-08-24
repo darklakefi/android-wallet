@@ -43,25 +43,9 @@ fun WalletScreen(
                 .statusBarsPadding()
         ) {
             // Header with Logo and Wallet Address
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .padding(vertical = 6.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                AppLogo(
-                    logoResId = R.drawable.darklake_logo,
-                    size = 40.dp,
-                    contentDescription = "Darklake Logo",
-                    tint = DarklakePrimary
-                )
-                
-                WalletAddress(
-                    address = uiState.publicKey ?: "Not connected"
-                )
-            }
+            AppHeader(
+                walletAddress = uiState.publicKey ?: "Not connected"
+            )
             
             // Main Balance Card with Send/Receive/Refresh
             MainBalanceCard(

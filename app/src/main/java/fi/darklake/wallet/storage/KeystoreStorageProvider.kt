@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import android.util.Log
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import fi.darklake.wallet.crypto.SolanaWallet
@@ -20,6 +21,7 @@ class KeystoreStorageProvider(
 ) : WalletStorageProvider {
     
     companion object {
+        private const val TAG = "KeystoreStorageProvider"
         private const val PREFS_FILE_NAME = "darklake_secure_prefs"
         private const val KEY_MNEMONIC = "wallet_mnemonic"
         private const val KEY_PUBLIC_KEY = "wallet_public_key"
@@ -48,51 +50,80 @@ class KeystoreStorageProvider(
     }
     
     private fun getMasterKey(): MasterKey {
-        val spec = KeyGenParameterSpec.Builder(
-            MASTER_KEY_ALIAS,
-            KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
-        ).apply {
-            setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-            setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-            setKeySize(256)
+        return try {
+            Log.d(TAG, "Creating MasterKey with StrongBox=$useStrongBox")
+            val spec = KeyGenParameterSpec.Builder(
+                MASTER_KEY_ALIAS,
+                KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
+            ).apply {
+                setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                setKeySize(256)
+                
+                if (useStrongBox && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    setIsStrongBoxBacked(true)
+                }
+            }.build()
             
-            if (useStrongBox && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                setIsStrongBoxBacked(true)
+            MasterKey.Builder(context, MASTER_KEY_ALIAS)
+                .setKeyGenParameterSpec(spec)
+                .build()
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to create MasterKey with StrongBox=$useStrongBox", e)
+            // Fallback to regular MasterKey without StrongBox
+            if (useStrongBox) {
+                Log.w(TAG, "Falling back to regular MasterKey without StrongBox")
+                MasterKey.Builder(context)
+                    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                    .build()
+            } else {
+                throw e
             }
-        }.build()
-        
-        return MasterKey.Builder(context, MASTER_KEY_ALIAS)
-            .setKeyGenParameterSpec(spec)
-            .build()
+        }
     }
     
-    private fun getEncryptedPrefs() = EncryptedSharedPreferences.create(
-        context,
-        PREFS_FILE_NAME,
-        getMasterKey(),
-        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-    )
+    private fun getEncryptedPrefs() = try {
+        Log.d(TAG, "Creating EncryptedSharedPreferences")
+        EncryptedSharedPreferences.create(
+            context,
+            PREFS_FILE_NAME,
+            getMasterKey(),
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
+    } catch (e: Exception) {
+        Log.e(TAG, "Failed to create EncryptedSharedPreferences", e)
+        throw e
+    }
     
     override suspend fun storeWallet(wallet: SolanaWallet): Result<Unit> = withContext(Dispatchers.IO) {
         try {
+            Log.d(TAG, "Attempting to store wallet with provider: $providerName")
+            
             if (!isAvailable) {
+                Log.w(TAG, "$providerName is not available")
                 return@withContext Result.failure(
                     StorageError.NotAvailable("$providerName is not available")
                 )
             }
             
+            Log.d(TAG, "Getting encrypted preferences...")
             val prefs = getEncryptedPrefs()
+            
+            Log.d(TAG, "Encoding mnemonic to JSON...")
             val mnemonicJson = Json.encodeToString(wallet.mnemonic)
             
+            Log.d(TAG, "Saving wallet data to encrypted preferences...")
             prefs.edit().apply {
                 putString(KEY_MNEMONIC, mnemonicJson)
                 putString(KEY_PUBLIC_KEY, wallet.publicKey)
                 apply()
             }
             
+            Log.d(TAG, "Wallet stored successfully")
             Result.success(Unit)
         } catch (e: Exception) {
+            Log.e(TAG, "Failed to store wallet", e)
             Result.failure(StorageError.StorageFailed("Failed to store wallet: ${e.message}"))
         }
     }

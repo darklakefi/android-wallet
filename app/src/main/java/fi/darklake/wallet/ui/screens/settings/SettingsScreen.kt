@@ -37,8 +37,9 @@ import fi.darklake.wallet.ui.design.*
 @Composable
 fun SettingsScreen(
     settingsManager: SettingsManager,
+    storageManager: fi.darklake.wallet.storage.WalletStorageManager,
     onBack: () -> Unit = {},
-    viewModel: SettingsViewModel = viewModel { SettingsViewModel(settingsManager) }
+    viewModel: SettingsViewModel = viewModel { SettingsViewModel(settingsManager, storageManager) }
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
@@ -48,8 +49,15 @@ fun SettingsScreen(
     var apiKeyInput by remember { mutableStateOf(uiState.networkSettings.heliusApiKey ?: "") }
     var expandedNetwork by remember { mutableStateOf(false) }
     
+    var walletAddress by remember { mutableStateOf("") }
+    
     LaunchedEffect(uiState.networkSettings.heliusApiKey) {
         apiKeyInput = uiState.networkSettings.heliusApiKey ?: ""
+    }
+    
+    LaunchedEffect(Unit) {
+        viewModel.loadWalletAddress()
+        walletAddress = viewModel.getWalletAddress()
     }
     
     BackgroundWithOverlay {
@@ -61,18 +69,10 @@ fun SettingsScreen(
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Header with back button
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                AppHeader(
-                    onBackClick = onBack,
-                    logoResId = R.drawable.darklake_logo,
-                    contentDescription = "Darklake Logo"
-                )
-            }
+            // Header with Logo and Wallet Address
+            AppHeader(
+                walletAddress = walletAddress.ifEmpty { "Not connected" }
+            )
             
             // Settings Title
             Text(

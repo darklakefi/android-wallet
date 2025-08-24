@@ -134,9 +134,11 @@ fun PreviewSettingsScreen() {
     DarklakeWalletTheme {
         val context = LocalContext.current
         val settingsManager = remember { SettingsManager(context) }
+        val storageManager = remember { fi.darklake.wallet.storage.WalletStorageManager(context) }
         
         SettingsScreen(
-            settingsManager = settingsManager
+            settingsManager = settingsManager,
+            storageManager = storageManager
         )
     }
 }

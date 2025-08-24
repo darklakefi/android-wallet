@@ -2,61 +2,72 @@ package fi.darklake.wallet.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import fi.darklake.wallet.R
 import fi.darklake.wallet.ui.design.DarklakeBackground
 import fi.darklake.wallet.ui.design.DarklakeWalletTheme
+import fi.darklake.wallet.ui.design.DesignTokens
+import fi.darklake.wallet.ui.design.Green100
 
 /**
- * Main app header component with logo and wallet address.
+ * Reusable modal header component for screens with back button and logo.
  * 
- * @param walletAddress The wallet address to display
+ * @param onBackClick Callback when back button is clicked
  * @param logoResId Resource ID for the logo (defaults to darklake_logo)
- * @param logoSize Size of the logo (defaults to 32dp)
+ * @param logoSize Size of the logo (defaults to 32dp for header usage)
  * @param contentDescription Content description for accessibility
  */
 @Composable
-fun AppHeader(
-    walletAddress: String,
+fun ModalHeader(
+    onBackClick: () -> Unit,
     logoResId: Int = R.drawable.darklake_logo,
     logoSize: Int = 32,
     contentDescription: String = "Darklake Logo"
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 6.dp),
+        modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
+        IconButton(onClick = onBackClick) {
+            Icon(
+                Icons.Default.ArrowBack, 
+                contentDescription = "Back",
+                tint = Green100
+            )
+        }
+        
         AppLogo(
             logoResId = logoResId,
             contentDescription = contentDescription,
             size = logoSize.dp
         )
         
-        WalletAddress(
-            address = walletAddress
-        )
+        // Empty space for balance
+        Spacer(modifier = Modifier.width(DesignTokens.Spacing.xxl))
     }
 }
 
 @Preview(showBackground = true, backgroundColor = 0xFF010F06)
 @Composable
-fun PreviewAppHeader() {
+fun PreviewModalHeader() {
     DarklakeWalletTheme {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(DarklakeBackground)
-                .padding(vertical = 16.dp)
+                .padding(24.dp)
         ) {
-            AppHeader(
-                walletAddress = "3FWPh...2iKLb"
+            ModalHeader(
+                onBackClick = {}
             )
         }
     }
@@ -64,17 +75,18 @@ fun PreviewAppHeader() {
 
 @Preview(showBackground = true, backgroundColor = 0xFF010F06)
 @Composable
-fun PreviewAppHeaderFullAddress() {
+fun PreviewModalHeaderCustomLogo() {
     DarklakeWalletTheme {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(DarklakeBackground)
-                .padding(vertical = 16.dp)
+                .padding(24.dp)
         ) {
-            AppHeader(
-                walletAddress = "3FWPhvafpyjRo7BwJdVaDqpb4Q3PLkPx2iKLb",
-                logoSize = 40
+            ModalHeader(
+                onBackClick = {},
+                logoSize = 40,
+                contentDescription = "Custom Logo"
             )
         }
     }

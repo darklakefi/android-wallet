@@ -71,7 +71,7 @@ fun ReceiveScreen(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                AppHeader(
+                ModalHeader(
                     onBackClick = onBack,
                     logoResId = R.drawable.darklake_logo,
                     contentDescription = "Darklake Logo"

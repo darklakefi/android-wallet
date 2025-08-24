@@ -49,9 +49,18 @@ fun LpScreen(
     val scope = rememberCoroutineScope()
     
     var hasWallet by remember { mutableStateOf(false) }
+    var walletAddress by remember { mutableStateOf("") }
     
     LaunchedEffect(Unit) {
         hasWallet = storageManager.hasWallet()
+        if (hasWallet) {
+            val result = storageManager.getWallet()
+            if (result.isSuccess) {
+                result.getOrNull()?.let { wallet ->
+                    walletAddress = wallet.publicKey
+                }
+            }
+        }
         viewModel.loadTokens()
         viewModel.loadPositions()
     }
@@ -65,7 +74,12 @@ fun LpScreen(
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Header with title and action buttons
+            // Header with Logo and Wallet Address
+            AppHeader(
+                walletAddress = if (hasWallet) walletAddress else "Not connected"
+            )
+            
+            // Liquidity Title and action buttons
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,

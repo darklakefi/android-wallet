@@ -16,6 +16,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.platform.LocalContext
 import fi.darklake.wallet.ui.design.DarklakeWalletTheme
 import fi.darklake.wallet.ui.design.Green100
 import fi.darklake.wallet.ui.design.DesignTokens
@@ -31,7 +32,7 @@ import fi.darklake.wallet.ui.components.ContainerVariant
 import fi.darklake.wallet.ui.components.AppLogo
 import fi.darklake.wallet.ui.components.NumberedList
 import fi.darklake.wallet.ui.components.createHighlightedItem
-import fi.darklake.wallet.ui.components.AppHeader
+import fi.darklake.wallet.ui.components.ModalHeader
 import androidx.compose.ui.res.stringResource
 import fi.darklake.wallet.R
 
@@ -39,9 +40,12 @@ import fi.darklake.wallet.R
 @Composable
 fun CreateWalletScreen(
     onWalletCreated: (List<String>) -> Unit,
-    onBack: () -> Unit,
-    viewModel: CreateWalletViewModel = viewModel()
+    onBack: () -> Unit
 ) {
+    val context = LocalContext.current
+    val viewModel: CreateWalletViewModel = viewModel(
+        factory = CreateWalletViewModelFactory(context.applicationContext as android.app.Application)
+    )
     val uiState by viewModel.uiState.collectAsState()
     
     LaunchedEffect(uiState.walletCreated) {
@@ -58,7 +62,7 @@ fun CreateWalletScreen(
                 // Top section: Back button + Logo
                 FlexSection(
                     content = {
-                        AppHeader(onBackClick = onBack)
+                        ModalHeader(onBackClick = onBack)
                     },
                     position = FlexPosition.Top,
                     topSpacing = DesignTokens.Spacing.sm,
@@ -152,7 +156,7 @@ fun CreateWalletScreenPreview() {
                     // Top section: Back button + Logo
                     FlexSection(
                         content = {
-                            AppHeader(onBackClick = {})
+                            ModalHeader(onBackClick = {})
                         },
                         position = FlexPosition.Top,
                         topSpacing = DesignTokens.Spacing.sm,

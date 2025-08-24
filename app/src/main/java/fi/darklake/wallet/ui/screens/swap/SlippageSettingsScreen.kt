@@ -73,31 +73,11 @@ fun SlippageSettingsScreen(
                 verticalArrangement = Arrangement.spacedBy(48.dp)
             ) {
                 // Header
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(
-                        onClick = onBack,
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            tint = DarklakePrimary,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                    
-                    AppHeader(
-                        onBackClick = {},
-                        logoResId = R.drawable.darklake_logo,
-                        contentDescription = "Darklake Logo"
-                    )
-                    
-                    Spacer(modifier = Modifier.width(40.dp))
-                }
+                ModalHeader(
+                    onBackClick = onBack,
+                    logoResId = R.drawable.darklake_logo,
+                    contentDescription = "Darklake Logo"
+                )
                 
                 // Title and options
                 Column(
