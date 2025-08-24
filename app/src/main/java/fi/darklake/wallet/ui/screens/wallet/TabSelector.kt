@@ -14,10 +14,11 @@ import fi.darklake.wallet.ui.design.*
 @Composable
 internal fun TabSelector(
     selectedTab: Int,
-    onTabSelected: (Int) -> Unit
+    onTabSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .background(DarklakeCardBackgroundAlt)
     ) {
@@ -27,7 +28,7 @@ internal fun TabSelector(
                 .weight(1f)
                 .clickable { onTabSelected(0) }
                 .background(if (selectedTab == 0) DarklakeTabActive else Color.Transparent)
-                .padding(vertical = 12.dp),
+                .padding(vertical = 8.dp, horizontal = 20.dp),
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -43,7 +44,7 @@ internal fun TabSelector(
                 .weight(1f)
                 .clickable { onTabSelected(1) }
                 .background(if (selectedTab == 1) DarklakeTabActive else Color.Transparent)
-                .padding(vertical = 12.dp),
+                .padding(vertical = 8.dp, horizontal = 20.dp),
             contentAlignment = Alignment.Center
         ) {
             Text(

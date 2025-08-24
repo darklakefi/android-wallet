@@ -19,28 +19,30 @@ internal fun TokensList(
     isLoading: Boolean,
     onTokenClick: (String) -> Unit
 ) {
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(DarklakeCardBackground)
-            .padding(vertical = 12.dp)
     ) {
+        // 8px gap from tabs
+        Spacer(modifier = Modifier.height(8.dp))
+        
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(tokens) { token ->
-                TokenBalanceCard(
-                    tokenSymbol = token.symbol,
-                    tokenName = token.name,
-                    tokenAddress = if (token.mint.length > 10) {
-                        "${token.mint.take(4)}...${token.mint.takeLast(4)}"
-                    } else null,
-                    balance = token.balance,
-                    balanceUsd = null,
-                    onClick = { onTokenClick(token.mint) },
-                    modifier = Modifier.fillMaxWidth()
-                )
+                    TokenBalanceCard(
+                        tokenSymbol = token.symbol,
+                        tokenName = token.name,
+                        tokenAddress = if (token.mint.length > 10) {
+                            "${token.mint.take(4)}...${token.mint.takeLast(4)}"
+                        } else null,
+                        balance = token.balance,
+                        balanceUsd = null,
+                        onClick = { onTokenClick(token.mint) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
             }
             
             if (tokens.isEmpty() && !isLoading) {

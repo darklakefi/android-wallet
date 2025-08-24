@@ -25,9 +25,9 @@ internal fun NftCard(
             .aspectRatio(1f)
             .clickable { onClick() },
         colors = CardDefaults.cardColors(
-            containerColor = DarklakeCardBackgroundAlt
+            containerColor = DarklakeCardBackground
         ),
-        shape = RoundedCornerShape(4.dp)
+        shape = RoundedCornerShape(0.dp)
     ) {
         Box(
             modifier = Modifier.fillMaxSize(),

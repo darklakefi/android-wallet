@@ -1,5 +1,6 @@
 package fi.darklake.wallet.ui.screens.wallet
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -9,8 +10,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import fi.darklake.wallet.R
 import fi.darklake.wallet.data.model.DisplayNft
 import fi.darklake.wallet.ui.design.*
 
@@ -20,31 +25,46 @@ internal fun NftsGrid(
     isLoading: Boolean,
     onNftClick: (String) -> Unit
 ) {
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(DarklakeCardBackground)
-            .padding(12.dp)
     ) {
+        // 8px gap from tabs
+        Spacer(modifier = Modifier.height(8.dp))
+        
         if (nfts.isEmpty() && !isLoading) {
+            // Empty state with custom graphic
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 40.dp),
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "No NFTs found",
-                    style = TerminalTextStyle,
-                    color = DarklakeTextTertiary,
-                    textAlign = TextAlign.Center
-                )
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(24.dp)
+                ) {
+                    // Empty state image
+                    Image(
+                        imageVector = ImageVector.vectorResource(id = R.drawable.ic_empty_nft_state),
+                        contentDescription = "No NFTs",
+                        modifier = Modifier.size(80.dp),
+                        colorFilter = ColorFilter.tint(DarklakeTertiary)
+                    )
+                    Text(
+                        text = "NO NFTS YET",
+                        style = TerminalTextStyle,
+                        color = DarklakeTextTertiary,
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
         } else {
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
                 items(nfts) { nft ->

@@ -41,12 +41,12 @@ fun WalletScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .padding(24.dp)
         ) {
             // Header with Logo and Wallet Address
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
                     .padding(vertical = 6.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
@@ -68,22 +68,24 @@ fun WalletScreen(
                 balance = String.format("%.2f SOL", uiState.solBalance),
                 onSendClick = onNavigateToSendSol,
                 onReceiveClick = onNavigateToReceive,
-                onRefreshClick = { viewModel.refresh() }
+                onRefreshClick = { viewModel.refresh() },
+                modifier = Modifier.padding(horizontal = 24.dp)
             )
             
-            // Spacer
-            Spacer(modifier = Modifier.height(20.dp))
+            // No spacer needed - spacing handled by TabSelector padding
             
             // Tab Selection and Content
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
+                    .padding(top = 20.dp)
             ) {
                 // Tab Selector
                 TabSelector(
                     selectedTab = selectedTab,
-                    onTabSelected = { selectedTab = it }
+                    onTabSelected = { selectedTab = it },
+                    modifier = Modifier.padding(horizontal = 24.dp)
                 )
                 
                 // Content Container with no extra background since tabs handle it
