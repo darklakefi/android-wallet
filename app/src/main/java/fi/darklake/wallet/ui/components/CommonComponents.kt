@@ -75,7 +75,7 @@ fun AppButton(
     val buttonBorder = if (isPrimary) {
         null
     } else {
-        ButtonDefaults.outlinedButtonBorder.copy(width = 0.dp)
+        ButtonDefaults.outlinedButtonBorder(enabled = enabled && !isLoading).copy(width = 0.dp)
     }
     
     val buttonShape = RoundedCornerShape(0.dp)

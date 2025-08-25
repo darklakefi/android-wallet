@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -17,9 +18,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.AnnotatedString
+import android.content.ClipData
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -44,8 +46,9 @@ fun ReceiveScreen(
 ) {
     var publicKey by remember { mutableStateOf<String?>(null) }
     var qrCodeBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
-    val clipboardManager = LocalClipboardManager.current
+    val clipboardManager = LocalClipboard.current
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
@@ -163,8 +166,11 @@ fun ReceiveScreen(
                     AppButton(
                         text = "COPY",
                         onClick = {
-                            publicKey?.let {
-                                clipboardManager.setText(AnnotatedString(it))
+                            publicKey?.let { address ->
+                                coroutineScope.launch {
+                                    val clipData = ClipData.newPlainText("Wallet Address", address)
+                                    clipboardManager.setClipEntry(ClipEntry(clipData))
+                                }
                             }
                         },
                         modifier = Modifier.weight(1f),

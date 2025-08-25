@@ -9,10 +9,12 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.ClipEntry
+import android.content.ClipData
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -27,7 +29,8 @@ fun MnemonicDisplayScreen(
     viewModel: SharedWalletViewModel = viewModel()
 ) {
     val mnemonic = viewModel.currentMnemonic ?: listOf()
-    val clipboardManager = LocalClipboardManager.current
+    val clipboardManager = LocalClipboard.current
+    val coroutineScope = rememberCoroutineScope()
     var copiedToClipboard by remember { mutableStateOf(false) }
     
     Scaffold(
@@ -112,8 +115,11 @@ fun MnemonicDisplayScreen(
                     
                     OutlinedButton(
                         onClick = {
-                            clipboardManager.setText(AnnotatedString(mnemonic.joinToString(" ")))
-                            copiedToClipboard = true
+                            coroutineScope.launch {
+                                val clipData = ClipData.newPlainText("Recovery Phrase", mnemonic.joinToString(" "))
+                                clipboardManager.setClipEntry(ClipEntry(clipData))
+                                copiedToClipboard = true
+                            }
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {

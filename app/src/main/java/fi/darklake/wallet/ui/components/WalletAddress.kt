@@ -7,11 +7,13 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.AnnotatedString
+import android.content.ClipData
 import androidx.compose.ui.unit.dp
 import android.widget.Toast
 import fi.darklake.wallet.ui.design.*
@@ -23,8 +25,9 @@ fun WalletAddress(
     showFullAddress: Boolean = false,
     onCopyClick: (() -> Unit)? = null
 ) {
-    val clipboardManager = LocalClipboardManager.current
+    val clipboardManager = LocalClipboard.current
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     
     // Truncate address if needed
     val displayAddress = if (showFullAddress || address.length <= 13) {
@@ -39,8 +42,11 @@ fun WalletAddress(
                 if (onCopyClick != null) {
                     onCopyClick()
                 } else {
-                    clipboardManager.setText(AnnotatedString(address))
-                    Toast.makeText(context, "Address copied", Toast.LENGTH_SHORT).show()
+                    coroutineScope.launch {
+                        val clipData = ClipData.newPlainText("Wallet Address", address)
+                        clipboardManager.setClipEntry(ClipEntry(clipData))
+                        Toast.makeText(context, "Address copied", Toast.LENGTH_SHORT).show()
+                    }
                 }
             },
         horizontalArrangement = Arrangement.spacedBy(8.dp),
