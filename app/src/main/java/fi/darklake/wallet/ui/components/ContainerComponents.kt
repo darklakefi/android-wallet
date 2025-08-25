@@ -125,27 +125,6 @@ fun FlexibleScreenLayout(
 }
 
 /**
- * Convenience function for simple 3-section layouts
- */
-@Composable
-fun ThreeSectionLayout(
-    topContent: @Composable () -> Unit = {},
-    middleContent: @Composable () -> Unit = {},
-    bottomContent: @Composable () -> Unit = {},
-    topSpacing: Dp = DesignTokens.Spacing.top,
-    bottomSpacing: Dp = DesignTokens.Spacing.xs,
-    backgroundBrush: androidx.compose.ui.graphics.Brush? = null
-) {
-    FlexibleScreenLayout(
-        sections = listOf(topContent, middleContent, bottomContent),
-        spacing = DesignTokens.Spacing.xxl,
-        topSpacing = topSpacing,
-        bottomSpacing = bottomSpacing,
-        backgroundBrush = backgroundBrush
-    )
-}
-
-/**
  * FlexLayout provides CSS flexbox-like functionality for flexible layouts.
  * 
  * This layout system allows granular control over section positioning and spacing,

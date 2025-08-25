@@ -1,30 +1,46 @@
 package fi.darklake.wallet.ui.components
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import fi.darklake.wallet.R
+import fi.darklake.wallet.ui.design.DarklakeWalletTheme
 import fi.darklake.wallet.ui.design.DesignTokens
 import fi.darklake.wallet.ui.design.Green100
 import fi.darklake.wallet.ui.design.Green300
-import fi.darklake.wallet.ui.design.Green700
-import fi.darklake.wallet.R
-import androidx.compose.ui.tooling.preview.Preview
-import fi.darklake.wallet.ui.design.DarklakeWalletTheme
 
 /**
  * Reusable button component with consistent styling and accessibility support.
@@ -146,31 +162,6 @@ fun AppButton(
 }
 
 /**
- * Reusable message box component with shadow effect
- */
-@Composable
-fun MessageBox(
-    content: @Composable () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .offset(x = DesignTokens.Colors.SHADOW_OFFSET.dp, y = DesignTokens.Colors.SHADOW_OFFSET.dp)
-            .background(color = Color(DesignTokens.Colors.SHADOW_COLOR))
-            .offset(x = (-DesignTokens.Colors.SHADOW_OFFSET).dp, y = (-DesignTokens.Colors.SHADOW_OFFSET).dp)
-            .background(color = Green700)
-            .padding(
-                horizontal = DesignTokens.Sizing.messageBoxPadding,
-                vertical = DesignTokens.Sizing.messageBoxVerticalPadding
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        content()
-    }
-}
-
-/**
  * Reusable logo component
  */
 @Composable
@@ -178,7 +169,7 @@ fun AppLogo(
     logoResId: Int,
     size: Dp = DesignTokens.Sizing.logo,
     contentDescription: String = "App Logo",
-    modifier: Modifier = Modifier,
+    @SuppressLint("ModifierParameter") modifier: Modifier = Modifier,
     tint: Color? = null
 ) {
     Image(
