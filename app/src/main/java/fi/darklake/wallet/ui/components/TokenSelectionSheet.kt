@@ -16,8 +16,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -171,11 +169,10 @@ private fun TokenListItem(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Token icon
-            TokenIcon(
-                symbol = token.symbol,
-                imageUrl = token.imageUrl,
-                modifier = Modifier.size(40.dp)
+            // Token icon with metadata fetching
+            TokenIconByAddress(
+                tokenAddress = token.address,
+                size = 40.dp
             )
             
             // Token info
@@ -235,54 +232,6 @@ private fun TokenListItem(
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun TokenIcon(
-    symbol: String,
-    imageUrl: String?,
-    modifier: Modifier = Modifier
-) {
-    // For now, use a simple colored circle with the first letter
-    // Later this can be enhanced with actual token images
-    Box(
-        modifier = modifier
-            .clip(CircleShape)
-            .background(
-                color = getTokenColor(symbol)
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = symbol.firstOrNull()?.toString() ?: "?",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = Color.White
-        )
-    }
-}
-
-private fun getTokenColor(symbol: String): Color {
-    // Simple color mapping based on token symbol
-    return when (symbol.uppercase()) {
-        "SOL" -> Color(0xFF9945FF)
-        "USDC" -> Color(0xFF2775CA)
-        "BTC" -> Color(0xFFFF9500)
-        "ETH" -> Color(0xFF627EEA)
-        else -> {
-            // Generate a color based on symbol hash
-            val hash = symbol.hashCode()
-            val colors = listOf(
-                Color(0xFF4CAF50),
-                Color(0xFF2196F3),
-                Color(0xFFFF5722),
-                Color(0xFF9C27B0),
-                Color(0xFFFF9800),
-                Color(0xFF795548)
-            )
-            colors[Math.abs(hash) % colors.size]
         }
     }
 }

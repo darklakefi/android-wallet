@@ -3,7 +3,6 @@ package fi.darklake.wallet.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -12,7 +11,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -64,7 +62,7 @@ fun TokenAmountInput(
                 ) {
                     // Balance text
                     Text(
-                        text = "Balance: ${FormatUtils.formatBalance(balance)}",
+                        text = "BALANCE: ${FormatUtils.formatBalance(balance)}",
                         style = TerminalTextStyle,
                         color = if (showInsufficientBalance) DarklakeError else DarklakeTextTertiary,
                         fontSize = 10.sp
@@ -96,7 +94,7 @@ fun TokenAmountInput(
             } else if (isReadOnly) {
                 // Just show balance for readonly (BUYING)
                 Text(
-                    text = "Balance: ${FormatUtils.formatBalance(balance)}",
+                    text = "BALANCE: ${FormatUtils.formatBalance(balance)}",
                     style = TerminalTextStyle,
                     color = DarklakeTextTertiary,
                     fontSize = 10.sp
@@ -127,28 +125,11 @@ fun TokenAmountInput(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     if (token != null) {
-                        // Token icon as first letter
-                        Box(
-                            modifier = Modifier
-                                .size(24.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    when(token.symbol) {
-                                        "SOL" -> TokenSolBackground
-                                        "USDC" -> TokenUsdcBackground
-                                        "BONK" -> TokenBonkBackground
-                                        else -> DarklakeTokenDefaultBg
-                                    }
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = token.symbol.first().toString(),
-                                style = TerminalTextStyle,
-                                color = DarklakeTextPrimary,
-                                fontSize = 12.sp
-                            )
-                        }
+                        // Token icon with metadata fetching
+                        TokenIcon(
+                            token = token,
+                            size = 24.dp
+                        )
                         Text(
                             text = token.symbol,
                             style = ButtonTextStyle,

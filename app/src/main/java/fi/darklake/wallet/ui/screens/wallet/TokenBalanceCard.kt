@@ -3,18 +3,15 @@ package fi.darklake.wallet.ui.screens.wallet
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import fi.darklake.wallet.data.swap.models.TokenInfo
+import fi.darklake.wallet.ui.components.TokenIcon
+import fi.darklake.wallet.ui.components.TokenIconByAddress
 import fi.darklake.wallet.ui.design.*
 
 @Composable
@@ -28,20 +25,6 @@ fun TokenBalanceCard(
     onClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    // Define token-specific colors
-    val iconBackgroundColor = when (tokenSymbol.uppercase()) {
-        "USDC" -> TokenUsdcBackground
-        "SOL" -> TokenSolBackground
-        "BONK" -> TokenBonkBackground
-        else -> DarklakeTokenDefaultBg
-    }
-    
-    val iconTextColor = when (tokenSymbol.uppercase()) {
-        "USDC", "BONK" -> Color.White
-        "SOL" -> TokenSolText
-        else -> DarklakePrimary
-    }
-    
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -59,20 +42,23 @@ fun TokenBalanceCard(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Token Icon Circle with specific colors
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(CircleShape)
-                        .background(iconBackgroundColor),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = iconText ?: tokenSymbol.take(2).uppercase(),
-                        color = iconTextColor,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = BitsumishiFontFamily
+                // Token Icon with metadata fetching
+                if (!tokenAddress.isNullOrEmpty()) {
+                    // Use address-based icon if available
+                    TokenIconByAddress(
+                        tokenAddress = tokenAddress,
+                        size = 32.dp
+                    )
+                } else {
+                    // Fall back to symbol-based icon
+                    TokenIcon(
+                        token = TokenInfo(
+                            address = "",
+                            symbol = tokenSymbol,
+                            name = tokenName,
+                            decimals = 0
+                        ),
+                        size = 32.dp
                     )
                 }
                 

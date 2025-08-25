@@ -282,112 +282,49 @@ fun LpScreen(
                 // Pool Details
                 AnimatedVisibility(visible = uiState.poolDetails != null) {
                     uiState.poolDetails?.let { pool ->
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(
-                                    color = DarklakeCardBackground,
-                                    shape = RoundedCornerShape(4.dp)
+                        val informationEntries = mutableListOf(
+                            InformationCardEntry(
+                                label = "Slippage Tolerance",
+                                value = "${uiState.slippagePercent}%",
+                                isClickable = true,
+                                onClick = {
+                                    val nextSlippage = when (uiState.slippagePercent) {
+                                        0.5 -> 1.0
+                                        1.0 -> 2.0
+                                        2.0 -> 0.5
+                                        else -> 0.5
+                                    }
+                                    viewModel.updateSlippage(nextSlippage, false)
+                                }
+                            )
+                        )
+                        
+                        if (pool.exists) {
+                            informationEntries.add(
+                                InformationCardEntry(
+                                    label = "Current Price",
+                                    value = "${pool.currentPrice} ${uiState.tokenB?.symbol ?: ""} per ${uiState.tokenA?.symbol ?: ""}"
                                 )
-                                .padding(horizontal = 20.dp, vertical = 8.dp)
-                        ) {
-                            Column(
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                // Slippage Tolerance
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text(
-                                        text = "Slippage Tolerance",
-                                        style = TerminalTextStyle,
-                                        color = DarklakeTextTertiary,
-                                        fontSize = 12.sp
+                            )
+                            
+                            if (uiState.tokenAAmount.isNotEmpty() && uiState.tokenBAmount.isNotEmpty()) {
+                                informationEntries.add(
+                                    InformationCardEntry(
+                                        label = "Pool Share",
+                                        value = "${String.format("%.2f", pool.poolShare)}%"
                                     )
-                                    Row(
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        modifier = Modifier.clickable {
-                                            val nextSlippage = when (uiState.slippagePercent) {
-                                                0.5 -> 1.0
-                                                1.0 -> 2.0
-                                                2.0 -> 0.5
-                                                else -> 0.5
-                                            }
-                                            viewModel.updateSlippage(nextSlippage, false)
-                                        }
-                                    ) {
-                                        Text(
-                                            text = "${uiState.slippagePercent}%",
-                                            style = TerminalTextStyle,
-                                            color = DarklakeTextPrimary,
-                                            fontSize = 12.sp
-                                        )
-                                    }
-                                }
-                                
-                                if (pool.exists) {
-                                    // Current Price
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Text(
-                                            text = "Current Price",
-                                            style = TerminalTextStyle,
-                                            color = DarklakeTextTertiary,
-                                            fontSize = 12.sp
-                                        )
-                                        Text(
-                                            text = "${pool.currentPrice} ${uiState.tokenB?.symbol ?: ""} per ${uiState.tokenA?.symbol ?: ""}",
-                                            style = TerminalTextStyle,
-                                            color = DarklakeTextPrimary,
-                                            fontSize = 12.sp
-                                        )
-                                    }
-                                    
-                                    // Pool Share
-                                    if (uiState.tokenAAmount.isNotEmpty() && uiState.tokenBAmount.isNotEmpty()) {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween
-                                        ) {
-                                            Text(
-                                                text = "Pool Share",
-                                                style = TerminalTextStyle,
-                                                color = DarklakeTextTertiary,
-                                                fontSize = 12.sp
-                                            )
-                                            Text(
-                                                text = "${String.format("%.2f", pool.poolShare)}%",
-                                                style = TerminalTextStyle,
-                                                color = DarklakeTextPrimary,
-                                                fontSize = 12.sp
-                                            )
-                                        }
-                                    }
-                                    
-                                    // APR
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Text(
-                                            text = "APR",
-                                            style = TerminalTextStyle,
-                                            color = DarklakeTextTertiary,
-                                            fontSize = 12.sp
-                                        )
-                                        Text(
-                                            text = "${pool.apr}%",
-                                            style = TerminalTextStyle,
-                                            color = DarklakePrimary,
-                                            fontSize = 12.sp
-                                        )
-                                    }
-                                }
+                                )
                             }
+                            
+                            informationEntries.add(
+                                InformationCardEntry(
+                                    label = "APR",
+                                    value = "${pool.apr}%"
+                                )
+                            )
                         }
+                        
+                        InformationCard(entries = informationEntries)
                     }
                 }
                 

@@ -273,138 +273,58 @@ fun SwapScreen(
                 
                 // Swap Details
                 AnimatedVisibility(visible = uiState.quote != null || uiState.slippagePercent > 0) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                color = DarklakeCardBackground,
-                                shape = RoundedCornerShape(4.dp)
+                    val informationEntries = mutableListOf(
+                        InformationCardEntry(
+                            label = "Slippage Tolerance",
+                            value = "${uiState.slippagePercent}%",
+                            isClickable = true,
+                            onClick = {
+                                val nextSlippage = when (uiState.slippagePercent) {
+                                    0.5 -> 1.0
+                                    1.0 -> 2.0
+                                    2.0 -> 0.5
+                                    else -> 0.5
+                                }
+                                viewModel.updateSlippage(nextSlippage, false)
+                            }
+                        )
+                    )
+                    
+                    uiState.quote?.let { quote ->
+                        informationEntries.add(
+                            InformationCardEntry(
+                                label = "Rate",
+                                value = "1 ${uiState.tokenA?.symbol ?: ""} = ${quote.rate} ${uiState.tokenB?.symbol ?: ""}"
                             )
-                            .padding(horizontal = 20.dp, vertical = 8.dp)
-                    ) {
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            // Slippage
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    text = "Slippage Tolerance",
-                                    style = TerminalTextStyle,
-                                    color = DarklakeTextTertiary,
-                                    fontSize = 12.sp
+                        )
+                        
+                        if (quote.priceImpactPercentage > 0) {
+                            informationEntries.add(
+                                InformationCardEntry(
+                                    label = "Price Impact",
+                                    value = "${String.format("%.2f", quote.priceImpactPercentage)}%"
                                 )
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    modifier = Modifier.clickable {
-                                        val nextSlippage = when (uiState.slippagePercent) {
-                                            0.5 -> 1.0
-                                            1.0 -> 2.0
-                                            2.0 -> 0.5
-                                            else -> 0.5
-                                        }
-                                        viewModel.updateSlippage(nextSlippage, false)
-                                    }
-                                ) {
-                                    Text(
-                                        text = "${uiState.slippagePercent}%",
-                                        style = TerminalTextStyle,
-                                        color = DarklakeTextPrimary,
-                                        fontSize = 12.sp
-                                    )
-                                }
-                            }
-                            
-                            // Quote details
-                            uiState.quote?.let { quote ->
-                                // Exchange Rate
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text(
-                                        text = "Rate",
-                                        style = TerminalTextStyle,
-                                        color = DarklakeTextTertiary,
-                                        fontSize = 12.sp
-                                    )
-                                    Text(
-                                        text = "1 ${uiState.tokenA?.symbol ?: ""} = ${quote.rate} ${uiState.tokenB?.symbol ?: ""}",
-                                        style = TerminalTextStyle,
-                                        color = DarklakeTextPrimary,
-                                        fontSize = 12.sp
-                                    )
-                                }
-                                
-                                // Price Impact
-                                if (quote.priceImpactPercentage > 0) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Text(
-                                            text = "Price Impact",
-                                            style = TerminalTextStyle,
-                                            color = DarklakeTextTertiary,
-                                            fontSize = 12.sp
-                                        )
-                                        Text(
-                                            text = "${String.format("%.2f", quote.priceImpactPercentage)}%",
-                                            style = TerminalTextStyle,
-                                            color = when {
-                                                quote.priceImpactPercentage < 1 -> SwapPriceImpactLow
-                                                quote.priceImpactPercentage < 5 -> SwapPriceImpactMedium
-                                                else -> SwapPriceImpactHigh
-                                            },
-                                            fontSize = 12.sp
-                                        )
-                                    }
-                                }
-                                
-                                // Network Fee
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text(
-                                        text = "Network Fee",
-                                        style = TerminalTextStyle,
-                                        color = DarklakeTextTertiary,
-                                        fontSize = 12.sp
-                                    )
-                                    Text(
-                                        text = "${quote.estimatedFee} SOL",
-                                        style = TerminalTextStyle,
-                                        color = DarklakeTextPrimary,
-                                        fontSize = 12.sp
-                                    )
-                                }
-                                
-                                // Route
-                                if (quote.routePlan.isNotEmpty()) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Text(
-                                            text = "Route",
-                                            style = TerminalTextStyle,
-                                            color = DarklakeTextTertiary,
-                                            fontSize = 12.sp
-                                        )
-                                        Text(
-                                            text = "${quote.routePlan.size} hop(s)",
-                                            style = TerminalTextStyle,
-                                            color = DarklakeTextPrimary,
-                                            fontSize = 12.sp
-                                        )
-                                    }
-                                }
-                            }
+                            )
+                        }
+                        
+                        informationEntries.add(
+                            InformationCardEntry(
+                                label = "Network Fee",
+                                value = "${quote.estimatedFee} SOL"
+                            )
+                        )
+                        
+                        if (quote.routePlan.isNotEmpty()) {
+                            informationEntries.add(
+                                InformationCardEntry(
+                                    label = "Route",
+                                    value = "${quote.routePlan.size} hop(s)"
+                                )
+                            )
                         }
                     }
+                    
+                    InformationCard(entries = informationEntries)
                 }
                 
                 // Warning Messages
