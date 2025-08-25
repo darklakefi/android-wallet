@@ -12,6 +12,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import fi.darklake.wallet.data.swap.models.TokenInfo
@@ -111,13 +113,14 @@ fun TokenAmountInput(
             // Token Selector
             Box(
                 modifier = Modifier
+                    .height(48.dp)
+                    .width(120.dp) // Fixed width for consistency
                     .clickable { onTokenSelect() }
                     .background(
                         color = DarklakeCardBackgroundAlt,
                         shape = RoundedCornerShape(4.dp)
                     )
-                    .padding(horizontal = 8.dp, vertical = 12.dp)
-                    .height(48.dp),
+                    .padding(horizontal = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Row(
@@ -137,6 +140,8 @@ fun TokenAmountInput(
                             fontSize = 14.sp
                         )
                     } else {
+                        // Spacer to mimic icon width when SELECT is shown
+                        Spacer(modifier = Modifier.width(24.dp))
                         Text(
                             text = "SELECT",
                             style = ButtonTextStyle,
@@ -185,14 +190,20 @@ fun TokenAmountInput(
                         onValueChange = onAmountChange,
                         readOnly = isReadOnly,
                         placeholder = { 
-                            Text(
-                                "0.00",
-                                color = DarklakeTextTertiary.copy(alpha = 0.5f)
-                            )
+                            Box(
+                                modifier = Modifier.fillMaxWidth(),
+                                contentAlignment = Alignment.CenterEnd
+                            ) {
+                                Text(
+                                    "0.00",
+                                    color = DarklakeTextTertiary.copy(alpha = 0.5f)
+                                )
+                            }
                         },
                         textStyle = TerminalTextStyle.copy(
                             fontSize = 16.sp,
-                            color = DarklakeTextPrimary
+                            color = DarklakeTextPrimary,
+                            textAlign = TextAlign.End
                         ),
                         singleLine = true,
                         modifier = Modifier
@@ -215,6 +226,80 @@ fun TokenAmountInput(
                     )
                 }
             }
+        }
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF010F06)
+@Composable
+fun PreviewTokenAmountInput() {
+    DarklakeWalletTheme {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
+        ) {
+            // Selling state with token selected
+            TokenAmountInput(
+                label = "SELLING",
+                token = TokenInfo(
+                    address = "So11111111111111111111111111111111111111112",
+                    symbol = "SOL",
+                    name = "Solana",
+                    decimals = 9
+                ),
+                amount = "10.5",
+                balance = BigDecimal("25.789"),
+                onAmountChange = {},
+                onTokenSelect = {},
+                isReadOnly = false,
+                showInsufficientBalance = false
+            )
+            
+            // Buying state (read-only) with token selected
+            TokenAmountInput(
+                label = "BUYING",
+                token = TokenInfo(
+                    address = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+                    symbol = "USDC",
+                    name = "USD Coin",
+                    decimals = 6
+                ),
+                amount = "105.25",
+                balance = BigDecimal("1250.50"),
+                onAmountChange = {},
+                onTokenSelect = {},
+                isReadOnly = true,
+                showInsufficientBalance = false
+            )
+            
+            // No token selected state
+            TokenAmountInput(
+                label = "TOKEN A",
+                token = null,
+                amount = "",
+                balance = BigDecimal.ZERO,
+                onAmountChange = {},
+                onTokenSelect = {},
+                isReadOnly = false,
+                showInsufficientBalance = false
+            )
+            
+            // Insufficient balance state
+            TokenAmountInput(
+                label = "SELLING",
+                token = TokenInfo(
+                    address = "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+                    symbol = "BONK",
+                    name = "Bonk",
+                    decimals = 5
+                ),
+                amount = "1000000",
+                balance = BigDecimal("500000"),
+                onAmountChange = {},
+                onTokenSelect = {},
+                isReadOnly = false,
+                showInsufficientBalance = true
+            )
         }
     }
 }

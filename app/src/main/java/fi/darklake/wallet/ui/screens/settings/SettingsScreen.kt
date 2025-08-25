@@ -23,6 +23,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -201,91 +202,70 @@ fun SettingsScreen(
                 SettingsSection(
                     title = "HELIUS API KEY"
                 ) {
-                    Box(
+                    OutlinedTextField(
+                        value = apiKeyInput,
+                        onValueChange = { apiKeyInput = it },
+                        placeholder = { 
+                            Text(
+                                "Enter your Helius API key",
+                                style = TerminalTextStyle,
+                                color = DarklakeTextTertiary.copy(alpha = 0.5f),
+                                fontSize = 14.sp
+                            )
+                        },
+                        visualTransformation = if (showApiKey) 
+                            VisualTransformation.None 
+                        else PasswordVisualTransformation(),
+                        textStyle = TerminalTextStyle.copy(
+                            fontSize = 14.sp,
+                            color = DarklakeTextPrimary,
+                            fontFamily = MonospaceFontFamily
+                        ),
+                        singleLine = true,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(
-                                color = DarklakeCardBackground,
-                                shape = RoundedCornerShape(4.dp)
-                            )
-                            .border(
-                                width = 1.dp,
-                                color = DarklakeBorder,
-                                shape = RoundedCornerShape(4.dp)
-                            )
-                            .padding(12.dp, 16.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(
-                                modifier = Modifier.weight(1f),
-                                verticalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                OutlinedTextField(
-                                    value = apiKeyInput,
-                                    onValueChange = { apiKeyInput = it },
-                                    placeholder = { 
-                                        Text(
-                                            "Enter your Helius API key",
-                                            style = TerminalTextStyle,
-                                            color = DarklakeTextTertiary.copy(alpha = 0.5f),
-                                            fontSize = 14.sp
-                                        )
-                                    },
-                                    visualTransformation = if (showApiKey) 
-                                        VisualTransformation.None 
-                                    else PasswordVisualTransformation(),
-                                    textStyle = TerminalTextStyle.copy(
-                                        fontSize = 14.sp,
-                                        color = DarklakeTextPrimary,
-                                        fontFamily = MonospaceFontFamily
-                                    ),
-                                    singleLine = true,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    colors = OutlinedTextFieldDefaults.colors(
-                                        focusedBorderColor = DarklakePrimary,
-                                        unfocusedBorderColor = Color.Transparent,
-                                        cursorColor = DarklakePrimary,
-                                        focusedContainerColor = Color.Transparent,
-                                        unfocusedContainerColor = Color.Transparent
-                                    ),
-                                    trailingIcon = {
-                                        Row {
-                                            IconButton(onClick = { showApiKey = !showApiKey }) {
-                                                Icon(
-                                                    imageVector = if (showApiKey) 
-                                                        Icons.Default.VisibilityOff 
-                                                    else Icons.Default.Visibility,
-                                                    contentDescription = if (showApiKey) 
-                                                        "Hide API key" 
-                                                    else "Show API key",
-                                                    tint = DarklakeTextTertiary,
-                                                    modifier = Modifier.size(20.dp)
-                                                )
-                                            }
-                                            if (apiKeyInput != uiState.networkSettings.heliusApiKey) {
-                                                IconButton(
-                                                    onClick = { 
-                                                        viewModel.updateHeliusApiKey(apiKeyInput)
-                                                    }
-                                                ) {
-                                                    Icon(
-                                                        imageVector = Icons.Default.Save,
-                                                        contentDescription = "Save API key",
-                                                        tint = DarklakePrimary,
-                                                        modifier = Modifier.size(20.dp)
-                                                    )
-                                                }
-                                            }
+                            .height(56.dp), // Match the height of network selector
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = DarklakePrimary,
+                            unfocusedBorderColor = DarklakeBorder,
+                            errorBorderColor = DarklakeError,
+                            cursorColor = DarklakePrimary,
+                            focusedContainerColor = DarklakeCardBackground,
+                            unfocusedContainerColor = DarklakeCardBackground,
+                            errorContainerColor = DarklakeCardBackground
+                        ),
+                        shape = RoundedCornerShape(4.dp),
+                        trailingIcon = {
+                            Row {
+                                IconButton(onClick = { showApiKey = !showApiKey }) {
+                                    Icon(
+                                        imageVector = if (showApiKey) 
+                                            Icons.Default.VisibilityOff 
+                                        else Icons.Default.Visibility,
+                                        contentDescription = if (showApiKey) 
+                                            "Hide API key" 
+                                        else "Show API key",
+                                        tint = DarklakeTextTertiary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                if (apiKeyInput != uiState.networkSettings.heliusApiKey) {
+                                    IconButton(
+                                        onClick = { 
+                                            viewModel.updateHeliusApiKey(apiKeyInput)
                                         }
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Save,
+                                            contentDescription = "Save API key",
+                                            tint = DarklakePrimary,
+                                            modifier = Modifier.size(20.dp)
+                                        )
                                     }
-                                )
+                                }
                             }
                         }
-                    }
+                    )
                 }
                 
                 // RPC Endpoint Section (Read-only display)
@@ -360,50 +340,6 @@ fun SettingsScreen(
                 }
                 
                 // Additional Settings Sections can be added here
-                
-                // About Section
-                SettingsSection(
-                    title = "ABOUT"
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                color = DarklakeCardBackground,
-                                shape = RoundedCornerShape(4.dp)
-                            )
-                            .border(
-                                width = 1.dp,
-                                color = DarklakeBorder,
-                                shape = RoundedCornerShape(4.dp)
-                            )
-                            .padding(12.dp, 16.dp)
-                    ) {
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Text(
-                                text = "DARKLAKE WALLET",
-                                style = TerminalTextStyle,
-                                color = DarklakePrimary,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "VERSION 1.0.0",
-                                style = TerminalTextStyle,
-                                color = DarklakeTextTertiary,
-                                fontSize = 14.sp
-                            )
-                            Text(
-                                text = "OPEN SOURCE SOLANA WALLET",
-                                style = TerminalTextStyle,
-                                color = DarklakeTextTertiary,
-                                fontSize = 12.sp
-                            )
-                        }
-                    }
-                }
             }
             
             Spacer(modifier = Modifier.height(100.dp))
@@ -429,5 +365,267 @@ private fun SettingsSection(
             color = DarklakeTextSecondary
         )
         content()
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF010F06)
+@Composable
+fun SettingsScreenPreview() {
+    DarklakeWalletTheme {
+        
+        // Create a mock state
+        var showApiKey by remember { mutableStateOf(false) }
+        var apiKeyInput by remember { mutableStateOf("hel1us4p1k3y1234567890abcdefghijklmnop") }
+        var expandedNetwork by remember { mutableStateOf(false) }
+        
+        BackgroundWithOverlay {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .verticalScroll(rememberScrollState())
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Header with Logo and Wallet Address
+                AppHeader(
+                    walletAddress = "7xKXtpZfyVtzPE9PqRz8g9hNmDwrDgYm5x3TJK9PqRz"
+                )
+                
+                // Settings Title
+                Text(
+                    text = "SETTINGS",
+                    style = Typography.headlineMedium.copy(
+                        fontFamily = BitsumishiFontFamily,
+                        fontSize = 28.sp
+                    ),
+                    color = DarklakeTextSecondary,
+                    modifier = Modifier.padding(vertical = 12.dp)
+                )
+                
+                // Settings Sections
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(40.dp)
+                ) {
+                    // Network Section
+                    SettingsSection(
+                        title = "NETWORK"
+                    ) {
+                        // Network Selector
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    color = if (expandedNetwork) DarklakeCardBackgroundAlt else DarklakeCardBackground,
+                                    shape = RoundedCornerShape(4.dp)
+                                )
+                                .border(
+                                    width = 1.dp,
+                                    color = DarklakeBorder,
+                                    shape = RoundedCornerShape(4.dp)
+                                )
+                                .clickable { expandedNetwork = !expandedNetwork }
+                                .padding(12.dp, 16.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "MAINNET-BETA",
+                                    style = TerminalTextStyle,
+                                    color = DarklakePrimary,
+                                    fontSize = 18.sp
+                                )
+                                Icon(
+                                    imageVector = if (expandedNetwork) 
+                                        Icons.Default.KeyboardArrowUp 
+                                    else Icons.Default.KeyboardArrowDown,
+                                    contentDescription = "Expand",
+                                    tint = DarklakeTextTertiary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
+                        
+                        // Network Options Dropdown
+                        AnimatedVisibility(visible = expandedNetwork) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(
+                                        color = DarklakeCardBackgroundAlt,
+                                        shape = RoundedCornerShape(4.dp)
+                                    )
+                                    .border(
+                                        width = 1.dp,
+                                        color = DarklakeBorder,
+                                        shape = RoundedCornerShape(4.dp)
+                                    )
+                            ) {
+                                listOf("MAINNET-BETA" to true, "DEVNET" to false).forEach { (network, isSelected) ->
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable { expandedNetwork = false }
+                                            .padding(12.dp, 16.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = network,
+                                                style = TerminalTextStyle,
+                                                color = if (isSelected) DarklakePrimary else DarklakeTextPrimary,
+                                                fontSize = 16.sp
+                                            )
+                                            if (isSelected) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Check,
+                                                    contentDescription = "Selected",
+                                                    tint = DarklakePrimary,
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                    if (network != "DEVNET") {
+                                        HorizontalDivider(
+                                            color = DarklakeBorder,
+                                            thickness = 1.dp
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Helius API Key Section
+                    SettingsSection(
+                        title = "HELIUS API KEY"
+                    ) {
+                        OutlinedTextField(
+                            value = apiKeyInput,
+                            onValueChange = { apiKeyInput = it },
+                            placeholder = { 
+                                Text(
+                                    "Enter your Helius API key",
+                                    style = TerminalTextStyle,
+                                    color = DarklakeTextTertiary.copy(alpha = 0.5f),
+                                    fontSize = 14.sp
+                                )
+                            },
+                            visualTransformation = if (showApiKey) 
+                                VisualTransformation.None 
+                            else PasswordVisualTransformation(),
+                            textStyle = TerminalTextStyle.copy(
+                                fontSize = 14.sp,
+                                color = DarklakeTextPrimary,
+                                fontFamily = MonospaceFontFamily
+                            ),
+                            singleLine = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp), // Match the height of network selector
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = DarklakePrimary,
+                                unfocusedBorderColor = DarklakeBorder,
+                                errorBorderColor = DarklakeError,
+                                cursorColor = DarklakePrimary,
+                                focusedContainerColor = DarklakeCardBackground,
+                                unfocusedContainerColor = DarklakeCardBackground,
+                                errorContainerColor = DarklakeCardBackground
+                            ),
+                            shape = RoundedCornerShape(4.dp),
+                            trailingIcon = {
+                                Row {
+                                    IconButton(onClick = { showApiKey = !showApiKey }) {
+                                        Icon(
+                                            imageVector = if (showApiKey) 
+                                                Icons.Default.VisibilityOff 
+                                            else Icons.Default.Visibility,
+                                            contentDescription = if (showApiKey) 
+                                                "Hide API key" 
+                                            else "Show API key",
+                                            tint = DarklakeTextTertiary,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                    IconButton(onClick = {}) {
+                                        Icon(
+                                            imageVector = Icons.Default.Save,
+                                            contentDescription = "Save API key",
+                                            tint = DarklakePrimary,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        )
+                    }
+                    
+                    // RPC Endpoint Section
+                    SettingsSection(
+                        title = "RPC ENDPOINT"
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    color = DarklakeCardBackground,
+                                    shape = RoundedCornerShape(4.dp)
+                                )
+                                .border(
+                                    width = 1.dp,
+                                    color = DarklakeBorder,
+                                    shape = RoundedCornerShape(4.dp)
+                                )
+                                .padding(12.dp, 16.dp)
+                        ) {
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Text(
+                                    text = "HELIUS RPC (MAINNET)",
+                                    style = TerminalTextStyle,
+                                    color = DarklakePrimary,
+                                    fontSize = 18.sp
+                                )
+                                
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Text(
+                                        text = "API KEY: ${apiKeyInput.take(8)}...",
+                                        style = TerminalTextStyle,
+                                        color = DarklakeTextTertiary,
+                                        fontSize = 14.sp,
+                                        fontFamily = MonospaceFontFamily
+                                    )
+                                    IconButton(
+                                        onClick = {},
+                                        modifier = Modifier.size(20.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.ContentCopy,
+                                            contentDescription = "Copy API key",
+                                            tint = DarklakeTextTertiary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(100.dp))
+            }
+        }
     }
 }
