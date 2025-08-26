@@ -214,16 +214,16 @@ class LpTransactionHandler(
     ): Result<String> {
         return try {
             // Step 1: Derive all Program Derived Addresses (PDAs)
-            val ammConfigPda = SolanaPda.getAmmConfigPda()
-            val poolPda = SolanaPda.getPoolPda(tokenXMint, tokenYMint)
-            val lpMintPda = SolanaPda.getLpTokenMint(tokenXMint, tokenYMint)
-            val poolReserveXPda = SolanaPda.getPoolReservePda(poolPda, tokenXMint)
-            val poolReserveYPda = SolanaPda.getPoolReservePda(poolPda, tokenYMint)
+            val ammConfigPda = PdaUtils.getAmmConfigPda()
+            val poolPda = PdaUtils.getPoolPda(tokenXMint, tokenYMint)
+            val lpMintPda = PdaUtils.getLpTokenMint(tokenXMint, tokenYMint)
+            val poolReserveXPda = PdaUtils.getPoolReservePda(poolPda, tokenXMint)
+            val poolReserveYPda = PdaUtils.getPoolReservePda(poolPda, tokenYMint)
             
             // Step 2: Calculate Associated Token Addresses (ATAs)
-            val userTokenXAta = SolanaPda.getAssociatedTokenAddress(userAddress, tokenXMint)
-            val userTokenYAta = SolanaPda.getAssociatedTokenAddress(userAddress, tokenYMint)
-            val userLpAta = SolanaPda.getAssociatedTokenAddress(userAddress, lpMintPda)
+            val userTokenXAta = PdaUtils.getAssociatedTokenAddress(userAddress, tokenXMint)
+            val userTokenYAta = PdaUtils.getAssociatedTokenAddress(userAddress, tokenYMint)
+            val userLpAta = PdaUtils.getAssociatedTokenAddress(userAddress, lpMintPda)
             
             // Step 3: Convert amounts to base units using real decimals
             val maxAmountXRaw = (maxAmountX * Math.pow(10.0, tokenXMetadata.decimals.toDouble())).toLong()

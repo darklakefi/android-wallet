@@ -153,7 +153,7 @@ class LpPositionService(
      * This implements the same logic as dex-web's getLpTokenMint
      */
     private fun deriveLpTokenMint(tokenAMint: String, tokenBMint: String): String {
-        return SolanaPda.getLpTokenMint(tokenAMint, tokenBMint)
+        return PdaUtils.getLpTokenMint(tokenAMint, tokenBMint)
     }
     
     /**

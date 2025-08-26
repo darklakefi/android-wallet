@@ -12,7 +12,7 @@ import fi.darklake.wallet.data.lp.LpTransactionService
 import fi.darklake.wallet.data.preferences.SettingsManager
 import fi.darklake.wallet.data.repository.BalanceRepository
 import fi.darklake.wallet.data.repository.BalanceService
-import fi.darklake.wallet.data.solana.SolanaKTTransactionService
+import fi.darklake.wallet.data.solana.SolanaTransactionService
 import fi.darklake.wallet.data.swap.repository.TokenRepository
 import fi.darklake.wallet.storage.WalletStorageManager
 import kotlinx.coroutines.Dispatchers
@@ -104,7 +104,7 @@ class LpViewModel(
     private val tokenRepository = TokenRepository()
     private val lpTransactionService = LpTransactionService(settingsManager)
     private val lpPositionService = LpPositionService(settingsManager)
-    private val transactionService = SolanaKTTransactionService(settingsManager)
+    private val transactionService = SolanaTransactionService(settingsManager)
     
     private val solanaApiService = SolanaApiService {
         settingsManager.networkSettings.value.let { settings ->
@@ -354,7 +354,7 @@ class LpViewModel(
                     liquidityStep = LiquidityStep.PROCESSING
                 )
                 
-                // TODO: Submit to Solana network using SolanaKTTransactionService
+                // TODO: Submit to Solana network using SolanaTransactionService
                 // For now, simulate successful submission
                 kotlinx.coroutines.delay(3000)
                 
@@ -435,7 +435,7 @@ class LpViewModel(
                     liquidityStep = LiquidityStep.PROCESSING
                 )
                 
-                // TODO: Submit to Solana network using SolanaKTTransactionService
+                // TODO: Submit to Solana network using SolanaTransactionService
                 // For now, simulate successful submission
                 kotlinx.coroutines.delay(3000)
                 

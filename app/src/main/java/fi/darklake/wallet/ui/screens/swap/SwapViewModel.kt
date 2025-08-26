@@ -11,7 +11,7 @@ import fi.darklake.wallet.data.swap.repository.PoolRepository
 import fi.darklake.wallet.data.api.SolanaApiService
 import fi.darklake.wallet.data.repository.BalanceRepository
 import fi.darklake.wallet.data.repository.BalanceService
-import fi.darklake.wallet.data.solana.SolanaKTTransactionService
+import fi.darklake.wallet.data.solana.SolanaTransactionService
 import fi.darklake.wallet.storage.WalletStorageManager
 import com.solana.core.HotAccount
 import com.solana.core.Transaction
@@ -80,7 +80,7 @@ class SwapViewModel(
         
     private val tokenRepository = TokenRepository()
     private val poolRepository = PoolRepository()
-    private val transactionService = SolanaKTTransactionService(settingsManager)
+    private val transactionService = SolanaTransactionService(settingsManager)
         
     private val solanaApiService = SolanaApiService {
         settingsManager.networkSettings.value.let { settings ->
