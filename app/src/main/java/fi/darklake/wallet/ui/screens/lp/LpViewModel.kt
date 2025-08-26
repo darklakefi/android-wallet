@@ -1,28 +1,27 @@
 package fi.darklake.wallet.ui.screens.lp
 
+import android.content.Context
+import android.util.Base64
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import fi.darklake.wallet.data.preferences.SettingsManager
-import fi.darklake.wallet.data.lp.LpTransactionService
-import fi.darklake.wallet.data.lp.LpPositionService
-import fi.darklake.wallet.data.solana.SolanaKTTransactionService
-import fi.darklake.wallet.data.swap.repository.TokenRepository
-import fi.darklake.wallet.data.api.SolanaApiService
-import fi.darklake.wallet.data.repository.BalanceRepository
-import fi.darklake.wallet.data.repository.BalanceService
-import fi.darklake.wallet.storage.WalletStorageManager
-import android.content.Context
 import com.solana.core.HotAccount
 import com.solana.core.Transaction
+import fi.darklake.wallet.data.api.SolanaApiService
+import fi.darklake.wallet.data.lp.LpPositionService
+import fi.darklake.wallet.data.lp.LpTransactionService
+import fi.darklake.wallet.data.preferences.SettingsManager
+import fi.darklake.wallet.data.repository.BalanceRepository
+import fi.darklake.wallet.data.repository.BalanceService
+import fi.darklake.wallet.data.solana.SolanaKTTransactionService
+import fi.darklake.wallet.data.swap.repository.TokenRepository
+import fi.darklake.wallet.storage.WalletStorageManager
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.Dispatchers
-import android.util.Base64
 import java.math.BigDecimal
-import java.math.RoundingMode
 
 // Use the same TokenInfo from swap module for consistency
 typealias TokenInfo = fi.darklake.wallet.data.swap.models.TokenInfo

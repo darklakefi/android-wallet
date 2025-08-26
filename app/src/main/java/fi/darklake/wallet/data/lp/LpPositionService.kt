@@ -8,7 +8,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import java.math.BigDecimal
-import java.math.RoundingMode
 
 /**
  * Service for fetching user liquidity positions from the blockchain
@@ -17,16 +16,6 @@ import java.math.RoundingMode
 class LpPositionService(
     private val settingsManager: SettingsManager
 ) {
-    
-    // Exchange program ID from dex-web
-    companion object {
-        private const val EXCHANGE_PROGRAM_ID = "darkr3FB87qAZmgLwKov6Hk9Yiah5UT4rUYu8Zhthw1"
-        private const val LP_TOKEN_DECIMALS = 9
-        private const val LIQUIDITY_SEED = "lp"
-        private const val POOL_SEED = "pool"
-        private const val AMM_CONFIG_SEED = "amm_config"
-    }
-    
     private val solanaApiService = SolanaApiService {
         settingsManager.networkSettings.value.let { settings ->
             settings.heliusApiKey?.let { key ->
@@ -124,17 +113,16 @@ class LpPositionService(
         
         // Since reverse-engineering the pool from LP token is complex,
         // let's implement a different approach: check known token pairs
-        return checkKnownTokenPairs(lpTokenMint, lpTokenBalance, userAddress)
+        return checkKnownTokenPairs(lpTokenMint, lpTokenBalance)
     }
     
     /**
      * Check if the LP token matches any known token pairs
      * This is a simplified approach until we implement full PDA derivation
      */
-    private suspend fun checkKnownTokenPairs(
+    private fun checkKnownTokenPairs(
         lpTokenMint: String,
-        lpTokenBalance: Double,
-        userAddress: String
+        lpTokenBalance: Double
     ): LiquidityPosition? {
         
         // Known token pairs for each network
@@ -153,7 +141,7 @@ class LpPositionService(
             val expectedLpMint = deriveLpTokenMint(tokenA, tokenB)
             if (expectedLpMint == lpTokenMint) {
                 // Found a match! Create the position
-                return createLiquidityPosition(tokenA, tokenB, lpTokenMint, lpTokenBalance)
+                return createLiquidityPosition(tokenA, tokenB, lpTokenBalance)
             }
         }
         
@@ -171,10 +159,9 @@ class LpPositionService(
     /**
      * Create a LiquidityPosition from known token pair data
      */
-    private suspend fun createLiquidityPosition(
+    private fun createLiquidityPosition(
         tokenAMint: String,
         tokenBMint: String,
-        lpTokenMint: String,
         lpTokenBalance: Double
     ): LiquidityPosition {
         
