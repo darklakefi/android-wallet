@@ -75,56 +75,6 @@ enum class ContainerVariant {
 }
 
 /**
- * Flexible screen layout that can handle any number of sections
- */
-@Composable
-fun FlexibleScreenLayout(
-    sections: List<@Composable () -> Unit>,
-    spacing: Dp = DesignTokens.Spacing.md,
-    topSpacing: Dp = DesignTokens.Spacing.top,
-    bottomSpacing: Dp = DesignTokens.Spacing.xs,
-    backgroundBrush: androidx.compose.ui.graphics.Brush? = null
-) {
-    Box(
-        modifier = Modifier.fillMaxSize().then(
-            if (backgroundBrush != null) {
-                Modifier.background(backgroundBrush)
-            } else {
-                Modifier
-            }
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(DesignTokens.Layout.screenPadding),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top
-        ) {
-            // Top spacing
-            if (topSpacing > DesignTokens.Spacing.xs) {
-                Spacer(modifier = Modifier.height(topSpacing))
-            }
-            
-            // Render all sections with spacing
-            sections.forEachIndexed { index, section ->
-                section()
-                
-                // Add spacing between sections (but not after the last one)
-                if (index < sections.size - 1) {
-                    Spacer(modifier = Modifier.height(spacing))
-                }
-            }
-            
-            // Bottom spacing
-            if (bottomSpacing > DesignTokens.Spacing.xs) {
-                Spacer(modifier = Modifier.height(bottomSpacing))
-            }
-        }
-    }
-}
-
-/**
  * FlexLayout provides CSS flexbox-like functionality for flexible layouts.
  * 
  * This layout system allows granular control over section positioning and spacing,
