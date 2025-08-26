@@ -129,6 +129,142 @@ platform :android do
     UI.success "Build artifacts cleaned!"
   end
 
+  desc "Prepare for a new release - update version numbers"
+  lane :prepare_release do |options|
+    # Get current version from build.gradle.kts
+    gradle_file = File.read("../app/build.gradle.kts")
+    current_version = gradle_file.match(/versionName\s*=\s*"([^"]+)"/)[1]
+    current_version_code = gradle_file.match(/versionCode\s*=\s*(\d+)/)[1].to_i
+    
+    UI.message "Current version: #{current_version} (code: #{current_version_code})"
+    
+    # Get new version from options or prompt
+    new_version = options[:version] || UI.input("Enter new version (e.g., 1.1.0): ")
+    new_version_code = options[:version_code] || UI.input("Enter new version code (current: #{current_version_code}, usually increment by 1): ").to_i
+    
+    # Validate version format
+    unless new_version.match?(/^\d+\.\d+\.\d+$/)
+      UI.user_error!("Invalid version format. Please use semantic versioning (e.g., 1.1.0)")
+    end
+    
+    # Validate version code
+    if new_version_code <= current_version_code
+      UI.user_error!("New version code must be greater than current version code (#{current_version_code})")
+    end
+    
+    # Update build.gradle.kts
+    gradle_content = gradle_file.gsub(/versionName\s*=\s*"[^"]+"/, "versionName = \"#{new_version}\"")
+    gradle_content = gradle_content.gsub(/versionCode\s*=\s*\d+/, "versionCode = #{new_version_code}")
+    File.write("../app/build.gradle.kts", gradle_content)
+    
+    UI.success "✅ Version updated to #{new_version} (code: #{new_version_code})"
+    
+    # Create changelog file if requested
+    if options[:changelog] || UI.confirm("Create changelog entry?")
+      changelog_dir = "../fastlane/metadata/android/en-US/changelogs"
+      FileUtils.mkdir_p(changelog_dir)
+      changelog_file = "#{changelog_dir}/#{new_version_code}.txt"
+      
+      changelog_content = UI.input("Enter changelog for this version (or press Enter to skip): ")
+      if changelog_content && !changelog_content.empty?
+        File.write(changelog_file, changelog_content)
+        UI.success "Changelog created at: #{changelog_file}"
+      end
+    end
+    
+    # Git operations
+    if UI.confirm("Create git commit for version bump?")
+      sh("git add ../app/build.gradle.kts")
+      sh("git add ../fastlane/metadata/android/en-US/changelogs/#{new_version_code}.txt") if File.exist?("../fastlane/metadata/android/en-US/changelogs/#{new_version_code}.txt")
+      sh("git commit -m 'Bump version to #{new_version} (#{new_version_code})'")
+      UI.success "Git commit created"
+      
+      if UI.confirm("Create git tag v#{new_version}?")
+        sh("git tag v#{new_version}")
+        UI.success "Git tag v#{new_version} created"
+      end
+    end
+    
+    UI.message "Next steps:"
+    UI.message "1. Run 'fastlane android release' for unsigned APK (F-Droid)"
+    UI.message "2. Run 'fastlane android signed_release' for signed APK (Play Store)"
+    UI.message "3. Push changes: git push && git push --tags"
+  end
+
+  desc "Build a signed release APK (requires signing configuration)"
+  lane :signed_release do |options|
+    # Check if signing.properties exists
+    signing_props_file = "../signing.properties"
+    unless File.exist?(signing_props_file)
+      UI.user_error!("signing.properties not found! Copy signing.properties.example to signing.properties and configure it.")
+    end
+    
+    # Read signing properties
+    signing_props = {}
+    File.readlines(signing_props_file).each do |line|
+      next if line.strip.empty? || line.start_with?('#')
+      key, value = line.strip.split('=', 2)
+      signing_props[key] = value if key && value
+    end
+    
+    # Verify keystore exists
+    keystore_file = signing_props['KEYSTORE_FILE']
+    unless keystore_file && File.exist?("../#{keystore_file}")
+      UI.user_error!("Keystore file not found at: #{keystore_file}")
+    end
+    
+    # Clean build
+    gradle(
+      task: "clean",
+      project_dir: "."
+    )
+    
+    # Build signed release APK
+    gradle(
+      task: "assembleRelease",
+      project_dir: ".",
+      properties: {
+        "android.injected.signing.store.file" => File.expand_path("../#{keystore_file}"),
+        "android.injected.signing.store.password" => signing_props['KEYSTORE_PASSWORD'],
+        "android.injected.signing.key.alias" => signing_props['KEY_ALIAS'],
+        "android.injected.signing.key.password" => signing_props['KEY_PASSWORD']
+      }
+    )
+    
+    # Find and display APK info
+    apk_path = lane_context[SharedValues::GRADLE_APK_OUTPUT_PATH]
+    if apk_path && File.exist?(apk_path)
+      apk_size = (File.size(apk_path) / 1024.0 / 1024.0).round(2)
+      
+      # Copy to release directory
+      release_dir = "../releases"
+      FileUtils.mkdir_p(release_dir)
+      
+      # Get version from build.gradle.kts
+      gradle_file = File.read("../app/build.gradle.kts")
+      version = gradle_file.match(/versionName\s*=\s*"([^"]+)"/)[1]
+      
+      release_apk = "#{release_dir}/darklake-wallet-#{version}.apk"
+      FileUtils.cp(apk_path, release_apk)
+      
+      # Generate checksums
+      sha256 = sh("sha256sum '#{release_apk}' | cut -d' ' -f1", log: false).strip
+      File.write("#{release_apk}.sha256", "#{sha256}  darklake-wallet-#{version}.apk\n")
+      
+      UI.success "✅ Signed APK created: #{release_apk}"
+      UI.message "   Size: #{apk_size} MB"
+      UI.message "   SHA256: #{sha256}"
+      
+      # Verify signature if apksigner is available
+      if system("which apksigner > /dev/null 2>&1")
+        UI.message "Verifying APK signature..."
+        sh("apksigner verify --print-certs '#{release_apk}'")
+      end
+    else
+      UI.error "APK file not found!"
+    end
+  end
+
   # Helper method to create F-Droid YML metadata
   private_lane :create_fdroid_yml do
     metadata = {

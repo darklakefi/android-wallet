@@ -75,12 +75,19 @@ fastlane android reproducible
 **Available Fastlane Lanes**:
 - `fastlane android debug` - Build debug APK
 - `fastlane android release` - Build unsigned release APK for F-Droid
+- `fastlane android signed_release` - Build signed release APK (requires signing.properties)
 - `fastlane android reproducible` - Build reproducible APK with consistent timestamps
 - `fastlane android test` - Run unit tests
 - `fastlane android lint` - Run lint checks
+- `fastlane android prepare_release` - Update version numbers and prepare for release
 - `fastlane android prepare_fdroid_metadata` - Generate F-Droid metadata
 - `fastlane android verify_reproducible` - Verify build reproducibility
 - `fastlane android clean` - Clean build artifacts
+
+**Release Process**:
+1. `fastlane android prepare_release` - Update version, create changelog, git commit & tag
+2. `fastlane android release` - Build unsigned APK for F-Droid
+3. `fastlane android signed_release` - Build signed APK for Play Store (optional)
 
 **Ruby Version File**: The project uses `.ruby-version` file set to `3.3.6`
 
