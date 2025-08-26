@@ -1,7 +1,6 @@
 package fi.darklake.wallet.ui.screens.send
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Spacer
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
