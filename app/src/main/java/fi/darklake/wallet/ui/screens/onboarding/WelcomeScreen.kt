@@ -1,37 +1,26 @@
 package fi.darklake.wallet.ui.screens.onboarding
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import fi.darklake.wallet.R
-import fi.darklake.wallet.ui.design.DarklakeWalletTheme
-import fi.darklake.wallet.ui.design.DesignTokens
-import fi.darklake.wallet.ui.components.FlexLayout
-import fi.darklake.wallet.ui.components.FlexSection
-import fi.darklake.wallet.ui.components.FlexPosition
-import fi.darklake.wallet.ui.components.defaultScreenBackground
-import fi.darklake.wallet.ui.components.AppLogo
-import fi.darklake.wallet.ui.components.AppTitle
 import fi.darklake.wallet.ui.components.AppBodyText
 import fi.darklake.wallet.ui.components.AppButton
 import fi.darklake.wallet.ui.components.AppContainer
-import fi.darklake.wallet.ui.components.ContainerVariant
-import fi.darklake.wallet.ui.components.HighlightedText
+import fi.darklake.wallet.ui.components.AppLogo
+import fi.darklake.wallet.ui.components.AppTitle
 import fi.darklake.wallet.ui.components.BackgroundWithOverlay
+import fi.darklake.wallet.ui.components.ContainerVariant
+import fi.darklake.wallet.ui.components.FlexLayout
+import fi.darklake.wallet.ui.components.FlexPosition
+import fi.darklake.wallet.ui.components.FlexSection
 import fi.darklake.wallet.ui.components.NumberedList
 import fi.darklake.wallet.ui.components.createHighlightedItem
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
-import fi.darklake.wallet.ui.design.Green100
-import fi.darklake.wallet.ui.design.Green300
+import fi.darklake.wallet.ui.design.DarklakeWalletTheme
+import fi.darklake.wallet.ui.design.DesignTokens
 
 /**
  * Welcome screen for the Darklake wallet onboarding flow.
