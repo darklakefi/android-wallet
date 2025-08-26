@@ -1,9 +1,12 @@
 package fi.darklake.wallet.ui.screens.wallet
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import fi.darklake.wallet.data.api.SolanaApiService
 import fi.darklake.wallet.data.api.WalletAssetsRepository
+import fi.darklake.wallet.data.repository.BalanceRepository
+import fi.darklake.wallet.data.repository.BalanceService
 import fi.darklake.wallet.data.model.DisplayNft
 import fi.darklake.wallet.data.model.DisplayToken
 import fi.darklake.wallet.data.model.WalletAssets
@@ -26,10 +29,20 @@ data class WalletUiState(
 
 open class WalletViewModel(
     private val storageManager: WalletStorageManager,
-    private val settingsManager: SettingsManager
+    private val settingsManager: SettingsManager,
+    context: Context? = null
 ) : ViewModel() {
 
     private val assetsRepository = createAssetsRepository()
+    
+    // Use centralized balance repository
+    private val balanceRepository: BalanceRepository = if (context != null) {
+        BalanceService.getInstance(context).getRepository()
+    } else {
+        // Fallback to direct repository if no context provided
+        val solanaApi = SolanaApiService { settingsManager.getCurrentRpcUrl() }
+        BalanceRepository(solanaApi)
+    }
 
     protected open fun createAssetsRepository(): WalletAssetsRepository {
         val solanaApi = SolanaApiService { settingsManager.getCurrentRpcUrl() }
@@ -70,7 +83,11 @@ open class WalletViewModel(
                 val publicKey = wallet.publicKey
                 _uiState.value = _uiState.value.copy(publicKey = publicKey)
 
-                // Fetch assets from Helius
+                // Fetch balances from centralized repository (with caching)
+                val solBalanceResult = balanceRepository.fetchSolBalance(publicKey)
+                val tokensResult = balanceRepository.fetchTokens(publicKey)
+                
+                // Also fetch NFTs and compressed tokens from assets repository
                 val assetsResult = assetsRepository.getWalletAssets(publicKey)
                 if (assetsResult.isFailure) {
                     _uiState.value = _uiState.value.copy(
@@ -81,7 +98,15 @@ open class WalletViewModel(
                 }
 
                 val assets = assetsResult.getOrNull()!!
-                updateUiWithAssets(assets)
+                
+                // Use SOL balance from centralized repository
+                val solBalance = balanceRepository.solBalance.value
+                
+                // Use token balances from centralized repository
+                val tokens = balanceRepository.tokens.value
+                
+                // Merge with NFT data from assets
+                updateUiWithAssets(assets, solBalance, tokens)
                 
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
@@ -103,6 +128,11 @@ open class WalletViewModel(
             _uiState.value = _uiState.value.copy(isRefreshing = true, error = null)
             
             try {
+                // Force refresh balances in centralized repository
+                val solBalanceResult = balanceRepository.fetchSolBalance(currentPublicKey)
+                val tokensResult = balanceRepository.fetchTokens(currentPublicKey, forceRefresh = true)
+                
+                // Also refresh NFTs from assets repository
                 val assetsResult = assetsRepository.getWalletAssets(currentPublicKey)
                 if (assetsResult.isFailure) {
                     _uiState.value = _uiState.value.copy(
@@ -113,7 +143,10 @@ open class WalletViewModel(
                 }
 
                 val assets = assetsResult.getOrNull()!!
-                updateUiWithAssets(assets)
+                val solBalance = balanceRepository.solBalance.value
+                val tokens = balanceRepository.tokens.value
+                
+                updateUiWithAssets(assets, solBalance, tokens)
                 _uiState.value = _uiState.value.copy(isRefreshing = false)
                 
             } catch (e: Exception) {
@@ -125,11 +158,15 @@ open class WalletViewModel(
         }
     }
 
-    private fun updateUiWithAssets(assets: WalletAssets) {
+    private fun updateUiWithAssets(
+        assets: WalletAssets,
+        solBalance: Double = assets.solBalance,
+        tokens: List<fi.darklake.wallet.data.model.TokenInfo> = assets.tokens
+    ) {
         val displayTokens = mutableListOf<DisplayToken>()
         
-        // Add regular tokens
-        displayTokens.addAll(assets.tokens.map { tokenInfo ->
+        // Add regular tokens from centralized repository
+        displayTokens.addAll(tokens.map { tokenInfo ->
             DisplayToken(
                 mint = tokenInfo.balance.mint,
                 name = tokenInfo.metadata?.name ?: "Unknown Token",
@@ -178,7 +215,7 @@ open class WalletViewModel(
 
         _uiState.value = _uiState.value.copy(
             isLoading = false,
-            solBalance = assets.solBalance,
+            solBalance = solBalance,
             tokens = displayTokens,
             nfts = displayNfts,
             error = null

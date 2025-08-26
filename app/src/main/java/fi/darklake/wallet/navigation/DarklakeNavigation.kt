@@ -14,7 +14,6 @@ import fi.darklake.wallet.ui.screens.onboarding.MnemonicVerificationScreen
 import fi.darklake.wallet.ui.screens.onboarding.SharedWalletViewModel
 import fi.darklake.wallet.ui.screens.MainScreen
 import fi.darklake.wallet.ui.screens.wallet.WalletViewModel
-import fi.darklake.wallet.ui.screens.send.SendSolScreen
 import fi.darklake.wallet.ui.screens.send.SendTokenScreen
 import fi.darklake.wallet.ui.screens.send.SendNftScreen
 import fi.darklake.wallet.ui.screens.receive.ReceiveScreen
@@ -139,7 +138,7 @@ fun DarklakeNavigation(
         }
         
         composable(Screen.SendSol.route) {
-            SendSolScreen(
+            SendTokenScreen(
                 onBack = {
                     navController.popBackStack()
                 },

@@ -48,14 +48,10 @@ fun MainScreen(
             modifier = Modifier.fillMaxSize()
         ) {
             composable(MainTab.Wallet.route) {
-                val walletViewModel: WalletViewModel = viewModel { 
-                    WalletViewModel(storageManager, settingsManager) 
-                }
                 Box(modifier = Modifier.fillMaxSize()) {
                     WalletScreen(
                         storageManager = storageManager,
                         settingsManager = settingsManager,
-                        viewModel = walletViewModel,
                         onNavigateToSettings = {
                             navController.navigate(MainTab.More.route)
                         },

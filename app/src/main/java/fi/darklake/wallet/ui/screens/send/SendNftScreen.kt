@@ -14,7 +14,6 @@ import fi.darklake.wallet.data.preferences.SettingsManager
 import fi.darklake.wallet.data.model.getHeliusRpcUrl
 import fi.darklake.wallet.storage.WalletStorageManager
 import fi.darklake.wallet.ui.components.AppButton
-import fi.darklake.wallet.ui.components.TerminalCard
 import fi.darklake.wallet.ui.design.*
 import java.util.Locale
 
@@ -88,66 +87,17 @@ fun SendNftScreen(
                 nftMint = nftMint
             )
 
-            // Send form
-            TerminalCard(
-                title = "TRANSFER_PARAMETERS",
+            // Send form - Using TransferForm component
+            TransferForm(
+                recipientAddress = uiState.recipientAddress,
+                recipientAddressError = uiState.recipientAddressError,
+                onRecipientAddressChange = viewModel::updateRecipientAddress,
+                estimatedFee = uiState.estimatedFee,
+                solBalance = uiState.solBalance,
+                showWarning = true,
+                warningText = "⚠️ NFT transfers are irreversible. Please verify the recipient address carefully.",
                 modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    // Warning about NFT transfers
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f)
-                        )
-                    ) {
-                        Text(
-                            text = "⚠️ NFT transfers are irreversible. Please verify the recipient address carefully.",
-                            modifier = Modifier.padding(12.dp),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            style = TerminalTextStyle
-                        )
-                    }
-                    
-                    // Recipient address
-                    OutlinedTextField(
-                        value = uiState.recipientAddress,
-                        onValueChange = viewModel::updateRecipientAddress,
-                        label = { Text("Recipient Address") },
-                        placeholder = { Text("Enter Solana wallet address") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        isError = uiState.recipientAddressError != null,
-                        supportingText = uiState.recipientAddressError?.let { error ->
-                            { Text(error, color = MaterialTheme.colorScheme.error) }
-                        }
-                    )
-                    
-                    // Transaction fee estimate (in SOL)
-                    Text(
-                        text = "ESTIMATED_FEE: ${String.format(Locale.US, "%.6f", uiState.estimatedFee)} SOL",
-                        style = TerminalTextStyle,
-                        color = TerminalGray
-                    )
-                    
-                    // Balance check warning
-                    if (uiState.estimatedFee > uiState.solBalance) {
-                        Card(
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
-                            )
-                        ) {
-                            Text(
-                                text = "⚠️ Insufficient SOL for transaction fees",
-                                modifier = Modifier.padding(12.dp),
-                                color = MaterialTheme.colorScheme.error,
-                                style = TerminalTextStyle
-                            )
-                        }
-                    }
-                }
-            }
+            )
             
             // Error display
             uiState.error?.let { error ->

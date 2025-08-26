@@ -2,10 +2,15 @@ package fi.darklake.wallet.ui.screens.send
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import fi.darklake.wallet.data.api.SolanaApiService
 import fi.darklake.wallet.data.api.WalletAssetsRepository
 import fi.darklake.wallet.data.model.getHeliusRpcUrl
+import fi.darklake.wallet.data.model.TokenInfo
 import fi.darklake.wallet.data.preferences.SettingsManager
+import fi.darklake.wallet.data.repository.BalanceService
+import fi.darklake.wallet.data.tokens.TokenMetadataService
 import fi.darklake.wallet.data.solana.SolanaKTTransactionService
 import fi.darklake.wallet.storage.WalletStorageManager
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,6 +40,7 @@ data class SendUiState(
     val tokenImageUrl: String? = null,
     val tokenBalance: String? = null,
     val tokenDecimals: Int = 0,
+    val selectedToken: TokenInfo? = null,
     // For NFT sends
     val nftMint: String? = null,
     val nftName: String? = null,
@@ -244,6 +250,38 @@ class SendViewModel(
     }
     
     // For token sends
+    fun setTokenMint(mint: String) {
+        viewModelScope.launch {
+            try {
+                val wallet = storageManager.getWallet().getOrNull() ?: return@launch
+                
+                // Get token accounts for the wallet
+                val tokensResult = solanaApiService.getTokenAccounts(wallet.publicKey)
+                if (tokensResult.isSuccess) {
+                    val token = tokensResult.getOrNull()?.find { it.balance.mint == mint }
+                    if (token != null) {
+                        _uiState.value = _uiState.value.copy(
+                            tokenMint = mint,
+                            tokenSymbol = token.metadata?.symbol ?: "TOKEN",
+                            tokenName = token.metadata?.name ?: "Unknown Token",
+                            tokenImageUrl = token.metadata?.image,
+                            tokenBalance = token.balance.uiAmountString,
+                            tokenDecimals = token.balance.decimals,
+                            selectedToken = token
+                        )
+                        
+                        // Load metadata if not already present
+                        if (token.metadata == null) {
+                            loadTokenMetadata(mint)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                println("Failed to load token info: ${e.message}")
+            }
+        }
+    }
+    
     fun initializeTokenSend(tokenMint: String, tokenSymbol: String, tokenBalance: String, decimals: Int) {
         _uiState.value = _uiState.value.copy(
             tokenMint = tokenMint,

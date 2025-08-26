@@ -36,11 +36,11 @@ fun SwapScreen(
     settingsManager: SettingsManager,
     onNavigateToSlippageSettings: () -> Unit = {}
 ) {
+    val context = LocalContext.current
     val viewModel: SwapViewModel = viewModel {
-        SwapViewModel(storageManager, settingsManager)
+        SwapViewModel(storageManager, settingsManager, context)
     }
     val uiState by viewModel.uiState.collectAsState()
-    val context = LocalContext.current
     
     var hasWallet by remember { mutableStateOf(false) }
     var walletAddress by remember { mutableStateOf("") }

@@ -17,6 +17,8 @@ import kotlinx.serialization.encodeToString
 import io.ktor.client.statement.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 
 class SolanaApiService(
     private val getRpcUrl: () -> String
@@ -154,12 +156,45 @@ class SolanaApiService(
 
     suspend fun getTokenAccounts(publicKey: String): Result<List<TokenInfo>> = withContext(Dispatchers.IO) {
         try {
+            // Token Program ID (classic SPL Token)
+            val tokenProgramId = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+            // Token-2022 Program ID (Token Extensions)
+            val token2022ProgramId = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+            
+            // Fetch both Token and Token-2022 accounts in parallel
+            val results = awaitAll(
+                async { fetchTokenAccountsByProgram(publicKey, tokenProgramId) },
+                async { fetchTokenAccountsByProgram(publicKey, token2022ProgramId) }
+            )
+            
+            // Combine results from both programs
+            val allTokens = mutableListOf<TokenInfo>()
+            
+            results[0].fold(
+                onSuccess = { tokens -> allTokens.addAll(tokens) },
+                onFailure = { e -> println("Error fetching Token accounts: ${e.message}") }
+            )
+            
+            results[1].fold(
+                onSuccess = { tokens -> allTokens.addAll(tokens) },
+                onFailure = { e -> println("Error fetching Token-2022 accounts: ${e.message}") }
+            )
+            
+            Result.success(allTokens)
+        } catch (e: Exception) {
+            println("Token accounts error: ${e.message}")
+            Result.failure(e)
+        }
+    }
+    
+    private suspend fun fetchTokenAccountsByProgram(publicKey: String, programId: String): Result<List<TokenInfo>> = withContext(Dispatchers.IO) {
+        try {
             val tokenRequest = JsonRpcRequest(
                 method = "getTokenAccountsByOwner",
                 params = kotlinx.serialization.json.buildJsonArray {
                     add(kotlinx.serialization.json.JsonPrimitive(publicKey))
                     add(kotlinx.serialization.json.buildJsonObject {
-                        put("programId", kotlinx.serialization.json.JsonPrimitive("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"))
+                        put("programId", kotlinx.serialization.json.JsonPrimitive(programId))
                     })
                     add(kotlinx.serialization.json.buildJsonObject {
                         put("encoding", kotlinx.serialization.json.JsonPrimitive("jsonParsed"))
@@ -180,13 +215,13 @@ class SolanaApiService(
                 return@withContext Result.success(emptyList())
             }
             
-            println("Helius Token API Response: $responseBody")
+            println("Helius Token API Response for $programId: $responseBody")
             
             val tokenResponse = json.decodeFromString<HeliusTokenResponse>(responseBody)
             
             // Check for API errors
             if (tokenResponse.error != null) {
-                println("Token API Error: ${tokenResponse.error.message}")
+                println("Token API Error for $programId: ${tokenResponse.error.message}")
                 return@withContext Result.success(emptyList())
             }
             
@@ -211,7 +246,7 @@ class SolanaApiService(
             }
             Result.success(tokens)
         } catch (e: Exception) {
-            println("Token accounts error: ${e.message}")
+            println("Token accounts error for $programId: ${e.message}")
             Result.failure(e)
         }
     }

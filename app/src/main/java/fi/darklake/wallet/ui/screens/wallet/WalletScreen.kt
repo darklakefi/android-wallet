@@ -8,6 +8,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import fi.darklake.wallet.data.model.DisplayToken
@@ -26,9 +27,12 @@ fun WalletScreen(
     onNavigateToSendSol: () -> Unit = {},
     onNavigateToSendToken: (String) -> Unit = {},
     onNavigateToSendNft: (String) -> Unit = {},
-    onNavigateToReceive: () -> Unit = {},
-    viewModel: WalletViewModel = viewModel { WalletViewModel(storageManager, settingsManager) }
+    onNavigateToReceive: () -> Unit = {}
 ) {
+    val context = LocalContext.current
+    val viewModel: WalletViewModel = viewModel { 
+        WalletViewModel(storageManager, settingsManager, context) 
+    }
     val uiState by viewModel.uiState.collectAsState()
     var selectedTab by remember { mutableStateOf(0) } // 0 for Tokens, 1 for NFTs
 

@@ -39,8 +39,9 @@ fun LpScreen(
     storageManager: WalletStorageManager,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val viewModel: LpViewModel = viewModel {
-        LpViewModel(storageManager, settingsManager)
+        LpViewModel(storageManager, settingsManager, context)
     }
     
     val uiState by viewModel.uiState.collectAsState()

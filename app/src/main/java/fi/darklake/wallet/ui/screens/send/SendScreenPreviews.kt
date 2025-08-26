@@ -210,24 +210,6 @@ fun PreviewSendButton() {
 
 @Preview(showBackground = true, backgroundColor = 0xFF010F06)
 @Composable
-fun PreviewSendSolScreen() {
-    DarklakeWalletTheme {
-        val context = LocalContext.current
-        val storageManager = remember { WalletStorageManager(context) }
-        val settingsManager = remember { SettingsManager(context) }
-        
-        SendSolScreen(
-            onBack = {},
-            onSuccess = {},
-            storageManager = storageManager,
-            settingsManager = settingsManager,
-            viewModel = createMockSendViewModel()
-        )
-    }
-}
-
-@Preview(showBackground = true, backgroundColor = 0xFF010F06)
-@Composable
 fun PreviewSendTokenScreen() {
     DarklakeWalletTheme {
         val context = LocalContext.current
@@ -235,7 +217,6 @@ fun PreviewSendTokenScreen() {
         val settingsManager = remember { SettingsManager(context) }
         
         SendTokenScreen(
-            tokenMint = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
             onBack = {},
             onSuccess = {},
             storageManager = storageManager,

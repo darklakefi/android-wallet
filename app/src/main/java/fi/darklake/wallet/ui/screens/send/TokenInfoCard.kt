@@ -1,6 +1,7 @@
 package fi.darklake.wallet.ui.screens.send
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.Spacer
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -12,7 +13,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import fi.darklake.wallet.ui.components.TerminalCard
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.unit.sp
 import fi.darklake.wallet.ui.design.*
 
 @Composable
@@ -23,63 +27,116 @@ fun TokenInfoCard(
     tokenImageUrl: String?,
     modifier: Modifier = Modifier
 ) {
-    TerminalCard(
-        title = "TOKEN_INFO",
-        modifier = modifier.fillMaxWidth()
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(
+                color = SurfaceContainer,
+                shape = RoundedCornerShape(4.dp)
+            )
+            .border(
+                width = 1.dp,
+                color = NeonGreen.copy(alpha = 0.6f),
+                shape = RoundedCornerShape(4.dp)
+            )
+            .padding(16.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Token icon
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .padding(4.dp),
-                contentAlignment = Alignment.Center
+        Column {
+            // Title
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                if (tokenImageUrl != null) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(tokenImageUrl)
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = tokenName,
-                        modifier = Modifier.size(32.dp),
-                        contentScale = ContentScale.Fit
-                    )
-                } else {
+                Text(
+                    text = "╭─ TOKEN_INFO",
+                    style = TerminalHeaderStyle,
+                    color = NeonGreen,
+                    fontSize = 12.sp
+                )
+                Text(
+                    text = "─╮",
+                    style = TerminalHeaderStyle,
+                    color = NeonGreen,
+                    fontSize = 12.sp
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Token icon
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .padding(4.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (tokenImageUrl != null) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(tokenImageUrl)
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = tokenName,
+                            modifier = Modifier.size(32.dp),
+                            contentScale = ContentScale.Fit
+                        )
+                    } else {
+                        Text(
+                            text = tokenSymbol?.take(1) ?: "T",
+                            style = TerminalHeaderStyle,
+                            color = NeonGreen
+                        )
+                    }
+                }
+                
+                Column {
                     Text(
-                        text = tokenSymbol?.take(1) ?: "T",
+                        text = "[${tokenSymbol ?: "UNKNOWN"}]",
                         style = TerminalHeaderStyle,
-                        color = NeonGreen
+                        color = NeonGreen,
+                        fontWeight = FontWeight.Bold
+                    )
+                    tokenName?.let { name ->
+                        if (name != tokenSymbol) {
+                            Text(
+                                text = name,
+                                style = TerminalTextStyle,
+                                color = TerminalGray.copy(alpha = 0.8f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                    Text(
+                        text = "BALANCE: ${tokenBalance ?: "0"}",
+                        style = TerminalTextStyle,
+                        color = TerminalGray
                     )
                 }
             }
             
-            Column {
+            // Bottom border
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
                 Text(
-                    text = "[${tokenSymbol ?: "UNKNOWN"}]",
+                    text = "╰─",
                     style = TerminalHeaderStyle,
                     color = NeonGreen,
-                    fontWeight = FontWeight.Bold
+                    fontSize = 12.sp
                 )
-                tokenName?.let { name ->
-                    if (name != tokenSymbol) {
-                        Text(
-                            text = name,
-                            style = TerminalTextStyle,
-                            color = TerminalGray.copy(alpha = 0.8f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
                 Text(
-                    text = "BALANCE: ${tokenBalance ?: "0"}",
-                    style = TerminalTextStyle,
-                    color = TerminalGray
+                    text = "─╯",
+                    style = TerminalHeaderStyle,
+                    color = NeonGreen,
+                    fontSize = 12.sp
                 )
             }
         }

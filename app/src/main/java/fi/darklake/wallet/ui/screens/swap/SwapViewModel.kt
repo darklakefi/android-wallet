@@ -1,5 +1,6 @@
 package fi.darklake.wallet.ui.screens.swap
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import fi.darklake.wallet.data.preferences.SettingsManager
@@ -8,6 +9,8 @@ import fi.darklake.wallet.data.swap.models.*
 import fi.darklake.wallet.data.swap.repository.TokenRepository
 import fi.darklake.wallet.data.swap.repository.PoolRepository
 import fi.darklake.wallet.data.api.SolanaApiService
+import fi.darklake.wallet.data.repository.BalanceRepository
+import fi.darklake.wallet.data.repository.BalanceService
 import fi.darklake.wallet.data.solana.SolanaKTTransactionService
 import fi.darklake.wallet.storage.WalletStorageManager
 import com.solana.core.HotAccount
@@ -68,7 +71,8 @@ enum class SwapStep {
 
 class SwapViewModel(
     private val storageManager: WalletStorageManager,
-    private val settingsManager: SettingsManager
+    private val settingsManager: SettingsManager,
+    context: Context? = null
 ) : ViewModel() {
     
     private val swapRepository: SwapRepository
@@ -89,6 +93,14 @@ class SwapViewModel(
                 }
             } ?: settings.network.rpcUrl
         }
+    }
+    
+    // Use centralized balance repository
+    private val balanceRepository: BalanceRepository = if (context != null) {
+        BalanceService.getInstance(context).getRepository()
+    } else {
+        // Fallback to direct repository if no context provided
+        BalanceRepository(solanaApiService)
     }
     
     private val _uiState = MutableStateFlow(SwapUiState())
@@ -472,47 +484,42 @@ class SwapViewModel(
             // SOL mint address (same on all networks)
             val SOL_MINT = "So11111111111111111111111111111111111111112"
             
+            // Fetch balances from centralized repository
+            // This will use cached data when available
+            balanceRepository.fetchSolBalance(wallet.publicKey)
+            balanceRepository.fetchTokens(wallet.publicKey)
+            
             // Load token A balance
             if (tokenA != null) {
                 if (tokenA.address == SOL_MINT) {
-                    // Get SOL balance
-                    val balanceResult = solanaApiService.getBalance(wallet.publicKey)
-                    balanceResult.onSuccess { balance ->
-                        _uiState.value = _uiState.value.copy(
-                            tokenABalance = BigDecimal(balance).divide(BigDecimal(1_000_000_000), 9, RoundingMode.DOWN)
-                        )
-                    }
+                    // Get SOL balance from repository (already in SOL units)
+                    val solBalance = balanceRepository.solBalance.value
+                    _uiState.value = _uiState.value.copy(
+                        tokenABalance = BigDecimal(solBalance)
+                    )
                 } else {
-                    // Get SPL token balance
-                    val tokensResult = solanaApiService.getTokenAccounts(wallet.publicKey)
-                    tokensResult.onSuccess { tokens ->
-                        val tokenInfo = tokens.find { it.balance.mint == tokenA.address }
-                        _uiState.value = _uiState.value.copy(
-                            tokenABalance = BigDecimal(tokenInfo?.balance?.uiAmount ?: 0.0)
-                        )
-                    }
+                    // Get SPL token balance from repository
+                    val tokenInfo = balanceRepository.getTokenByMint(tokenA.address)
+                    _uiState.value = _uiState.value.copy(
+                        tokenABalance = BigDecimal(tokenInfo?.balance?.uiAmount ?: 0.0)
+                    )
                 }
             }
             
             // Load token B balance
             if (tokenB != null) {
                 if (tokenB.address == SOL_MINT) {
-                    // Get SOL balance
-                    val balanceResult = solanaApiService.getBalance(wallet.publicKey)
-                    balanceResult.onSuccess { balance ->
-                        _uiState.value = _uiState.value.copy(
-                            tokenBBalance = BigDecimal(balance).divide(BigDecimal(1_000_000_000), 9, RoundingMode.DOWN)
-                        )
-                    }
+                    // Get SOL balance from repository (already in SOL units)
+                    val solBalance = balanceRepository.solBalance.value
+                    _uiState.value = _uiState.value.copy(
+                        tokenBBalance = BigDecimal(solBalance)
+                    )
                 } else {
-                    // Get SPL token balance
-                    val tokensResult = solanaApiService.getTokenAccounts(wallet.publicKey)
-                    tokensResult.onSuccess { tokens ->
-                        val tokenInfo = tokens.find { it.balance.mint == tokenB.address }
-                        _uiState.value = _uiState.value.copy(
-                            tokenBBalance = BigDecimal(tokenInfo?.balance?.uiAmount ?: 0.0)
-                        )
-                    }
+                    // Get SPL token balance from repository
+                    val tokenInfo = balanceRepository.getTokenByMint(tokenB.address)
+                    _uiState.value = _uiState.value.copy(
+                        tokenBBalance = BigDecimal(tokenInfo?.balance?.uiAmount ?: 0.0)
+                    )
                 }
             }
         }
