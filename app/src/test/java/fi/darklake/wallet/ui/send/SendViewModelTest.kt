@@ -7,6 +7,7 @@ import fi.darklake.wallet.data.model.NetworkSettings
 import fi.darklake.wallet.data.model.SolanaNetwork
 import fi.darklake.wallet.data.preferences.SettingsManager
 import fi.darklake.wallet.storage.WalletStorageManager
+import fi.darklake.wallet.ui.screens.send.SendViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
