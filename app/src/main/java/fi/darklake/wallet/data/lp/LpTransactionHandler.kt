@@ -1,6 +1,6 @@
 package fi.darklake.wallet.data.lp
 
-import fi.darklake.wallet.data.api.SolanaApiService
+import fi.darklake.wallet.data.api.HeliusApiService
 import fi.darklake.wallet.data.preferences.SettingsManager
 import fi.darklake.wallet.data.swap.grpc.DexGatewayClient
 import kotlinx.coroutines.Dispatchers
@@ -33,7 +33,7 @@ class LpTransactionHandler(
         private const val COMPUTE_BUDGET_PROGRAM_ID = "ComputeBudget111111111111111111111111111111"
     }
     
-    private val solanaApiService = SolanaApiService {
+    private val solanaApiService = HeliusApiService {
         settingsManager.networkSettings.value.let { settings ->
             settings.heliusApiKey?.let { key ->
                 when (settings.network) {

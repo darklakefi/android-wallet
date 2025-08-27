@@ -2,7 +2,7 @@ package fi.darklake.wallet.ui.screens.send
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import fi.darklake.wallet.data.api.SolanaApiService
+import fi.darklake.wallet.data.api.HeliusApiService
 import fi.darklake.wallet.data.api.WalletAssetsRepository
 import fi.darklake.wallet.data.model.getHeliusRpcUrl
 import fi.darklake.wallet.data.model.TokenInfo
@@ -53,7 +53,7 @@ class SendViewModel(
     
     private val transactionService = SolanaTransactionService(settingsManager)
     
-    private lateinit var solanaApiService: SolanaApiService
+    private lateinit var solanaApiService: HeliusApiService
     private lateinit var assetsRepository: WalletAssetsRepository
     
     init {
@@ -63,7 +63,7 @@ class SendViewModel(
     
     private fun initializeServices() {
         val networkSettings = settingsManager.networkSettings.value
-        solanaApiService = SolanaApiService { networkSettings.getHeliusRpcUrl() }
+        solanaApiService = HeliusApiService { networkSettings.getHeliusRpcUrl() }
         assetsRepository = WalletAssetsRepository(solanaApiService)
     }
     

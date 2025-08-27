@@ -1,7 +1,7 @@
 package fi.darklake.wallet.data.repository
 
 import android.content.Context
-import fi.darklake.wallet.data.api.SolanaApiService
+import fi.darklake.wallet.data.api.HeliusApiService
 import fi.darklake.wallet.data.model.getHeliusRpcUrl
 import fi.darklake.wallet.data.preferences.SettingsManager
 
@@ -31,7 +31,7 @@ class BalanceService private constructor(
     fun getRepository(): BalanceRepository {
         if (balanceRepository == null) {
             val networkSettings = settingsManager.networkSettings.value
-            val apiService = SolanaApiService { networkSettings.getHeliusRpcUrl() }
+            val apiService = HeliusApiService { networkSettings.getHeliusRpcUrl() }
             balanceRepository = BalanceRepository(apiService, context)
         }
         return balanceRepository!!

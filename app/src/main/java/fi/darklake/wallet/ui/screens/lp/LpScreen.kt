@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -21,6 +22,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.tooling.preview.Preview
@@ -239,10 +241,89 @@ fun LpScreen(
                         )
                     }
                     
-                    // Initial Price Input (for new pools)
+                    // Initial Price Input (for new pools only - when pool doesn't exist)
                     AnimatedVisibility(visible = uiState.poolDetails?.exists == false) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = "SET INITIAL PRICE",
+                                style = TerminalTextStyle,
+                                color = DarklakeTextSecondary,
+                                fontSize = 12.sp
+                            )
+                            
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(
+                                        color = DarklakeCardBackground,
+                                        shape = RoundedCornerShape(4.dp)
+                                    )
+                                    .border(
+                                        width = 1.dp,
+                                        color = DarklakeBorder,
+                                        shape = RoundedCornerShape(4.dp)
+                                    )
+                                    .padding(16.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "1 ${uiState.tokenA?.symbol ?: "TOKEN A"} =",
+                                        style = Typography.bodyMedium,
+                                        color = DarklakeTextPrimary
+                                    )
+                                    
+                                    BasicTextField(
+                                        value = uiState.initialPrice,
+                                        onValueChange = { 
+                                            val filteredInput = FormatUtils.filterNumericInput(it)
+                                            viewModel.updateInitialPrice(filteredInput) 
+                                        },
+                                        modifier = Modifier
+                                            .width(120.dp)
+                                            .background(
+                                                color = DarklakeInputBackground,
+                                                shape = RoundedCornerShape(4.dp)
+                                            )
+                                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                                        textStyle = Typography.bodyMedium.copy(
+                                            color = DarklakeTextPrimary,
+                                            textAlign = TextAlign.End
+                                        ),
+                                        keyboardOptions = KeyboardOptions(
+                                            keyboardType = KeyboardType.Decimal
+                                        ),
+                                        singleLine = true,
+                                        decorationBox = { innerTextField ->
+                                            Box(contentAlignment = Alignment.CenterEnd) {
+                                                if (uiState.initialPrice.isEmpty()) {
+                                                    Text(
+                                                        text = "0.0",
+                                                        style = Typography.bodyMedium,
+                                                        color = DarklakeTextSecondary
+                                                    )
+                                                }
+                                                innerTextField()
+                                            }
+                                        }
+                                    )
+                                    
+                                    Text(
+                                        text = uiState.tokenB?.symbol ?: "TOKEN B",
+                                        style = Typography.bodyMedium,
+                                        color = DarklakeTextPrimary
+                                    )
+                                }
+                            }
                         }
                     }
+                }
 
                 // Action Button
                 AppButton(

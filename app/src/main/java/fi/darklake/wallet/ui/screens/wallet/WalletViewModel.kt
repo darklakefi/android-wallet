@@ -3,7 +3,7 @@ package fi.darklake.wallet.ui.screens.wallet
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import fi.darklake.wallet.data.api.SolanaApiService
+import fi.darklake.wallet.data.api.HeliusApiService
 import fi.darklake.wallet.data.api.WalletAssetsRepository
 import fi.darklake.wallet.data.repository.BalanceRepository
 import fi.darklake.wallet.data.repository.BalanceService
@@ -40,12 +40,12 @@ open class WalletViewModel(
         BalanceService.getInstance(context).getRepository()
     } else {
         // Fallback to direct repository if no context provided
-        val solanaApi = SolanaApiService { settingsManager.getCurrentRpcUrl() }
+        val solanaApi = HeliusApiService { settingsManager.getCurrentRpcUrl() }
         BalanceRepository(solanaApi)
     }
 
     protected open fun createAssetsRepository(): WalletAssetsRepository {
-        val solanaApi = SolanaApiService { settingsManager.getCurrentRpcUrl() }
+        val solanaApi = HeliusApiService { settingsManager.getCurrentRpcUrl() }
         return WalletAssetsRepository(solanaApi)
     }
 

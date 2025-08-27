@@ -6,9 +6,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.solana.core.HotAccount
 import com.solana.core.Transaction
-import fi.darklake.wallet.data.api.SolanaApiService
+import fi.darklake.wallet.data.api.HeliusApiService
 import fi.darklake.wallet.data.lp.LpPositionService
 import fi.darklake.wallet.data.lp.LpTransactionService
+import fi.darklake.wallet.data.lp.PdaUtils
 import fi.darklake.wallet.data.preferences.SettingsManager
 import fi.darklake.wallet.data.repository.BalanceRepository
 import fi.darklake.wallet.data.repository.BalanceService
@@ -106,7 +107,7 @@ class LpViewModel(
     private val lpPositionService = LpPositionService(settingsManager)
     private val transactionService = SolanaTransactionService(settingsManager)
     
-    private val solanaApiService = SolanaApiService {
+    private val solanaApiService = HeliusApiService {
         settingsManager.networkSettings.value.let { settings ->
             settings.heliusApiKey?.let { key ->
                 when (settings.network) {
@@ -492,20 +493,48 @@ class LpViewModel(
     
     private fun calculateProportionalAmount(amount: BigDecimal, isTokenA: Boolean) {
         val poolDetails = _uiState.value.poolDetails
+        
         if (poolDetails?.exists == true && poolDetails.reserveX > BigDecimal.ZERO && poolDetails.reserveY > BigDecimal.ZERO) {
-            // Calculate proportional amount based on pool reserves
+            // For existing pools: Calculate proportional amount based on pool reserves
             if (isTokenA) {
                 val ratio = poolDetails.reserveY.divide(poolDetails.reserveX, 6, java.math.RoundingMode.DOWN)
                 val calculatedAmount = amount.multiply(ratio)
                 _uiState.value = _uiState.value.copy(
-                    tokenBAmount = formatAmount(calculatedAmount.toDouble(), 6)
+                    tokenBAmount = formatAmount(calculatedAmount.toDouble(), 6),
+                    insufficientBalanceB = calculatedAmount > _uiState.value.tokenBBalance
                 )
             } else {
                 val ratio = poolDetails.reserveX.divide(poolDetails.reserveY, 6, java.math.RoundingMode.DOWN)
                 val calculatedAmount = amount.multiply(ratio)
                 _uiState.value = _uiState.value.copy(
-                    tokenAAmount = formatAmount(calculatedAmount.toDouble(), 9)
+                    tokenAAmount = formatAmount(calculatedAmount.toDouble(), 9),
+                    insufficientBalanceA = calculatedAmount > _uiState.value.tokenABalance
                 )
+            }
+        } else if (poolDetails?.exists == false) {
+            // For new pools: Use initial price to calculate
+            val initialPrice = _uiState.value.initialPrice
+            if (initialPrice.isNotEmpty()) {
+                try {
+                    val price = BigDecimal(initialPrice)
+                    if (isTokenA && price > BigDecimal.ZERO) {
+                        // TokenA changed, calculate TokenB = TokenA * price
+                        val calculatedAmount = amount.multiply(price)
+                        _uiState.value = _uiState.value.copy(
+                            tokenBAmount = formatAmount(calculatedAmount.toDouble(), 6),
+                            insufficientBalanceB = calculatedAmount > _uiState.value.tokenBBalance
+                        )
+                    } else if (!isTokenA && price > BigDecimal.ZERO) {
+                        // TokenB changed, calculate TokenA = TokenB / price
+                        val calculatedAmount = amount.divide(price, 9, java.math.RoundingMode.DOWN)
+                        _uiState.value = _uiState.value.copy(
+                            tokenAAmount = formatAmount(calculatedAmount.toDouble(), 9),
+                            insufficientBalanceA = calculatedAmount > _uiState.value.tokenABalance
+                        )
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.w("LpViewModel", "Error calculating with initial price", e)
+                }
             }
         }
     }
@@ -603,26 +632,76 @@ class LpViewModel(
             val tokenA = _uiState.value.tokenA ?: return@launch
             val tokenB = _uiState.value.tokenB ?: return@launch
             
-            // TODO: Implement actual pool existence check
-            // For now, assume SOL/USDC pool exists
-            val poolExists = (tokenA.symbol == "SOL" && tokenB.symbol == "USDC") ||
-                           (tokenA.symbol == "USDC" && tokenB.symbol == "SOL")
-            
-            _uiState.value = _uiState.value.copy(
-                poolDetails = if (poolExists) {
-                    PoolDetails(
-                        exists = true,
-                        tokenXMint = tokenA.address,
-                        tokenYMint = tokenB.address,
-                        poolAddress = "mock_pool_address",
-                        reserveX = BigDecimal("1000.0"),
-                        reserveY = BigDecimal("100000.0"),
-                        totalLpSupply = BigDecimal("10000.0")
-                    )
+            try {
+                // Calculate the pool PDA address using PdaUtils
+                val poolPda = PdaUtils.getPoolPda(tokenA.address, tokenB.address)
+                android.util.Log.d("LpViewModel", "Checking pool at address: $poolPda")
+                
+                // For now, use a simplified check - try to get balance of the pool address
+                // If it has any SOL balance, we assume it exists (accounts with data need rent)
+                val balanceResult = solanaApiService.getBalance(poolPda)
+                
+                if (balanceResult.isSuccess) {
+                    val balance = balanceResult.getOrNull() ?: 0.0
+                    
+                    // If account has any balance (even rent), it exists
+                    // Solana accounts need minimum rent to exist
+                    val poolExists = balance > 0
+                    
+                    if (poolExists) {
+                        android.util.Log.d("LpViewModel", "Pool exists at $poolPda with balance: $balance SOL")
+                        
+                        // Sort tokens canonically
+                        val (tokenXMint, tokenYMint) = sortTokenAddresses(tokenA.address, tokenB.address)
+                        
+                        // For existing pools, fetch some mock reserve data for now
+                        // TODO: Implement actual reserve fetching once we have proper RPC methods
+                        _uiState.value = _uiState.value.copy(
+                            poolDetails = PoolDetails(
+                                exists = true,
+                                tokenXMint = tokenXMint,
+                                tokenYMint = tokenYMint,
+                                poolAddress = poolPda,
+                                reserveX = BigDecimal("1000.0"), // Mock data
+                                reserveY = BigDecimal("50000.0"), // Mock data
+                                totalLpSupply = BigDecimal("10000.0") // Mock data
+                            )
+                        )
+                    } else {
+                        // Pool doesn't exist (no balance = no account)
+                        android.util.Log.d("LpViewModel", "Pool does not exist at $poolPda")
+                        _uiState.value = _uiState.value.copy(
+                            poolDetails = PoolDetails(
+                                exists = false,
+                                tokenXMint = tokenA.address,
+                                tokenYMint = tokenB.address,
+                                poolAddress = poolPda
+                            )
+                        )
+                    }
                 } else {
-                    PoolDetails(exists = false, tokenXMint = tokenA.address, tokenYMint = tokenB.address)
+                    // Error fetching balance usually means account doesn't exist
+                    android.util.Log.d("LpViewModel", "Pool likely doesn't exist (balance fetch failed): ${balanceResult.exceptionOrNull()?.message}")
+                    _uiState.value = _uiState.value.copy(
+                        poolDetails = PoolDetails(
+                            exists = false,
+                            tokenXMint = tokenA.address,
+                            tokenYMint = tokenB.address,
+                            poolAddress = poolPda
+                        )
+                    )
                 }
-            )
+            } catch (e: Exception) {
+                android.util.Log.e("LpViewModel", "Error checking pool existence", e)
+                _uiState.value = _uiState.value.copy(
+                    poolDetails = PoolDetails(
+                        exists = false,
+                        tokenXMint = tokenA.address,
+                        tokenYMint = tokenB.address
+                    ),
+                    errorMessage = "Failed to check pool: ${e.message}"
+                )
+            }
         }
     }
     

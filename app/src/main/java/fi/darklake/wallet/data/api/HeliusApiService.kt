@@ -20,7 +20,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 
-class SolanaApiService(
+class HeliusApiService(
     private val getRpcUrl: () -> String
 ) {
     private val json = Json {
@@ -31,7 +31,7 @@ class SolanaApiService(
     
     private val client = HttpClient(Android) {
         install(ContentNegotiation) {
-            json(this@SolanaApiService.json)
+            json(this@HeliusApiService.json)
         }
         install(Logging) {
             level = LogLevel.ALL
@@ -601,7 +601,7 @@ class SolanaApiService(
 
 // Repository to coordinate API calls
 class WalletAssetsRepository(
-    private val solanaApi: SolanaApiService
+    private val solanaApi: HeliusApiService
 ) {
     suspend fun getWalletAssets(publicKey: String): Result<WalletAssets> {
         try {

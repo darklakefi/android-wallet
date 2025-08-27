@@ -51,7 +51,7 @@ fun SendNftScreen(
         val wallet = storageManager.getWallet().getOrNull()
         if (wallet != null) {
             val networkSettings = settingsManager.networkSettings.value
-            val solanaApiService = fi.darklake.wallet.data.api.SolanaApiService { networkSettings.getHeliusRpcUrl() }
+            val solanaApiService = fi.darklake.wallet.data.api.HeliusApiService { networkSettings.getHeliusRpcUrl() }
             
             val nftsResult = solanaApiService.getNftsByOwner(wallet.publicKey)
             if (nftsResult.isSuccess) {

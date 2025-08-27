@@ -2,7 +2,7 @@ package fi.darklake.wallet.data.repository
 
 import android.content.Context
 import android.content.SharedPreferences
-import fi.darklake.wallet.data.api.SolanaApiService
+import fi.darklake.wallet.data.api.HeliusApiService
 import fi.darklake.wallet.data.model.TokenInfo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,7 +20,7 @@ import kotlinx.serialization.decodeFromString
  * Includes persistent storage for instant loading on app startup
  */
 class BalanceRepository(
-    private val solanaApiService: SolanaApiService,
+    private val solanaApiService: HeliusApiService,
     private val context: Context? = null
 ) {
     private val sharedPrefs: SharedPreferences? = context?.getSharedPreferences(

@@ -60,7 +60,14 @@
       "Bash(timeout 60 bundle exec fastlane android debug)",
       "mcp__Framelink_Figma_MCP__get_figma_data",
       "mcp__mobile__mobile_save_screenshot",
-      "mcp__Framelink_Figma_MCP__download_figma_images"
+      "mcp__Framelink_Figma_MCP__download_figma_images",
+      "Read(/home/vitorpy/zk/dex-web/apps/**)",
+      "Read(/home/vitorpy/zk/dex-web/**)",
+      "Read(/home/vitorpy/zk/dex-web/apps/web/src/app/[lang]/liquidity/_components/**)",
+      "Read(/home/vitorpy/zk/dex-web/apps/web/src/app/[lang]/liquidity/_components/**)",
+      "Read(/home/vitorpy/zk/dex-web/apps/web/src/app/[lang]/liquidity/_components/**)",
+      "Read(/home/vitorpy/zk/dex-web/apps/web/src/app/[lang]/liquidity/_components/**)",
+      "Read(/home/vitorpy/zk/dex-web/apps/web/src/app/[lang]/liquidity/_components/**)"
     ],
     "deny": []
   }

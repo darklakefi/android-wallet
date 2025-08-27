@@ -1,6 +1,6 @@
 package fi.darklake.wallet.data.lp
 
-import fi.darklake.wallet.data.api.SolanaApiService
+import fi.darklake.wallet.data.api.HeliusApiService
 import fi.darklake.wallet.data.preferences.SettingsManager
 import fi.darklake.wallet.data.swap.models.TokenInfo
 import fi.darklake.wallet.ui.screens.lp.LiquidityPosition
@@ -16,7 +16,7 @@ import java.math.BigDecimal
 class LpPositionService(
     private val settingsManager: SettingsManager
 ) {
-    private val solanaApiService = SolanaApiService {
+    private val solanaApiService = HeliusApiService {
         settingsManager.networkSettings.value.let { settings ->
             settings.heliusApiKey?.let { key ->
                 when (settings.network) {
