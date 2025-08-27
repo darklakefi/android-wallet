@@ -1,24 +1,23 @@
 package fi.darklake.wallet.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.lifecycle.viewmodel.compose.viewModel
-import fi.darklake.wallet.ui.screens.swap.SwapScreen
-import fi.darklake.wallet.ui.screens.lp.LpScreen
-import fi.darklake.wallet.ui.screens.wallet.WalletScreen
-import fi.darklake.wallet.ui.screens.wallet.WalletViewModel
-import fi.darklake.wallet.ui.screens.settings.SettingsScreen
-import fi.darklake.wallet.storage.WalletStorageManager
 import fi.darklake.wallet.data.preferences.SettingsManager
-import fi.darklake.wallet.ui.design.*
+import fi.darklake.wallet.storage.WalletStorageManager
+import fi.darklake.wallet.ui.design.DarklakeBackground
+import fi.darklake.wallet.ui.screens.lp.LpScreen
+import fi.darklake.wallet.ui.screens.settings.SettingsScreen
+import fi.darklake.wallet.ui.screens.swap.SwapScreen
+import fi.darklake.wallet.ui.screens.wallet.WalletScreen
 
 @Composable
 fun MainScreen(
