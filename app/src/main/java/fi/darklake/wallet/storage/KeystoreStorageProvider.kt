@@ -5,6 +5,7 @@ import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Log
+import fi.darklake.wallet.diagnostics.DiagnosticLogger
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import fi.darklake.wallet.crypto.SolanaWallet
@@ -98,7 +99,7 @@ class KeystoreStorageProvider(
     
     override suspend fun storeWallet(wallet: SolanaWallet): Result<Unit> = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "Attempting to store wallet with provider: $providerName")
+            DiagnosticLogger.getInstance().info(TAG, "Attempting to store wallet with provider: $providerName")
             
             if (!isAvailable) {
                 Log.w(TAG, "$providerName is not available")
@@ -123,7 +124,7 @@ class KeystoreStorageProvider(
             Log.d(TAG, "Wallet stored successfully")
             Result.success(Unit)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to store wallet", e)
+            DiagnosticLogger.getInstance().error(TAG, "Failed to store wallet", e)
             Result.failure(StorageError.StorageFailed("Failed to store wallet: ${e.message}"))
         }
     }

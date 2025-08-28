@@ -17,9 +17,7 @@ class WalletStorageManager(context: Context) {
         // TODO: Enable Seed Vault when dependency is properly configured
         // SeedVaultStorageProvider(context),
         KeystoreStorageProvider(context, useStrongBox = true),
-        KeystoreStorageProvider(context, useStrongBox = false),
-        // Add basic file encryption as final fallback
-        BasicFileStorageProvider(context)
+        KeystoreStorageProvider(context, useStrongBox = false)
     )
     
     private val _currentProvider = MutableStateFlow<WalletStorageProvider?>(null)

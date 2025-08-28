@@ -2,6 +2,7 @@ package fi.darklake.wallet.ui.screens.onboarding
 
 import android.app.Application
 import android.util.Log
+import fi.darklake.wallet.diagnostics.DiagnosticLogger
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -55,14 +56,14 @@ class CreateWalletViewModel(application: Application) : AndroidViewModel(applica
                     )
                 } else {
                     val error = saveResult.exceptionOrNull()
-                    Log.e(TAG, "Failed to save wallet", error)
+                    DiagnosticLogger.getInstance().error(TAG, "Failed to save wallet", error)
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         error = "Failed to save wallet: ${error?.message ?: "Unknown error"}"
                     )
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Exception during wallet creation", e)
+                DiagnosticLogger.getInstance().error(TAG, "Exception during wallet creation", e)
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     error = "Failed to create wallet: ${e.message}"

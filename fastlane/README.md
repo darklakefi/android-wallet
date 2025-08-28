@@ -79,6 +79,22 @@ Verify reproducible build
 
 Clean build artifacts
 
+### android prepare_release
+
+```sh
+[bundle exec] fastlane android prepare_release
+```
+
+Prepare for a new release - update version numbers
+
+### android signed_release
+
+```sh
+[bundle exec] fastlane android signed_release
+```
+
+Build a signed release APK (requires signing configuration)
+
 ----
 
 This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.

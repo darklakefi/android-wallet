@@ -44,9 +44,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboard
-import androidx.compose.ui.platform.LocalContext
-import android.content.Context
-import android.app.Activity
 import androidx.compose.ui.platform.ClipEntry
 import android.content.ClipData
 import kotlinx.coroutines.launch
@@ -85,7 +82,6 @@ fun SettingsScreen(
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
     val clipboardManager = LocalClipboard.current
-    val context = LocalContext.current as Context
     val coroutineScope = rememberCoroutineScope()
     
     var showApiKey by remember { mutableStateOf(false) }
@@ -384,63 +380,6 @@ fun SettingsScreen(
                     }
                 }
                 
-                // Diagnostic Section
-                SettingsSection(
-                    title = "DIAGNOSTICS"
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                color = DarklakeCardBackground,
-                                shape = RoundedCornerShape(4.dp)
-                            )
-                            .border(
-                                width = 1.dp,
-                                color = DarklakeBorder,
-                                shape = RoundedCornerShape(4.dp)
-                            )
-                            .clickable { 
-                                coroutineScope.launch {
-                                    val diagnosticLogger = fi.darklake.wallet.diagnostics.DiagnosticLogger.getInstance()
-                                    val logFile = diagnosticLogger.saveLogsToFile(context)
-                                    val emailHelper = fi.darklake.wallet.diagnostics.DiagnosticEmailHelper()
-                                    val emailIntent = emailHelper.createEmailIntent(context, logFile)
-                                    try { (context as android.app.Activity).startActivity(emailIntent) } catch (e: Exception) { /* Handle case where context is not an Activity */ }
-                                }
-                            }
-                            .padding(12.dp, 16.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(
-                                verticalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Text(
-                                    text = "SUBMIT DIAGNOSTIC REPORT",
-                                    style = TerminalTextStyle,
-                                    color = DarklakePrimary,
-                                    fontSize = 16.sp
-                                )
-                                Text(
-                                    text = "Send logs and device info via email",
-                                    style = TerminalTextStyle,
-                                    color = DarklakeTextTertiary,
-                                    fontSize = 12.sp
-                                )
-                            }
-                            Icon(
-                                imageVector = Icons.Default.ContentCopy,
-                                contentDescription = "Submit diagnostics",
-                                tint = DarklakeTextTertiary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
-                }
                 // Additional Settings Sections can be added here
             }
             
