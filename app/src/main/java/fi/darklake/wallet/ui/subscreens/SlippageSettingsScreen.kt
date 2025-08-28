@@ -1,4 +1,4 @@
-package fi.darklake.wallet.ui.screens.swap
+package fi.darklake.wallet.ui.subscreens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border

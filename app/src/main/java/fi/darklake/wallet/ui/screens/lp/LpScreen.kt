@@ -32,6 +32,7 @@ import fi.darklake.wallet.data.preferences.SettingsManager
 import fi.darklake.wallet.storage.WalletStorageManager
 import fi.darklake.wallet.ui.components.*
 import fi.darklake.wallet.ui.design.*
+import fi.darklake.wallet.ui.subscreens.SlippageSettingsScreen
 import fi.darklake.wallet.ui.utils.FormatUtils
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -51,6 +52,7 @@ fun LpScreen(
     
     var hasWallet by remember { mutableStateOf(false) }
     var walletAddress by remember { mutableStateOf("") }
+    var showSlippageSettings by remember { mutableStateOf(false) }
     
     LaunchedEffect(Unit) {
         hasWallet = storageManager.hasWallet()
@@ -102,7 +104,7 @@ fun LpScreen(
                 ) {
                     // Settings button
                     IconButton(
-                        onClick = { /* TODO: Open liquidity settings */ },
+                        onClick = { showSlippageSettings = true },
                         modifier = Modifier
                             .size(40.dp)
                             .background(
@@ -467,6 +469,14 @@ fun LpScreen(
             onDismiss = { viewModel.hideTokenSelection() }
         )
     }
+    
+    // Slippage Settings Modal
+    if (showSlippageSettings) {
+        SlippageSettingsScreen(
+            settingsManager = settingsManager,
+            onBack = { showSlippageSettings = false }
+        )
+    }
 }
 
 @Composable
@@ -505,7 +515,7 @@ private fun LiquidityPositionCard(
                 )
 
                 Text(
-                    text = "$${FormatUtils.formatBalance(position.totalValue)}",
+                    text = "${FormatUtils.formatBalance(position.lpTokenBalance)} LP",
                     style = TerminalTextStyle,
                     color = DarklakePrimary,
                     fontSize = 14.sp

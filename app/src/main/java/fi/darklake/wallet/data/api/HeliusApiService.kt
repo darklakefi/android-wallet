@@ -12,6 +12,8 @@ import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import io.ktor.client.statement.*
@@ -394,6 +396,61 @@ class HeliusApiService(
         }
     }
 
+    /**
+     * Get mint account info to fetch supply and other mint details
+     */
+    suspend fun getMintInfo(mintAddress: String): Result<MintInfo> = withContext(Dispatchers.IO) {
+        try {
+            val request = JsonRpcRequest(
+                method = "getAccountInfo",
+                params = kotlinx.serialization.json.buildJsonArray {
+                    add(kotlinx.serialization.json.JsonPrimitive(mintAddress))
+                    add(kotlinx.serialization.json.buildJsonObject {
+                        put("encoding", kotlinx.serialization.json.JsonPrimitive("jsonParsed"))
+                    })
+                }
+            )
+            
+            val response = client.post(getRpcUrl()) {
+                contentType(ContentType.Application.Json)
+                setBody(request)
+            }
+            
+            val jsonResponse = response.bodyAsText()
+            val jsonElement = Json.parseToJsonElement(jsonResponse)
+            val resultObj = jsonElement.jsonObject["result"]?.jsonObject
+            
+            if (resultObj != null) {
+                val value = resultObj["value"]?.jsonObject
+                val data = value?.get("data")?.jsonObject
+                val parsed = data?.get("parsed")?.jsonObject
+                val info = parsed?.get("info")?.jsonObject
+                
+                if (info != null) {
+                    val supply = info["supply"]?.jsonPrimitive?.content?.toDoubleOrNull() ?: 0.0
+                    val decimals = info["decimals"]?.jsonPrimitive?.content?.toIntOrNull() ?: 9
+                    
+                    // Convert raw supply to UI amount
+                    val uiAmount = supply / Math.pow(10.0, decimals.toDouble())
+                    
+                    Result.success(MintInfo(
+                        mintAddress = mintAddress,
+                        supply = supply,
+                        decimals = decimals,
+                        uiAmount = uiAmount
+                    ))
+                } else {
+                    Result.failure(Exception("Invalid mint account data"))
+                }
+            } else {
+                Result.failure(Exception("Mint account not found"))
+            }
+        } catch (e: Exception) {
+            println("Failed to fetch mint info: ${e.message}")
+            Result.failure(e)
+        }
+    }
+    
     suspend fun getCompressedNftsByOwner(publicKey: String): Result<List<CompressedNftMetadata>> = withContext(Dispatchers.IO) {
         try {
             val rpcUrl = getRpcUrl()

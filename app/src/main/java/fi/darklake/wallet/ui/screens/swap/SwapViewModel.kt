@@ -13,12 +13,7 @@ import fi.darklake.wallet.data.repository.BalanceRepository
 import fi.darklake.wallet.data.repository.BalanceService
 import fi.darklake.wallet.data.solana.SolanaTransactionService
 import fi.darklake.wallet.storage.WalletStorageManager
-import com.solana.core.HotAccount
-import com.solana.core.Transaction
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.Dispatchers
-import android.util.Base64
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -397,7 +392,7 @@ class SwapViewModel(
                 
                 // Sign the transaction using SolanaKT
                 val signedTransactionBase64 = try {
-                    signTransaction(swapResponse.unsignedTransaction, wallet.privateKey)
+                    transactionService.signTransaction(swapResponse.unsignedTransaction, wallet.privateKey)
                 } catch (e: Exception) {
                     throw Exception("Failed to sign transaction: ${e.message}")
                 }
@@ -622,90 +617,6 @@ class SwapViewModel(
     
     fun clearSuccess() {
         _uiState.value = _uiState.value.copy(successMessage = null)
-    }
-    
-    /**
-     * Signs a transaction using SolanaKT libraries
-     * @param unsignedTransactionBase64 The unsigned transaction as base64 string
-     * @param privateKey The wallet's private key
-     * @return The signed transaction as base64 string
-     */
-    private suspend fun signTransaction(
-        unsignedTransactionBase64: String,
-        privateKey: ByteArray
-    ): String = withContext(Dispatchers.IO) {
-        try {
-            android.util.Log.d("SwapViewModel", "Starting transaction signing")
-            android.util.Log.d("SwapViewModel", "- Unsigned transaction length: ${unsignedTransactionBase64.length}")
-            android.util.Log.d("SwapViewModel", "- Unsigned transaction preview: ${unsignedTransactionBase64.take(100)}...")
-            
-            // Decode the unsigned transaction from base64
-            val transactionBytes = Base64.decode(unsignedTransactionBase64, Base64.DEFAULT)
-            
-            android.util.Log.d("SwapViewModel", "- Raw transaction bytes length: ${transactionBytes.size}")
-            android.util.Log.d("SwapViewModel", "- First few bytes: ${transactionBytes.take(10).joinToString { "%02x".format(it) }}")
-            
-            // Check if this is a versioned transaction (starts with 0x80) or legacy transaction
-            val isVersioned = transactionBytes.isNotEmpty() && (transactionBytes[0].toInt() and 0x80) != 0
-            
-            android.util.Log.d("SwapViewModel", "- Is versioned transaction: $isVersioned")
-            
-            val signedTransactionBase64 = if (isVersioned) {
-                // Handle versioned transaction (keep existing logic)
-                val version = transactionBytes[0].toInt() and 0x7f
-                val numSignatures = transactionBytes[1].toInt() and 0xff
-                val messageStart = 2 + (numSignatures * 64)
-                val message = transactionBytes.sliceArray(messageStart until transactionBytes.size)
-                
-                val account = if (privateKey.size == 32) {
-                    val keypair = com.solana.vendor.TweetNaclFast.Signature.keyPair_fromSeed(privateKey)
-                    HotAccount(keypair.secretKey)
-                } else {
-                    HotAccount(privateKey)
-                }
-                
-                val signature = account.sign(message)
-                val signedTxSize = 1 + 1 + 64 + message.size
-                val signedTransaction = ByteArray(signedTxSize)
-                var offset = 0
-                
-                signedTransaction[offset++] = (0x80 or version).toByte()
-                signedTransaction[offset++] = 1
-                System.arraycopy(signature, 0, signedTransaction, offset, 64)
-                offset += 64
-                System.arraycopy(message, 0, signedTransaction, offset, message.size)
-                
-                Base64.encodeToString(signedTransaction, Base64.NO_WRAP)
-            } else {
-                // Handle legacy transaction (like dex-web)
-                android.util.Log.d("SwapViewModel", "Processing as legacy transaction")
-                
-                val transaction = Transaction.from(transactionBytes)
-                
-                // Create account from private key
-                val account = if (privateKey.size == 32) {
-                    val keypair = com.solana.vendor.TweetNaclFast.Signature.keyPair_fromSeed(privateKey)
-                    HotAccount(keypair.secretKey)
-                } else {
-                    HotAccount(privateKey)
-                }
-                
-                // Sign the transaction
-                transaction.sign(account)
-                
-                // Serialize and encode back to base64
-                Base64.encodeToString(transaction.serialize(), Base64.NO_WRAP)
-            }
-            
-            android.util.Log.d("SwapViewModel", "Transaction signing completed")
-            android.util.Log.d("SwapViewModel", "- Signed transaction length: ${signedTransactionBase64.length}")
-            android.util.Log.d("SwapViewModel", "- Signed transaction preview: ${signedTransactionBase64.take(100)}...")
-            
-            signedTransactionBase64
-        } catch (e: Exception) {
-            android.util.Log.e("SwapViewModel", "Transaction signing failed", e)
-            throw Exception("Failed to sign versioned transaction: ${e.message}")
-        }
     }
     
     override fun onCleared() {

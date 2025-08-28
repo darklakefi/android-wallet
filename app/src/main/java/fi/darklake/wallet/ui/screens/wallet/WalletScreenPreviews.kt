@@ -28,24 +28,21 @@ fun PreviewTokensList() {
             symbol = "USDC",
             name = "USD Coin",
             balance = "123,333.12",
-            imageUrl = null,
-            usdValue = null
+            imageUrl = null
         ),
         DisplayToken(
             mint = "So11111111111111111111111111111111111111112",
             symbol = "SOL",
             name = "Solana",
             balance = "456.78",
-            imageUrl = null,
-            usdValue = null
+            imageUrl = null
         ),
         DisplayToken(
             mint = "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
             symbol = "BONK",
             name = "Bonk",
             balance = "999,999,999.00",
-            imageUrl = null,
-            usdValue = null
+            imageUrl = null
         )
     )
     

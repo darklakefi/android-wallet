@@ -511,13 +511,19 @@ data class WalletAssets(
     val compressedNfts: List<CompressedNftMetadata> = emptyList()
 )
 
+data class MintInfo(
+    val mintAddress: String,
+    val supply: Double,
+    val decimals: Int,
+    val uiAmount: Double
+)
+
 data class DisplayToken(
     val mint: String,
     val name: String,
     val symbol: String,
     val balance: String,
     val imageUrl: String?,
-    val usdValue: Double? = null,
     val compressed: Boolean = false
 )
 

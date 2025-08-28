@@ -67,8 +67,12 @@
       "Read(/home/vitorpy/zk/dex-web/apps/web/src/app/[lang]/liquidity/_components/**)",
       "Read(/home/vitorpy/zk/dex-web/apps/web/src/app/[lang]/liquidity/_components/**)",
       "Read(/home/vitorpy/zk/dex-web/apps/web/src/app/[lang]/liquidity/_components/**)",
-      "Read(/home/vitorpy/zk/dex-web/apps/web/src/app/[lang]/liquidity/_components/**)"
+      "Read(/home/vitorpy/zk/dex-web/apps/web/src/app/[lang]/liquidity/_components/**)",
+      "Read(/home/vitorpy/zk/dex-web/libs/orpc/src/**)"
     ],
-    "deny": []
+    "deny": [],
+    "additionalDirectories": [
+      "/home/vitorpy/zk/dex-web/libs/orpc"
+    ]
   }
 }

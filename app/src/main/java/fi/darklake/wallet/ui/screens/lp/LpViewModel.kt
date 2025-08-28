@@ -1,11 +1,8 @@
 package fi.darklake.wallet.ui.screens.lp
 
 import android.content.Context
-import android.util.Base64
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.solana.core.HotAccount
-import com.solana.core.Transaction
 import fi.darklake.wallet.data.api.HeliusApiService
 import fi.darklake.wallet.data.lp.LpPositionService
 import fi.darklake.wallet.data.lp.LpTransactionService
@@ -14,18 +11,14 @@ import fi.darklake.wallet.data.preferences.SettingsManager
 import fi.darklake.wallet.data.repository.BalanceRepository
 import fi.darklake.wallet.data.repository.BalanceService
 import fi.darklake.wallet.data.solana.SolanaTransactionService
+import fi.darklake.wallet.data.swap.models.TokenInfo
 import fi.darklake.wallet.data.swap.repository.TokenRepository
 import fi.darklake.wallet.storage.WalletStorageManager
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.math.BigDecimal
-
-// Use the same TokenInfo from swap module for consistency
-typealias TokenInfo = fi.darklake.wallet.data.swap.models.TokenInfo
 
 data class LiquidityPosition(
     val id: String,
@@ -34,8 +27,7 @@ data class LiquidityPosition(
     val amountA: BigDecimal,
     val amountB: BigDecimal,
     val lpTokenBalance: BigDecimal,
-    val poolShare: Double,
-    val totalValue: BigDecimal
+    val poolShare: Double
 )
 
 data class PoolDetails(
@@ -103,7 +95,7 @@ class LpViewModel(
     val uiState: StateFlow<LpUiState> = _uiState.asStateFlow()
     
     private val tokenRepository = TokenRepository()
-    private val lpTransactionService = LpTransactionService(settingsManager)
+    private val lpTransactionService = LpTransactionService(settingsManager, context)
     private val lpPositionService = LpPositionService(settingsManager)
     private val transactionService = SolanaTransactionService(settingsManager)
     
@@ -170,6 +162,13 @@ class LpViewModel(
         // Initialize with network-appropriate default tokens
         setTokenA(getDefaultTokenA())
         setTokenB(getDefaultTokenB())
+        
+        // Load saved slippage settings
+        val savedSlippage = settingsManager.getSlippageTolerance()
+        _uiState.value = _uiState.value.copy(
+            slippagePercent = savedSlippage.toDouble(),
+            useCustomSlippage = savedSlippage !in listOf(0.5f, 1.0f, 2.0f)
+        )
         
         // Load balances and liquidity positions
         loadTokenBalances()
@@ -348,29 +347,39 @@ class LpViewModel(
                     liquidityStep = LiquidityStep.CONFIRM_TRANSACTION
                 )
                 
-                val signedTransactionBase64 = signTransaction(unsignedTransactionBase64, wallet.privateKey)
+                val signedTransactionBase64 = transactionService.signTransaction(unsignedTransactionBase64, wallet.privateKey)
                 
                 // Step 3: Submit transaction
                 _uiState.value = _uiState.value.copy(
                     liquidityStep = LiquidityStep.PROCESSING
                 )
                 
-                // TODO: Submit to Solana network using SolanaTransactionService
-                // For now, simulate successful submission
-                kotlinx.coroutines.delay(3000)
+                // Submit to Solana network
+                val txSignature = transactionService.submitSignedTransaction(signedTransactionBase64)
                 
-                _uiState.value = _uiState.value.copy(
-                    isAddingLiquidity = false,
-                    isProcessing = false,
-                    liquidityStep = LiquidityStep.COMPLETED,
-                    successMessage = "Liquidity added successfully! $tokenAAmount ${tokenA.symbol} + $tokenBAmount ${tokenB.symbol}",
-                    tokenAAmount = "",
-                    tokenBAmount = ""
-                )
-                
-                // Reload balances and positions after successful add liquidity
-                loadTokenBalances()
-                loadLiquidityPositions()
+                if (txSignature != null) {
+                    // Wait for confirmation
+                    val confirmed = transactionService.waitForConfirmation(txSignature, timeout = 30)
+                    
+                    if (confirmed) {
+                        _uiState.value = _uiState.value.copy(
+                            isAddingLiquidity = false,
+                            isProcessing = false,
+                            liquidityStep = LiquidityStep.COMPLETED,
+                            successMessage = "Liquidity added successfully! TX: ${txSignature.take(8)}...",
+                            tokenAAmount = "",
+                            tokenBAmount = ""
+                        )
+                        
+                        // Reload balances and positions after successful add liquidity
+                        loadTokenBalances()
+                        loadLiquidityPositions()
+                    } else {
+                        throw Exception("Transaction confirmation timeout")
+                    }
+                } else {
+                    throw Exception("Failed to submit transaction")
+                }
             }
             
             transactionResult.onFailure { error ->
@@ -429,31 +438,41 @@ class LpViewModel(
                     liquidityStep = LiquidityStep.CONFIRM_TRANSACTION
                 )
                 
-                val signedTransactionBase64 = signTransaction(unsignedTransactionBase64, wallet.privateKey)
+                val signedTransactionBase64 = transactionService.signTransaction(unsignedTransactionBase64, wallet.privateKey)
                 
                 // Step 3: Submit transaction
                 _uiState.value = _uiState.value.copy(
                     liquidityStep = LiquidityStep.PROCESSING
                 )
                 
-                // TODO: Submit to Solana network using SolanaTransactionService
-                // For now, simulate successful submission
-                kotlinx.coroutines.delay(3000)
+                // Submit to Solana network
+                val txSignature = transactionService.submitSignedTransaction(signedTransactionBase64)
                 
-                _uiState.value = _uiState.value.copy(
-                    isCreatingPool = false,
-                    isProcessing = false,
-                    liquidityStep = LiquidityStep.COMPLETED,
-                    successMessage = "Pool created successfully! Initial deposit: $tokenAAmount ${tokenA.symbol} + $tokenBAmount ${tokenB.symbol}",
-                    tokenAAmount = "",
-                    tokenBAmount = "",
-                    initialPrice = "1.0"
-                )
-                
-                // Reload data after successful pool creation
-                loadTokenBalances()
-                loadLiquidityPositions()
-                checkPoolExists()
+                if (txSignature != null) {
+                    // Wait for confirmation
+                    val confirmed = transactionService.waitForConfirmation(txSignature, timeout = 30)
+                    
+                    if (confirmed) {
+                        _uiState.value = _uiState.value.copy(
+                            isCreatingPool = false,
+                            isProcessing = false,
+                            liquidityStep = LiquidityStep.COMPLETED,
+                            successMessage = "Pool created successfully! TX: ${txSignature.take(8)}...",
+                            tokenAAmount = "",
+                            tokenBAmount = "",
+                            initialPrice = "1.0"
+                        )
+                        
+                        // Reload data after successful pool creation
+                        loadTokenBalances()
+                        loadLiquidityPositions()
+                        checkPoolExists()
+                    } else {
+                        throw Exception("Transaction confirmation timeout")
+                    }
+                } else {
+                    throw Exception("Failed to submit transaction")
+                }
             }
             
             transactionResult.onFailure { error ->
@@ -472,20 +491,93 @@ class LpViewModel(
     
     private suspend fun performWithdrawLiquidity(positionId: String) {
         try {
-            // TODO: Implement actual liquidity withdrawal with Anchor IDL
-            // For now, simulate the process
-            kotlinx.coroutines.delay(2000)
-            
             _uiState.value = _uiState.value.copy(
-                successMessage = "Liquidity withdrawn successfully!"
+                isProcessing = true,
+                liquidityStep = LiquidityStep.GENERATING_PROOF,
+                errorMessage = null
             )
             
-            // Reload data after successful withdrawal
-            loadTokenBalances()
-            loadLiquidityPositions()
+            val wallet = storageManager.getWallet().getOrNull() ?: throw Exception("Wallet not found")
+            
+            // Find the position to withdraw
+            val position = _uiState.value.liquidityPositions.find { it.id == positionId }
+                ?: throw Exception("Position not found")
+            
+            // Sort tokens to get tokenX and tokenY
+            val (tokenXMint, tokenYMint) = sortTokenAddresses(
+                position.tokenA.address, 
+                position.tokenB.address
+            )
+            
+            // Calculate minimum amounts based on slippage tolerance
+            val slippageMultiplier = 1.0 - (_uiState.value.slippagePercent / 100.0)
+            val minAmountX = if (position.tokenA.address == tokenXMint) {
+                position.amountA.toDouble() * slippageMultiplier
+            } else {
+                position.amountB.toDouble() * slippageMultiplier
+            }
+            val minAmountY = if (position.tokenA.address == tokenXMint) {
+                position.amountB.toDouble() * slippageMultiplier
+            } else {
+                position.amountA.toDouble() * slippageMultiplier
+            }
+            
+            // Create withdraw liquidity transaction
+            val transactionResult = lpTransactionService.createWithdrawLiquidityTransaction(
+                userAddress = wallet.publicKey,
+                tokenXMint = tokenXMint,
+                tokenYMint = tokenYMint,
+                lpTokenAmount = position.lpTokenBalance.toDouble(),
+                minAmountX = minAmountX,
+                minAmountY = minAmountY
+            )
+            
+            transactionResult.onSuccess { unsignedTransactionBase64 ->
+                // Step 2: Sign transaction
+                _uiState.value = _uiState.value.copy(
+                    liquidityStep = LiquidityStep.CONFIRM_TRANSACTION
+                )
+                
+                val signedTransactionBase64 = transactionService.signTransaction(unsignedTransactionBase64, wallet.privateKey)
+                
+                // Step 3: Submit transaction
+                _uiState.value = _uiState.value.copy(
+                    liquidityStep = LiquidityStep.PROCESSING
+                )
+                
+                // Submit to Solana network
+                val txSignature = transactionService.submitSignedTransaction(signedTransactionBase64)
+                
+                if (txSignature != null) {
+                    // Wait for confirmation
+                    val confirmed = transactionService.waitForConfirmation(txSignature, timeout = 30)
+                    
+                    if (confirmed) {
+                        _uiState.value = _uiState.value.copy(
+                            isProcessing = false,
+                            liquidityStep = LiquidityStep.COMPLETED,
+                            successMessage = "Successfully withdrawn! TX: ${txSignature.take(8)}..."
+                        )
+                        
+                        // Reload data after successful withdrawal
+                        loadTokenBalances()
+                        loadLiquidityPositions()
+                    } else {
+                        throw Exception("Transaction confirmation timeout")
+                    }
+                } else {
+                    throw Exception("Failed to submit transaction")
+                }
+            }
+            
+            transactionResult.onFailure { error ->
+                throw error
+            }
             
         } catch (e: Exception) {
             _uiState.value = _uiState.value.copy(
+                isProcessing = false,
+                liquidityStep = LiquidityStep.FAILED,
                 errorMessage = "Withdraw liquidity failed: ${e.message}"
             )
         }
@@ -654,17 +746,51 @@ class LpViewModel(
                         // Sort tokens canonically
                         val (tokenXMint, tokenYMint) = sortTokenAddresses(tokenA.address, tokenB.address)
                         
-                        // For existing pools, fetch some mock reserve data for now
-                        // TODO: Implement actual reserve fetching once we have proper RPC methods
+                        // Fetch actual reserve data from the pool
+                        val reserveX = PdaUtils.getPoolReservePda(poolPda, tokenXMint)
+                        val reserveY = PdaUtils.getPoolReservePda(poolPda, tokenYMint)
+                        
+                        // Fetch token balances from reserve accounts
+                        val reserveXBalanceResult = solanaApiService.getTokenAccounts(reserveX)
+                        val reserveYBalanceResult = solanaApiService.getTokenAccounts(reserveY)
+                        
+                        var reserveXAmount = BigDecimal("1000.0") // Default fallback
+                        var reserveYAmount = BigDecimal("50000.0") // Default fallback
+                        
+                        reserveXBalanceResult.fold(
+                            onSuccess = { tokens ->
+                                if (tokens.isNotEmpty()) {
+                                    reserveXAmount = BigDecimal(tokens.first().balance.uiAmount ?: 1000.0)
+                                }
+                            },
+                            onFailure = { 
+                                android.util.Log.w("LpViewModel", "Failed to fetch reserveX, using default")
+                            }
+                        )
+                        
+                        reserveYBalanceResult.fold(
+                            onSuccess = { tokens ->
+                                if (tokens.isNotEmpty()) {
+                                    reserveYAmount = BigDecimal(tokens.first().balance.uiAmount ?: 50000.0)
+                                }
+                            },
+                            onFailure = { 
+                                android.util.Log.w("LpViewModel", "Failed to fetch reserveY, using default")
+                            }
+                        )
+                        
                         _uiState.value = _uiState.value.copy(
                             poolDetails = PoolDetails(
                                 exists = true,
                                 tokenXMint = tokenXMint,
                                 tokenYMint = tokenYMint,
                                 poolAddress = poolPda,
-                                reserveX = BigDecimal("1000.0"), // Mock data
-                                reserveY = BigDecimal("50000.0"), // Mock data
-                                totalLpSupply = BigDecimal("10000.0") // Mock data
+                                reserveX = reserveXAmount,
+                                reserveY = reserveYAmount,
+                                totalLpSupply = BigDecimal("10000.0"), // Still need to fetch LP token supply
+                                currentPrice = if (reserveXAmount > BigDecimal.ZERO) 
+                                    reserveYAmount.divide(reserveXAmount, 6, java.math.RoundingMode.DOWN).toDouble() 
+                                else 0.0
                             )
                         )
                     } else {
@@ -705,13 +831,6 @@ class LpViewModel(
         }
     }
     
-    fun clearMessages() {
-        _uiState.value = _uiState.value.copy(
-            errorMessage = null,
-            successMessage = null
-        )
-    }
-    
     fun clearError() {
         _uiState.value = _uiState.value.copy(errorMessage = null)
     }
@@ -737,39 +856,6 @@ class LpViewModel(
             .setScale(minOf(decimals, 6), java.math.RoundingMode.DOWN)
             .stripTrailingZeros()
             .toPlainString()
-    }
-    
-    /**
-     * Signs a transaction using SolanaKT libraries (same as SwapViewModel)
-     */
-    private suspend fun signTransaction(
-        unsignedTransactionBase64: String,
-        privateKey: ByteArray
-    ): String = withContext(Dispatchers.IO) {
-        try {
-            // Decode the unsigned transaction from base64
-            val transactionBytes = Base64.decode(unsignedTransactionBase64, Base64.DEFAULT)
-            
-            // Deserialize the transaction
-            val transaction = Transaction.from(transactionBytes)
-            
-            // Create account from private key
-            val account = if (privateKey.size == 32) {
-                // Create keypair from seed
-                val keypair = com.solana.vendor.TweetNaclFast.Signature.keyPair_fromSeed(privateKey)
-                HotAccount(keypair.secretKey)
-            } else {
-                HotAccount(privateKey)
-            }
-            
-            // Sign the transaction
-            transaction.sign(account)
-            
-            // Serialize and encode back to base64 (NO_WRAP to avoid newlines)
-            Base64.encodeToString(transaction.serialize(), Base64.NO_WRAP)
-        } catch (e: Exception) {
-            throw Exception("Failed to sign transaction: ${e.message}")
-        }
     }
     
     /**

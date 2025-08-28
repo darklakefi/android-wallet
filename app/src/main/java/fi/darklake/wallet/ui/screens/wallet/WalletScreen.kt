@@ -108,32 +108,28 @@ fun PreviewWalletScreen() {
                     symbol = "SOL",
                     name = "Solana",
                     balance = "12.456789",
-                    imageUrl = null,
-                    usdValue = 1234.56
+                    imageUrl = null
                 ),
                 DisplayToken(
                     mint = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
                     symbol = "USDC",
                     name = "USD Coin",
                     balance = "500.25",
-                    imageUrl = null,
-                    usdValue = 500.25
+                    imageUrl = null
                 ),
                 DisplayToken(
                     mint = "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
                     symbol = "BONK",
                     name = "Bonk",
                     balance = "1,000,000",
-                    imageUrl = null,
-                    usdValue = 25.50
+                    imageUrl = null
                 ),
                 DisplayToken(
                     mint = "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs",
                     symbol = "RAY",
                     name = "Raydium",
                     balance = "25.5",
-                    imageUrl = null,
-                    usdValue = 125.75
+                    imageUrl = null
                 )
             ),
             nfts = listOf(

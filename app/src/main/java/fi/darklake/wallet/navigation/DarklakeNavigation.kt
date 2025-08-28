@@ -17,7 +17,7 @@ import fi.darklake.wallet.ui.screens.wallet.WalletViewModel
 import fi.darklake.wallet.ui.screens.send.SendTokenScreen
 import fi.darklake.wallet.ui.screens.send.SendNftScreen
 import fi.darklake.wallet.ui.screens.receive.ReceiveScreen
-import fi.darklake.wallet.ui.screens.swap.SlippageSettingsScreen
+import fi.darklake.wallet.ui.subscreens.SlippageSettingsScreen
 import fi.darklake.wallet.storage.WalletStorageManager
 import fi.darklake.wallet.data.preferences.SettingsManager
 
