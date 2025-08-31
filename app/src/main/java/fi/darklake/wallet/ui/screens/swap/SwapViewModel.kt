@@ -74,7 +74,7 @@ class SwapViewModel(
         get() = SwapRepository(settingsManager.networkSettings.value)
         
     private val tokenRepository = TokenRepository()
-    private val poolRepository = PoolRepository()
+    private val poolRepository = PoolRepository(settingsManager)
     private val transactionService = SolanaTransactionService(settingsManager)
         
     private val solanaApiService = HeliusApiService {

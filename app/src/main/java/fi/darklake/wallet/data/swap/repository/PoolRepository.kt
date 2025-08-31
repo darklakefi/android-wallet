@@ -1,13 +1,12 @@
 package fi.darklake.wallet.data.swap.repository
 
+import fi.darklake.wallet.data.api.HeliusApiService
 import fi.darklake.wallet.data.model.SolanaNetwork
+import fi.darklake.wallet.data.preferences.SettingsManager
 import fi.darklake.wallet.data.swap.utils.SolanaUtils
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.Serializable
-import java.io.IOException
-import java.net.HttpURLConnection
-import java.net.URL
 
 @Serializable
 data class PoolDetails(
@@ -56,12 +55,30 @@ data class RpcError(
     val message: String
 )
 
-class PoolRepository {
+class PoolRepository(
+    private val settingsManager: SettingsManager
+) {
     
-    // Mock pool data matching dex-web implementation
+    private val heliusApiService = HeliusApiService {
+        settingsManager.networkSettings.value.let { settings ->
+            settings.heliusApiKey?.let { key ->
+                when (settings.network) {
+                    SolanaNetwork.MAINNET -> 
+                        "https://mainnet.helius-rpc.com/?api-key=$key"
+                    SolanaNetwork.DEVNET -> 
+                        "https://devnet.helius-rpc.com/?api-key=$key"
+                }
+            } ?: settings.network.rpcUrl
+        }
+    }
+    
+    // Known pool pairs - we'll derive real PDAs for these
     private val devnetPools = listOf(
         PoolDetails(
-            poolAddress = "mock_dukY_duX_pool",
+            poolAddress = SolanaUtils.generatePoolPda(
+                "DdLxrGFs2sKYbbqVk76eVx9268ASUdTMAhrsqphqDuX",
+                "HXsKnhXPtGr2mq4uTpxbxyy7ZydYWJwx4zMuYPEDukY"
+            ),
             tokenXMint = "DdLxrGFs2sKYbbqVk76eVx9268ASUdTMAhrsqphqDuX", // DuX
             tokenYMint = "HXsKnhXPtGr2mq4uTpxbxyy7ZydYWJwx4zMuYPEDukY", // DukY
             tokenXSymbol = "DuX",
@@ -71,7 +88,10 @@ class PoolRepository {
     
     private val mainnetPools = listOf(
         PoolDetails(
-            poolAddress = "mock_fartcoin_usdc_pool",
+            poolAddress = SolanaUtils.generatePoolPda(
+                "9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump",
+                "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+            ),
             tokenXMint = "9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump", // Fartcoin
             tokenYMint = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", // USDC
             tokenXSymbol = "Fartcoin",
@@ -138,23 +158,19 @@ class PoolRepository {
     
     /**
      * Check if pool exists on-chain by querying the PDA
-     * This is a simplified version - in production would use proper Solana RPC
+     * Uses HeliusApiService to check if account exists
      */
     private suspend fun checkPoolExistsOnChain(
         poolPda: String,
         rpcUrl: String?,
         network: SolanaNetwork
     ): Boolean {
-        if (rpcUrl == null) return false
-        
-        try {
-            // For now, return false as we don't have full RPC implementation
-            // In production, this would make an actual HTTP request to check if account exists
-            // by calling getAccountInfo on the poolPda
-            return false
-            
+        return try {
+            val result = heliusApiService.accountExists(poolPda)
+            result.getOrDefault(false)
         } catch (e: Exception) {
-            return false
+            android.util.Log.e("PoolRepository", "Failed to check pool existence on-chain", e)
+            false
         }
     }
     

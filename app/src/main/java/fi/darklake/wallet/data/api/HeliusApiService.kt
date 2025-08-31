@@ -397,6 +397,37 @@ class HeliusApiService(
     }
 
     /**
+     * Check if an account exists on the blockchain
+     */
+    suspend fun accountExists(accountAddress: String): Result<Boolean> = withContext(Dispatchers.IO) {
+        try {
+            val request = JsonRpcRequest(
+                method = "getAccountInfo",
+                params = kotlinx.serialization.json.buildJsonArray {
+                    add(kotlinx.serialization.json.JsonPrimitive(accountAddress))
+                }
+            )
+            
+            val response = client.post(getRpcUrl()) {
+                contentType(ContentType.Application.Json)
+                setBody(request)
+            }
+            
+            val jsonResponse = response.bodyAsText()
+            val jsonElement = Json.parseToJsonElement(jsonResponse)
+            val resultObj = jsonElement.jsonObject["result"]
+            
+            // Account exists if result is not null and has a value
+            val exists = resultObj != null && resultObj.jsonObject["value"] != kotlinx.serialization.json.JsonNull
+            
+            Result.success(exists)
+        } catch (e: Exception) {
+            println("Failed to check account existence: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+    /**
      * Get mint account info to fetch supply and other mint details
      */
     suspend fun getMintInfo(mintAddress: String): Result<MintInfo> = withContext(Dispatchers.IO) {
