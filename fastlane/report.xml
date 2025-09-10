@@ -5,22 +5,12 @@
     
     
       
-      <testcase classname="fastlane.lanes" name="0: default_platform" time="0.000252495">
+      <testcase classname="fastlane.lanes" name="0: default_platform" time="0.000469985">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="1: clean" time="1.342349903">
-        
-      </testcase>
-    
-      
-      <testcase classname="fastlane.lanes" name="2: assembleRelease" time="39.233861478">
-        
-      </testcase>
-    
-      
-      <testcase classname="fastlane.lanes" name="3: shell command" time="0.059804318">
+      <testcase classname="fastlane.lanes" name="1: :app:testDebugUnitTest" time="2.516956803">
         
       </testcase>
     
