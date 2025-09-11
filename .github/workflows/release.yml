@@ -100,7 +100,7 @@ jobs:
           export PATH="$HOME/.rvm/gems/ruby-3.3.6/bin:$HOME/.rvm/rubies/ruby-3.3.6/bin:$PATH"
           # Create signing.properties from secrets
           cat > signing.properties << EOF
-          KEYSTORE_FILE=release-keystore.jks
+          KEYSTORE_FILE=$PWD/release-keystore.jks
           KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD
           KEY_ALIAS=$KEY_ALIAS
           KEY_PASSWORD=$KEY_PASSWORD

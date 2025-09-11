@@ -150,7 +150,7 @@ jobs:
         KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
       run: |
         cat > signing.properties << EOF
-        KEYSTORE_FILE=release-keystore.jks
+        KEYSTORE_FILE=$PWD/release-keystore.jks
         KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD
         KEY_ALIAS=$KEY_ALIAS
         KEY_PASSWORD=$KEY_PASSWORD
