@@ -68,7 +68,8 @@
       "Read(/home/vitorpy/zk/dex-web/apps/web/src/app/[lang]/liquidity/_components/**)",
       "Read(/home/vitorpy/zk/dex-web/apps/web/src/app/[lang]/liquidity/_components/**)",
       "Read(/home/vitorpy/zk/dex-web/apps/web/src/app/[lang]/liquidity/_components/**)",
-      "Read(/home/vitorpy/zk/dex-web/libs/orpc/src/**)"
+      "Read(/home/vitorpy/zk/dex-web/libs/orpc/src/**)",
+      "Bash(gh secret list:*)"
     ],
     "deny": [],
     "additionalDirectories": [

@@ -13,17 +13,12 @@ platform :android do
     UI.success "Debug APK built successfully!"
   end
 
-  desc "Build a release APK (unsigned for F-Droid)"
+  desc "Build a signed release APK"
   lane :release do
+    # This lane expects signing.properties to be present (created by CI)
     gradle(
       task: "assembleRelease",
-      project_dir: ".",
-      properties: {
-        "android.injected.signing.store.file" => "",
-        "android.injected.signing.store.password" => "",
-        "android.injected.signing.key.alias" => "",
-        "android.injected.signing.key.password" => ""
-      }
+      project_dir: "."
     )
     UI.success "Release APK built successfully!"
   end
