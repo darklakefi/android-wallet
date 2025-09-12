@@ -38,12 +38,7 @@ platform :android do
     gradle(
       task: "assembleRelease",
       project_dir: ".",
-      properties: {
-        "android.injected.signing.store.file" => "",
-        "android.injected.signing.store.password" => "",
-        "android.injected.signing.key.alias" => "",
-        "android.injected.signing.key.password" => ""
-      }
+      flags: "-x validateSigningRelease"
     )
     
     # Copy APK to a standard location
