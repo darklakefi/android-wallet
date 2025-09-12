@@ -218,23 +218,30 @@ jobs:
     - name: Run reproducible build verification
       run: |
         export PATH="$HOME/.rvm/gems/ruby-3.3.6/bin:$HOME/.rvm/rubies/ruby-3.3.6/bin:$PATH"
-        ./verify-reproducible.sh 3
+        # Build twice and compare for reproducibility
+        bundle exec fastlane android reproducible
+        mv app/build/outputs/apk/release/app-release-unsigned.apk build1.apk
+        bundle exec fastlane android clean
+        bundle exec fastlane android reproducible
+        mv app/build/outputs/apk/release/app-release-unsigned.apk build2.apk
+        # Compare checksums
+        sha256sum build1.apk build2.apk
+        if [ "$(sha256sum build1.apk | cut -d' ' -f1)" = "$(sha256sum build2.apk | cut -d' ' -f1)" ]; then
+          echo "✅ Builds are reproducible!"
+        else
+          echo "❌ Builds are NOT reproducible!"
+          exit 1
+        fi
     
     - name: Upload reproducible build artifacts
       uses: actions/upload-artifact@v4
+      if: always()
       with:
         name: reproducible-builds
         path: |
-          verification-builds/
-          build-info.json
+          build1.apk
+          build2.apk
         retention-days: 30
-    
-    - name: Upload verification report
-      uses: actions/upload-artifact@v4
-      with:
-        name: verification-report
-        path: verification-builds/verification-report.json
-        retention-days: 90
 
   cross-platform-build:
     name: Cross-Platform Build Test
