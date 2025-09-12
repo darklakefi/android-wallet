@@ -31,14 +31,21 @@ platform :android do
       project_dir: "."
     )
     
-    # Build with reproducible settings
-    ENV["SOURCE_DATE_EPOCH"] = Time.now.to_i.to_s
+    # Build with reproducible settings - use fixed timestamp
+    ENV["SOURCE_DATE_EPOCH"] = "1734307200" # Fixed timestamp for reproducibility
     ENV["REPRODUCIBLE_BUILD"] = "true"
+    ENV["TZ"] = "UTC"
+    ENV["LC_ALL"] = "C"
+    ENV["LANG"] = "C"
     
     gradle(
       task: "assembleRelease",
       project_dir: ".",
-      flags: "-x validateSigningRelease"
+      flags: "-x validateSigningRelease",
+      properties: {
+        "android.buildDate.disable" => "true",
+        "android.buildDateTimestamp.disable" => "true"
+      }
     )
     
     # Copy APK to a standard location
