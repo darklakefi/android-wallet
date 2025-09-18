@@ -12,6 +12,7 @@ import fi.darklake.wallet.ui.screens.onboarding.ImportWalletScreen
 import fi.darklake.wallet.ui.screens.onboarding.MnemonicDisplayScreen
 import fi.darklake.wallet.ui.screens.onboarding.MnemonicVerificationScreen
 import fi.darklake.wallet.ui.screens.onboarding.SharedWalletViewModel
+import fi.darklake.wallet.ui.screens.onboarding.SeedVaultSetupScreen
 import fi.darklake.wallet.ui.screens.MainScreen
 import fi.darklake.wallet.ui.screens.wallet.WalletViewModel
 import fi.darklake.wallet.ui.screens.send.SendTokenScreen
@@ -19,12 +20,16 @@ import fi.darklake.wallet.ui.screens.send.SendNftScreen
 import fi.darklake.wallet.ui.screens.receive.ReceiveScreen
 import fi.darklake.wallet.ui.subscreens.SlippageSettingsScreen
 import fi.darklake.wallet.storage.WalletStorageManager
+import fi.darklake.wallet.storage.SeedVaultStorageProvider
 import fi.darklake.wallet.data.preferences.SettingsManager
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 
 sealed class Screen(val route: String) {
     data object Welcome : Screen("welcome")
     data object CreateWallet : Screen("create_wallet")
     data object ImportWallet : Screen("import_wallet")
+    data object SeedVaultSetup : Screen("seed_vault_setup")
     data object MnemonicDisplay : Screen("mnemonic_display")
     data object MnemonicVerification : Screen("mnemonic_verification")
     data object Wallet : Screen("wallet")
@@ -60,6 +65,9 @@ fun DarklakeNavigation(
                 },
                 onImportWallet = {
                     navController.navigate(Screen.ImportWallet.route)
+                },
+                onUseSeedVault = {
+                    navController.navigate(Screen.SeedVaultSetup.route)
                 }
             )
         }
@@ -81,6 +89,27 @@ fun DarklakeNavigation(
                 onWalletImported = {
                     navController.navigate(Screen.Wallet.route) {
                         popUpTo(Screen.Welcome.route) { inclusive = true }
+                    }
+                },
+                onBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(Screen.SeedVaultSetup.route) {
+            val coroutineScope = rememberCoroutineScope()
+            SeedVaultSetupScreen(
+                onSeedAuthorized = { authToken, publicKey ->
+                    // Store the seed vault authorization and navigate to wallet
+                    coroutineScope.launch {
+                        val seedVaultProvider = storageManager.currentProvider.value as? SeedVaultStorageProvider
+                            ?: SeedVaultStorageProvider(navController.context)
+                        seedVaultProvider.storeSeedVaultAuth(authToken, publicKey)
+
+                        navController.navigate(Screen.Wallet.route) {
+                            popUpTo(Screen.Welcome.route) { inclusive = true }
+                        }
                     }
                 },
                 onBack = {

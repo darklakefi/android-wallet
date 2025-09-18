@@ -14,8 +14,8 @@ class WalletStorageManager(context: Context) {
     }
     
     private val providers: List<WalletStorageProvider> = listOf(
-        // TODO: Enable Seed Vault when dependency is properly configured
-        // SeedVaultStorageProvider(context),
+        // Seed Vault has highest priority when available
+        SeedVaultStorageProvider(context),
         KeystoreStorageProvider(context, useStrongBox = true),
         KeystoreStorageProvider(context, useStrongBox = false),
         // Add basic file encryption as final fallback

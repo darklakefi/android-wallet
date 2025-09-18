@@ -167,7 +167,7 @@ dependencies {
     implementation(project(":libs:SolanaKT:solana"))
     // Bouncy Castle is provided by SolanaKT
     implementation(libs.kotlinx.serialization.json)
-    // implementation(libs.seed.vault) // TODO: Add correct Seed Vault dependency
+    implementation(libs.seed.vault)
     implementation(libs.androidx.security.crypto)
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.android)

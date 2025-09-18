@@ -1,135 +1,158 @@
 package fi.darklake.wallet.storage
 
 import android.content.Context
-import android.content.Intent
-import android.net.Uri
-// import com.solanamobile.seedvault.SeedVault
-// import com.solanamobile.seedvault.WalletContractV1
+import android.content.SharedPreferences
+import android.util.Base64
+import android.util.Log
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKeys
 import fi.darklake.wallet.crypto.SolanaWallet
-import fi.darklake.wallet.crypto.SolanaWalletManager
+import fi.darklake.wallet.seedvault.SeedVaultManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.bitcoinj.core.Base58
 
+/**
+ * Storage provider that uses Solana Mobile's Seed Vault for secure key management.
+ * This provider stores only a reference to the authorized seed in Seed Vault,
+ * not the actual private keys which remain in secure hardware.
+ */
 class SeedVaultStorageProvider(private val context: Context) : WalletStorageProvider {
-    
+
+    companion object {
+        private const val TAG = "SeedVaultStorageProvider"
+        private const val PREFS_NAME = "seed_vault_wallet_prefs"
+        private const val KEY_AUTH_TOKEN = "seed_vault_auth_token"
+        private const val KEY_PUBLIC_KEY = "seed_vault_public_key"
+        private const val KEY_WALLET_TYPE = "wallet_type"
+        private const val WALLET_TYPE_SEED_VAULT = "seed_vault"
+    }
+
+    private val seedVaultManager = SeedVaultManager(context)
+    private val sharedPreferences: SharedPreferences by lazy {
+        try {
+            val masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
+            EncryptedSharedPreferences.create(
+                PREFS_NAME,
+                masterKeyAlias,
+                context,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to create encrypted preferences, falling back to regular", e)
+            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        }
+    }
+
     override val providerName: String = "Seed Vault"
-    
+
     override val isAvailable: Boolean
-        get() = false // TODO: Enable when Seed Vault dependency is properly configured
-        // get() = try {
-        //     val seedVaultAvailable = SeedVault.isAvailable(context)
-        //     seedVaultAvailable
-        // } catch (e: Exception) {
-        //     false
-        // }
-    
+        get() = runCatching {
+            // Check if we have stored Seed Vault auth
+            sharedPreferences.getString(KEY_WALLET_TYPE, null) == WALLET_TYPE_SEED_VAULT
+        }.getOrDefault(false)
+
     override suspend fun storeWallet(wallet: SolanaWallet): Result<Unit> = withContext(Dispatchers.IO) {
         try {
-            if (!isAvailable) {
-                return@withContext Result.failure(StorageError.NotAvailable("Seed Vault is not available"))
-            }
-            
-            // Store the seed phrase in Seed Vault
-            // val purpose = WalletContractV1.PURPOSE_SIGN_SOLANA_TRANSACTIONS
-            val authToken = requestSeedVaultAuthorization()
-            
-            if (authToken != null) {
-                // Store the seed in Seed Vault
-                val success = storeSeedInVault(wallet.mnemonic, authToken)
-                if (success) {
-                    Result.success(Unit)
-                } else {
-                    Result.failure(StorageError.StorageFailed("Failed to store seed in Seed Vault"))
-                }
-            } else {
-                Result.failure(StorageError.StorageFailed("Failed to get Seed Vault authorization"))
-            }
-        } catch (e: Exception) {
-            Result.failure(StorageError.StorageFailed("Failed to store wallet: ${e.message}"))
-        }
-    }
-    
-    override suspend fun getWallet(): Result<SolanaWallet?> = withContext(Dispatchers.IO) {
-        try {
-            if (!isAvailable) {
-                return@withContext Result.failure(StorageError.NotAvailable("Seed Vault is not available"))
-            }
-            
-            val authToken = requestSeedVaultAuthorization()
-            if (authToken != null) {
-                val seedPhrase = retrieveSeedFromVault(authToken)
-                if (seedPhrase != null) {
-                    val wallet = SolanaWalletManager.createWalletFromMnemonic(seedPhrase)
-                    Result.success(wallet)
-                } else {
-                    Result.success(null)
-                }
-            } else {
-                Result.failure(StorageError.RetrievalFailed("Failed to get Seed Vault authorization"))
-            }
-        } catch (e: Exception) {
-            Result.failure(StorageError.RetrievalFailed("Failed to retrieve wallet: ${e.message}"))
-        }
-    }
-    
-    override suspend fun deleteWallet(): Result<Unit> = withContext(Dispatchers.IO) {
-        try {
-            if (!isAvailable) {
-                return@withContext Result.failure(StorageError.NotAvailable("Seed Vault is not available"))
-            }
-            
-            // Note: Seed Vault doesn't provide direct deletion API
-            // User needs to manage seeds through Seed Vault app
+            // For Seed Vault, we don't store the actual wallet
+            // This method is here for interface compatibility
+            // The actual auth token should be stored via storeSeedVaultAuth
+            Log.d(TAG, "Seed Vault wallet storage not needed - keys remain in secure hardware")
             Result.success(Unit)
         } catch (e: Exception) {
-            Result.failure(StorageError.DeletionFailed("Failed to delete wallet: ${e.message}"))
+            Log.e(TAG, "Failed to store wallet reference", e)
+            Result.failure(StorageError.StorageFailed("Failed to store Seed Vault reference: ${e.message}"))
         }
     }
-    
-    override suspend fun hasWallet(): Boolean = withContext(Dispatchers.IO) {
+
+    /**
+     * Store the Seed Vault authorization details
+     * This should be called after successful Seed Vault authorization
+     */
+    suspend fun storeSeedVaultAuth(authToken: Long, publicKey: ByteArray): Result<Unit> = withContext(Dispatchers.IO) {
         try {
-            if (!isAvailable) return@withContext false
-            
-            // Check if we have authorization and can retrieve a seed
-            val authToken = requestSeedVaultAuthorization()
-            authToken != null && hasSeedInVault(authToken)
+            sharedPreferences.edit().apply {
+                putLong(KEY_AUTH_TOKEN, authToken)
+                putString(KEY_PUBLIC_KEY, Base64.encodeToString(publicKey, Base64.NO_WRAP))
+                putString(KEY_WALLET_TYPE, WALLET_TYPE_SEED_VAULT)
+                apply()
+            }
+            Log.d(TAG, "Stored Seed Vault authorization")
+            Result.success(Unit)
         } catch (e: Exception) {
-            false
+            Log.e(TAG, "Failed to store Seed Vault auth", e)
+            Result.failure(StorageError.StorageFailed("Failed to store Seed Vault auth: ${e.message}"))
         }
     }
-    
-    private suspend fun requestSeedVaultAuthorization(): String? {
-        // This is a simplified implementation
-        // In a real app, you'd handle the authorization flow properly
-        return null // TODO: Implement when Seed Vault is enabled
-        // return try {
-        //     val authIntent = SeedVault.createAuthorizationIntent(
-        //         context,
-        //         Uri.parse("darklakewallet://seedvault")
-        //     )
-        //     // In a real implementation, you'd start this intent and handle the result
-        //     // For now, return null as we can't handle intents in this context
-        //     null
-        // } catch (e: Exception) {
-        //     null
-        // }
+
+    override suspend fun getWallet(): Result<SolanaWallet?> = withContext(Dispatchers.IO) {
+        try {
+            val walletType = sharedPreferences.getString(KEY_WALLET_TYPE, null)
+            if (walletType != WALLET_TYPE_SEED_VAULT) {
+                return@withContext Result.success(null)
+            }
+
+            val authToken = sharedPreferences.getLong(KEY_AUTH_TOKEN, -1L)
+            val publicKeyStr = sharedPreferences.getString(KEY_PUBLIC_KEY, null)
+
+            if (authToken == -1L || publicKeyStr == null) {
+                Log.d(TAG, "No Seed Vault wallet found")
+                return@withContext Result.success(null)
+            }
+
+            val publicKey = Base64.decode(publicKeyStr, Base64.NO_WRAP)
+
+            // Create a SolanaWallet with special marker for Seed Vault
+            // We use empty private key and mnemonic as they're not accessible
+            val wallet = SolanaWallet(
+                publicKey = Base58.encode(publicKey),
+                privateKey = ByteArray(0), // Empty as private key stays in Seed Vault
+                mnemonic = listOf("SEED_VAULT") // Special marker
+            )
+
+            Log.d(TAG, "Retrieved Seed Vault wallet")
+            Result.success(wallet)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to retrieve wallet", e)
+            Result.failure(StorageError.RetrievalFailed("Failed to retrieve Seed Vault wallet: ${e.message}"))
+        }
     }
-    
-    private suspend fun storeSeedInVault(mnemonic: List<String>, authToken: String): Boolean {
-        // Implementation would interact with Seed Vault API
-        // This is a placeholder
-        return false
+
+    override suspend fun deleteWallet(): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            sharedPreferences.edit().clear().apply()
+            Log.d(TAG, "Deleted Seed Vault wallet reference")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to delete wallet reference", e)
+            Result.failure(StorageError.DeletionFailed("Failed to delete Seed Vault reference: ${e.message}"))
+        }
     }
-    
-    private suspend fun retrieveSeedFromVault(authToken: String): List<String>? {
-        // Implementation would interact with Seed Vault API
-        // This is a placeholder
-        return null
+
+    override suspend fun hasWallet(): Boolean = withContext(Dispatchers.IO) {
+        val walletType = sharedPreferences.getString(KEY_WALLET_TYPE, null)
+        walletType == WALLET_TYPE_SEED_VAULT && sharedPreferences.contains(KEY_AUTH_TOKEN)
     }
-    
-    private suspend fun hasSeedInVault(authToken: String): Boolean {
-        // Implementation would check if a seed exists in Seed Vault
-        // This is a placeholder
-        return false
+
+    /**
+     * Check if Seed Vault is actually available on this device
+     */
+    suspend fun checkAvailability(): Boolean = withContext(Dispatchers.IO) {
+        seedVaultManager.isSeedVaultAvailable()
+    }
+
+    /**
+     * Get the stored auth token for Seed Vault signing operations
+     */
+    fun getAuthToken(): Long {
+        return sharedPreferences.getLong(KEY_AUTH_TOKEN, -1L)
+    }
+
+    /**
+     * Check if the current wallet is a Seed Vault wallet
+     */
+    fun isSeedVaultWallet(): Boolean {
+        return sharedPreferences.getString(KEY_WALLET_TYPE, null) == WALLET_TYPE_SEED_VAULT
     }
 }

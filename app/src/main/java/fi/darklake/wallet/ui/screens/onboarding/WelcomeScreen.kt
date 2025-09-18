@@ -3,7 +3,11 @@ package fi.darklake.wallet.ui.screens.onboarding
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import fi.darklake.wallet.R
@@ -24,19 +28,29 @@ import fi.darklake.wallet.ui.design.DesignTokens
 
 /**
  * Welcome screen for the Darklake wallet onboarding flow.
- * 
+ *
  * Displays the app logo, tagline, and main action buttons for creating
  * or importing a wallet. Uses a flexible layout system to position
  * content with proper spacing and visual hierarchy.
- * 
+ *
  * @param onCreateWallet Callback when user wants to create a new wallet
  * @param onImportWallet Callback when user wants to import existing wallet
+ * @param onUseSeedVault Callback when user wants to use Seed Vault
  */
 @Composable
 fun WelcomeScreen(
     onCreateWallet: () -> Unit,
-    onImportWallet: () -> Unit
+    onImportWallet: () -> Unit,
+    onUseSeedVault: () -> Unit = {}
 ) {
+    val context = LocalContext.current
+    val seedVaultAvailable = remember { mutableStateOf(false) }
+
+    // Check if Seed Vault is available on this device
+    LaunchedEffect(Unit) {
+        val seedVaultManager = fi.darklake.wallet.seedvault.SeedVaultManager(context)
+        seedVaultAvailable.value = seedVaultManager.isSeedVaultAvailable()
+    }
     BackgroundWithOverlay {
         FlexLayout(
             sections = listOf(
@@ -90,15 +104,27 @@ fun WelcomeScreen(
                             onClick = onCreateWallet,
                             isPrimary = true
                         )
-                        
+
                         Spacer(modifier = Modifier.height(DesignTokens.Layout.buttonGap))
-                        
+
                         AppButton(
                             text = stringResource(R.string.welcome_import_wallet),
                             onClick = onImportWallet,
                             isPrimary = false,
                             hasUnderline = true
                         )
+
+                        // Show Seed Vault option only if available
+                        if (seedVaultAvailable.value) {
+                            Spacer(modifier = Modifier.height(DesignTokens.Layout.buttonGap))
+
+                            AppButton(
+                                text = stringResource(R.string.welcome_use_seed_vault),
+                                onClick = onUseSeedVault,
+                                isPrimary = false,
+                                hasUnderline = false
+                            )
+                        }
                     },
                     position = FlexPosition.Bottom,
                     bottomSpacing = DesignTokens.Spacing.xs
