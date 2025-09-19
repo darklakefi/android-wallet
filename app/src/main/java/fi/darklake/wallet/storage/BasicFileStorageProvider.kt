@@ -90,8 +90,13 @@ class BasicFileStorageProvider(
     
     override suspend fun storeWallet(wallet: SolanaWallet): Result<Unit> = withContext(Dispatchers.IO) {
         try {
+            // Only LocalWallet can be stored with this provider
+            if (wallet !is fi.darklake.wallet.crypto.LocalWallet) {
+                return@withContext Result.failure(StorageError.StorageFailed("BasicFileStorageProvider can only store LocalWallet"))
+            }
+
             Log.d(TAG, "Storing wallet using basic file encryption")
-            
+
             val key = getOrCreateSecretKey()
             val walletData = Json.encodeToString(wallet.mnemonic)
             

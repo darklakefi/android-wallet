@@ -55,9 +55,13 @@ class SeedVaultStorageProvider(private val context: Context) : WalletStorageProv
 
     override suspend fun storeWallet(wallet: SolanaWallet): Result<Unit> = withContext(Dispatchers.IO) {
         try {
-            // For Seed Vault, we don't store the actual wallet
-            // This method is here for interface compatibility
-            // The actual auth token should be stored via storeSeedVaultAuth
+            // Only SeedVaultWallet can be stored with this provider
+            if (wallet !is fi.darklake.wallet.crypto.SeedVaultWallet) {
+                return@withContext Result.failure(StorageError.StorageFailed("SeedVaultStorageProvider can only store SeedVaultWallet"))
+            }
+
+            // For Seed Vault, we don't store the actual wallet keys
+            // The auth token should be stored via storeSeedVaultAuth
             Log.d(TAG, "Seed Vault wallet storage not needed - keys remain in secure hardware")
             Result.success(Unit)
         } catch (e: Exception) {
@@ -102,16 +106,19 @@ class SeedVaultStorageProvider(private val context: Context) : WalletStorageProv
             }
 
             val publicKey = Base64.decode(publicKeyStr, Base64.NO_WRAP)
+            Log.d(TAG, "Decoded public key: ${publicKey.size} bytes")
 
-            // Create a SolanaWallet with special marker for Seed Vault
-            // We use empty private key and mnemonic as they're not accessible
-            val wallet = SolanaWallet(
-                publicKey = Base58.encode(publicKey),
-                privateKey = ByteArray(0), // Empty as private key stays in Seed Vault
-                mnemonic = listOf("SEED_VAULT") // Special marker
+            val publicKeyBase58 = Base58.encode(publicKey)
+            Log.d(TAG, "Base58 encoded public key: $publicKeyBase58")
+
+            // Create a SeedVaultWallet implementation
+            val wallet = fi.darklake.wallet.crypto.SeedVaultWallet(
+                publicKey = publicKeyBase58,
+                authToken = authToken,
+                context = context
             )
 
-            Log.d(TAG, "Retrieved Seed Vault wallet")
+            Log.d(TAG, "Retrieved Seed Vault wallet with address: $publicKeyBase58")
             Result.success(wallet)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to retrieve wallet", e)

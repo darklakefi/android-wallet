@@ -117,18 +117,17 @@ class SeedVaultTransactionSigner(
 object TransactionSignerFactory {
 
     fun create(context: Context, wallet: fi.darklake.wallet.crypto.SolanaWallet): TransactionSigner {
-        // Check if this is a Seed Vault wallet
-        if (wallet.mnemonic == listOf("SEED_VAULT")) {
-            // Get the auth token from SeedVaultStorageProvider
-            val seedVaultProvider = SeedVaultStorageProvider(context)
-            val authToken = seedVaultProvider.getAuthToken()
-
-            if (authToken != -1L) {
-                return SeedVaultTransactionSigner(context, authToken)
+        // Check wallet implementation type
+        return when (wallet) {
+            is fi.darklake.wallet.crypto.SeedVaultWallet -> {
+                SeedVaultTransactionSigner(context, wallet.getAuthToken())
+            }
+            is fi.darklake.wallet.crypto.LocalWallet -> {
+                LocalTransactionSigner(wallet.getPrivateKey())
+            }
+            else -> {
+                throw IllegalArgumentException("Unknown wallet type: ${wallet.javaClass.simpleName}")
             }
         }
-
-        // Default to local signer
-        return LocalTransactionSigner(wallet.privateKey)
     }
 }

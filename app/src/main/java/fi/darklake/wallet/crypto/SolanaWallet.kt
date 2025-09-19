@@ -1,96 +1,46 @@
 package fi.darklake.wallet.crypto
 
-import org.bitcoinj.crypto.MnemonicCode
-import org.bitcoinj.crypto.MnemonicException
-import java.security.SecureRandom
-import javax.crypto.SecretKeyFactory
-import javax.crypto.spec.PBEKeySpec
-import org.bitcoinj.core.Base58
-import fi.darklake.wallet.data.solana.Ed25519Utils
+import com.solana.core.Transaction
 
-data class SolanaWallet(
-    val publicKey: String,
-    val privateKey: ByteArray,
-    val mnemonic: List<String>
-) {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
+/**
+ * Interface for Solana wallet implementations.
+ * Provides abstraction over different signing mechanisms (local, hardware, etc.)
+ *
+ * Uses a unified two-phase signing flow:
+ * 1. prepareTransaction() - returns a SigningRequest with method details
+ * 2. completeSignature() - completes signing with the provided signature
+ */
+interface SolanaWallet {
+    /**
+     * The public key (address) of this wallet in Base58 format
+     */
+    val publicKey: String
 
-        other as SolanaWallet
+    /**
+     * Prepare a transaction for signing.
+     * Returns a SigningRequest that describes how the transaction should be signed.
+     * For LocalWallet, this includes the private key for immediate signing.
+     * For SeedVaultWallet, this includes the signing intent for activity-based signing.
+     *
+     * @param transaction The unsigned transaction to prepare
+     * @return SigningRequest containing the transaction and signing method
+     */
+    suspend fun prepareTransaction(transaction: Transaction): SigningRequest
 
-        if (publicKey != other.publicKey) return false
-        if (!privateKey.contentEquals(other.privateKey)) return false
-        if (mnemonic != other.mnemonic) return false
+    /**
+     * Complete the signature process with the provided signature bytes.
+     * This applies the signature to the transaction and returns the signed version.
+     *
+     * @param transaction The original unsigned transaction
+     * @param signature The signature bytes obtained from the signing process
+     * @return The signed transaction
+     */
+    suspend fun completeSignature(transaction: Transaction, signature: ByteArray): Transaction
 
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = publicKey.hashCode()
-        result = 31 * result + privateKey.contentHashCode()
-        result = 31 * result + mnemonic.hashCode()
-        return result
-    }
-}
-
-object SolanaWalletManager {
-    private const val SEED_LENGTH = 64
-    private const val DERIVATION_PATH = "m/44'/501'/0'/0'"
-    
-    fun generateMnemonic(): List<String> {
-        val entropy = ByteArray(16) // 128 bits for 12 words
-        SecureRandom().nextBytes(entropy)
-        
-        return try {
-            MnemonicCode.INSTANCE.toMnemonic(entropy)
-        } catch (e: MnemonicException.MnemonicLengthException) {
-            throw IllegalStateException("Failed to generate mnemonic", e)
-        }
-    }
-    
-    fun createWalletFromMnemonic(mnemonic: List<String>, passphrase: String = ""): SolanaWallet {
-        if (mnemonic.size != 12) {
-            throw IllegalArgumentException("Mnemonic must be exactly 12 words")
-        }
-        
-        val seed = mnemonicToSeed(mnemonic, passphrase)
-        val keyPair = deriveKeyPair(seed)
-        
-        return SolanaWallet(
-            publicKey = Base58.encode(keyPair.first),
-            privateKey = keyPair.second,
-            mnemonic = mnemonic
-        )
-    }
-    
-    fun validateMnemonic(mnemonic: List<String>): Boolean {
-        return try {
-            MnemonicCode.INSTANCE.check(mnemonic)
-            true
-        } catch (e: MnemonicException) {
-            false
-        }
-    }
-    
-    private fun mnemonicToSeed(mnemonic: List<String>, passphrase: String): ByteArray {
-        val mnemonicString = mnemonic.joinToString(" ")
-        val salt = "mnemonic$passphrase".toByteArray()
-        
-        val spec = PBEKeySpec(mnemonicString.toCharArray(), salt, 2048, SEED_LENGTH * 8)
-        val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA512")
-        
-        return factory.generateSecret(spec).encoded
-    }
-    
-    private fun deriveKeyPair(seed: ByteArray): Pair<ByteArray, ByteArray> {
-        // Use proper Ed25519 key derivation for Solana
-        // Take first 32 bytes of seed as the private key
-        val privateKey = seed.sliceArray(0..31)
-        
-        // Derive public key using proper Ed25519
-        val publicKey = Ed25519Utils.getPublicKey(privateKey)
-        
-        return Pair(publicKey, privateKey)
-    }
+    /**
+     * Sign an arbitrary message
+     * @param message The message bytes to sign
+     * @return The signature bytes
+     */
+    suspend fun signMessage(message: ByteArray): ByteArray
 }

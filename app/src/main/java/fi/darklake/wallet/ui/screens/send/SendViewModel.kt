@@ -40,7 +40,9 @@ data class SendUiState(
     // For NFT sends
     val nftMint: String? = null,
     val nftName: String? = null,
-    val nftImageUrl: String? = null
+    val nftImageUrl: String? = null,
+    // For unified signing flow
+    val pendingSigningRequest: fi.darklake.wallet.crypto.SigningRequest? = null
 )
 
 class SendViewModel(
@@ -190,28 +192,35 @@ class SendViewModel(
                 val state = _uiState.value
                 val lamports = (state.amount * 1_000_000_000L).toLong() // Convert SOL to lamports
                 
-                val result = transactionService.sendSolTransaction(
-                    fromPrivateKey = wallet.privateKey,
+                when (val result = transactionService.sendSolTransaction(
+                    wallet = wallet,
                     toAddress = state.recipientAddress,
                     lamports = lamports
-                )
-                
-                if (result.isSuccess) {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        transactionSuccess = true,
-                        transactionSignature = result.getOrNull()
-                    )
-                    
-                    // Reset form after successful send
-                    resetForm()
-                } else {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        error = "Transaction failed: ${result.exceptionOrNull()?.message}"
-                    )
+                )) {
+                    is fi.darklake.wallet.data.solana.TransactionResult.Success -> {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            transactionSuccess = true,
+                            transactionSignature = result.signature
+                        )
+                        // Reset form after successful send
+                        resetForm()
+                    }
+                    is fi.darklake.wallet.data.solana.TransactionResult.NeedsSignature -> {
+                        // Transaction needs user interaction for signing
+                        println("SendViewModel: Transaction needs signature, setting pendingSigningRequest")
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            pendingSigningRequest = result.signingRequest
+                        )
+                    }
+                    is fi.darklake.wallet.data.solana.TransactionResult.Error -> {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            error = result.message
+                        )
+                    }
                 }
-                
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
@@ -219,6 +228,89 @@ class SendViewModel(
                 )
             }
         }
+    }
+
+    fun onSigningComplete(signatureBytes: ByteArray) {
+        // Called when signing is complete (e.g., from Seed Vault)
+        println("SendViewModel.onSigningComplete: Received signature of ${signatureBytes.size} bytes")
+
+        viewModelScope.launch {
+            val signingRequest = _uiState.value.pendingSigningRequest
+            if (signingRequest == null) {
+                println("SendViewModel.onSigningComplete: No pending signing request")
+                _uiState.value = _uiState.value.copy(
+                    error = "No pending signing request"
+                )
+                return@launch
+            }
+
+            _uiState.value = _uiState.value.copy(isLoading = true)
+
+            try {
+                println("SendViewModel.onSigningComplete: Getting wallet to complete signature")
+                val wallet = storageManager.getWallet().getOrNull()
+                if (wallet == null) {
+                    println("SendViewModel.onSigningComplete: No wallet found")
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        pendingSigningRequest = null,
+                        error = "No wallet found"
+                    )
+                    return@launch
+                }
+
+                println("SendViewModel.onSigningComplete: Completing signature on transaction")
+                // Complete the signature on the transaction using the wallet
+                val signedTransaction = wallet.completeSignature(
+                    signingRequest.transaction,
+                    signatureBytes
+                )
+
+                println("SendViewModel.onSigningComplete: Serializing signed transaction")
+                val signedTransactionBytes = signedTransaction.serialize()
+                println("SendViewModel.onSigningComplete: Signed transaction size: ${signedTransactionBytes.size} bytes")
+
+                // Submit the signed transaction
+                println("SendViewModel.onSigningComplete: Submitting signed transaction")
+                val result = transactionService.submitSignedTransaction(
+                    android.util.Base64.encodeToString(signedTransactionBytes, android.util.Base64.NO_WRAP)
+                )
+
+                if (result != null) {
+                    println("SendViewModel.onSigningComplete: Transaction submitted successfully: $result")
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        pendingSigningRequest = null,
+                        transactionSuccess = true,
+                        transactionSignature = result
+                    )
+                    resetForm()
+                } else {
+                    println("SendViewModel.onSigningComplete: Failed to submit signed transaction")
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        pendingSigningRequest = null,
+                        error = "Failed to submit signed transaction"
+                    )
+                }
+            } catch (e: Exception) {
+                println("SendViewModel.onSigningComplete: Exception: ${e.message}")
+                e.printStackTrace()
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    pendingSigningRequest = null,
+                    error = "Failed to submit transaction: ${e.message}"
+                )
+            }
+        }
+    }
+
+    fun onSigningCancelled() {
+        // Called when signing is cancelled
+        _uiState.value = _uiState.value.copy(
+            pendingSigningRequest = null,
+            error = "Transaction signing cancelled"
+        )
     }
     
     private fun resetForm() {
@@ -332,29 +424,36 @@ class SendViewModel(
                 val tokenMint = state.tokenMint ?: return@launch
                 val amount = (state.amount * (10.0).pow(state.tokenDecimals)).toLong()
                 
-                val result = transactionService.sendTokenTransaction(
-                    fromPrivateKey = wallet.privateKey,
+                when (val result = transactionService.sendTokenTransaction(
+                    wallet = wallet,
                     toAddress = state.recipientAddress,
                     tokenMint = tokenMint,
                     amount = amount,
                     decimals = state.tokenDecimals
-                )
-                
-                if (result.isSuccess) {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        transactionSuccess = true,
-                        transactionSignature = result.getOrNull()
-                    )
-                    
-                    resetForm()
-                } else {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        error = "Token transfer failed: ${result.exceptionOrNull()?.message}"
-                    )
+                )) {
+                    is fi.darklake.wallet.data.solana.TransactionResult.Success -> {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            transactionSuccess = true,
+                            transactionSignature = result.signature
+                        )
+                        resetForm()
+                    }
+                    is fi.darklake.wallet.data.solana.TransactionResult.NeedsSignature -> {
+                        // Transaction needs user interaction for signing
+                        println("SendViewModel: Transaction needs signature, setting pendingSigningRequest")
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            pendingSigningRequest = result.signingRequest
+                        )
+                    }
+                    is fi.darklake.wallet.data.solana.TransactionResult.Error -> {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            error = result.message
+                        )
+                    }
                 }
-                
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
@@ -418,25 +517,33 @@ class SendViewModel(
                 
                 val nftMint = state.nftMint ?: return@launch
                 
-                val result = transactionService.sendNftTransaction(
-                    fromPrivateKey = wallet.privateKey,
+                when (val result = transactionService.sendNftTransaction(
+                    wallet = wallet,
                     toAddress = state.recipientAddress,
                     nftMint = nftMint
-                )
-                
-                if (result.isSuccess) {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        transactionSuccess = true,
-                        transactionSignature = result.getOrNull()
-                    )
-                    
-                    resetForm()
-                } else {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        error = "NFT transfer failed: ${result.exceptionOrNull()?.message}"
-                    )
+                )) {
+                    is fi.darklake.wallet.data.solana.TransactionResult.Success -> {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            transactionSuccess = true,
+                            transactionSignature = result.signature
+                        )
+                        resetForm()
+                    }
+                    is fi.darklake.wallet.data.solana.TransactionResult.NeedsSignature -> {
+                        // Transaction needs user interaction for signing
+                        println("SendViewModel: Transaction needs signature, setting pendingSigningRequest")
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            pendingSigningRequest = result.signingRequest
+                        )
+                    }
+                    is fi.darklake.wallet.data.solana.TransactionResult.Error -> {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            error = result.message
+                        )
+                    }
                 }
                 
             } catch (e: Exception) {

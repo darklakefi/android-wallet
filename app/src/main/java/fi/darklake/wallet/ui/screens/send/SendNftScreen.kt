@@ -36,7 +36,41 @@ fun SendNftScreen(
     viewModel: SendViewModel = viewModel { SendViewModel(storageManager, settingsManager) }
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    
+
+    // Activity result launcher for signing (e.g., Seed Vault)
+    val signingLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK && result.data != null) {
+            // Get the signed transaction from the result
+            val signedTxBytes = result.data?.getByteArrayExtra(fi.darklake.wallet.seedvault.SeedVaultManager.EXTRA_SIGNED_TRANSACTION)
+            if (signedTxBytes != null) {
+                viewModel.onSigningComplete(signedTxBytes)
+            } else {
+                viewModel.onSigningCancelled()
+            }
+        } else {
+            viewModel.onSigningCancelled()
+        }
+    }
+
+    // Launch signing when we have a pending signing request
+    LaunchedEffect(uiState.pendingSigningRequest) {
+        val signingRequest = uiState.pendingSigningRequest
+        if (signingRequest != null) {
+            when (val method = signingRequest.signingMethod) {
+                is fi.darklake.wallet.crypto.SigningMethod.SeedVault -> {
+                    // Launch the signing intent for Seed Vault
+                    signingLauncher.launch(method.signingIntent)
+                }
+                is fi.darklake.wallet.crypto.SigningMethod.Local -> {
+                    // This shouldn't happen for local wallets as they sign immediately
+                    // But handle it just in case
+                }
+            }
+        }
+    }
+
     // Handle success state - navigate back and trigger refresh
     LaunchedEffect(uiState.transactionSuccess) {
         if (uiState.transactionSuccess) {

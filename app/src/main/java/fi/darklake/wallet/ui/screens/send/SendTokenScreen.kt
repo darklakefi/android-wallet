@@ -71,7 +71,78 @@ fun SendTokenScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
-    
+
+    // Activity result launcher for signing (e.g., Seed Vault)
+    val signingLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        println("SendTokenScreen: Activity result received - resultCode=${result.resultCode}")
+        if (result.resultCode == android.app.Activity.RESULT_OK && result.data != null) {
+            // Get the signing responses from the result
+            val signingResponses = try {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                    result.data?.getParcelableArrayListExtra(
+                        com.solanamobile.seedvault.WalletContractV1.EXTRA_SIGNING_RESPONSE,
+                        com.solanamobile.seedvault.SigningResponse::class.java
+                    )
+                } else {
+                    @Suppress("DEPRECATION")
+                    result.data?.getParcelableArrayListExtra<com.solanamobile.seedvault.SigningResponse>(
+                        com.solanamobile.seedvault.WalletContractV1.EXTRA_SIGNING_RESPONSE
+                    )
+                }
+            } catch (e: Exception) {
+                println("SendTokenScreen: Error getting signing responses: ${e.message}")
+                null
+            }
+
+            println("SendTokenScreen: Got ${signingResponses?.size} signing responses")
+
+            if (!signingResponses.isNullOrEmpty()) {
+                // Get the first signature from the first response
+                val firstResponse = signingResponses[0]
+                val signatures = firstResponse.signatures
+                println("SendTokenScreen: Got ${signatures.size} signatures in first response")
+
+                if (signatures.isNotEmpty()) {
+                    // Pass the first signature to the view model
+                    val signatureBytes = signatures[0]
+                    println("SendTokenScreen: Signature bytes: ${signatureBytes.size}")
+                    viewModel.onSigningComplete(signatureBytes)
+                } else {
+                    println("SendTokenScreen: No signatures in response")
+                    viewModel.onSigningCancelled()
+                }
+            } else {
+                println("SendTokenScreen: No signing responses in result")
+                println("SendTokenScreen: Result extras: ${result.data?.extras?.keySet()}")
+                viewModel.onSigningCancelled()
+            }
+        } else {
+            println("SendTokenScreen: Signing cancelled or failed with code: ${result.resultCode}")
+            viewModel.onSigningCancelled()
+        }
+    }
+
+    // Launch signing when we have a pending signing request
+    LaunchedEffect(uiState.pendingSigningRequest) {
+        val signingRequest = uiState.pendingSigningRequest
+        if (signingRequest != null) {
+            println("SendTokenScreen: Launching signing for pending request")
+            when (val method = signingRequest.signingMethod) {
+                is fi.darklake.wallet.crypto.SigningMethod.SeedVault -> {
+                    println("SendTokenScreen: Launching Seed Vault intent")
+                    // Launch the signing intent for Seed Vault
+                    signingLauncher.launch(method.signingIntent)
+                }
+                is fi.darklake.wallet.crypto.SigningMethod.Local -> {
+                    // This shouldn't happen for local wallets as they sign immediately
+                    println("SendTokenScreen: Unexpected local wallet in pending signing")
+                }
+            }
+        }
+    }
+
     // Set the token mint in the view model if provided
     LaunchedEffect(tokenMint) {
         tokenMint?.let { viewModel.setTokenMint(it) }

@@ -78,7 +78,8 @@
       "Read(//home/vitorpy/.android/avd/**)",
       "Read(//home/vitorpy/code/**)",
       "Bash(awk:*)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Read(//home/vitorpy/**)"
     ],
     "deny": [],
     "additionalDirectories": [

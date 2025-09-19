@@ -99,18 +99,23 @@ class KeystoreStorageProvider(
     
     override suspend fun storeWallet(wallet: SolanaWallet): Result<Unit> = withContext(Dispatchers.IO) {
         try {
+            // Only LocalWallet can be stored with this provider
+            if (wallet !is fi.darklake.wallet.crypto.LocalWallet) {
+                return@withContext Result.failure(StorageError.StorageFailed("KeystoreStorageProvider can only store LocalWallet"))
+            }
+
             DiagnosticLogger.getInstance().info(TAG, "Attempting to store wallet with provider: $providerName")
-            
+
             if (!isAvailable) {
                 Log.w(TAG, "$providerName is not available")
                 return@withContext Result.failure(
                     StorageError.NotAvailable("$providerName is not available")
                 )
             }
-            
+
             Log.d(TAG, "Getting encrypted preferences...")
             val prefs = getEncryptedPrefs()
-            
+
             Log.d(TAG, "Encoding mnemonic to JSON...")
             val mnemonicJson = Json.encodeToString(wallet.mnemonic)
             

@@ -88,186 +88,204 @@ class SolanaTransactionService(
     }
 
     suspend fun sendSolTransaction(
-        fromPrivateKey: ByteArray,
+        wallet: fi.darklake.wallet.crypto.SolanaWallet,
         toAddress: String,
         lamports: Long
-    ): Result<String> = withContext(Dispatchers.IO) {
-        TransactionErrorHandler.withRetry {
-            try {
-                println("=== SOLANA SOL TRANSFER (SolanaKT) ===")
-                println("To: $toAddress")
-                println("Amount: $lamports lamports")
+    ): TransactionResult = withContext(Dispatchers.IO) {
+        try {
+            println("=== SOLANA SOL TRANSFER (SolanaKT) ===")
+            println("To: $toAddress")
+            println("Amount: $lamports lamports")
 
-                val solana = createSolanaClient()
-                
-                // Create account from private key
-                // If it's 32 bytes, it's a seed; if 64 bytes, it's a full keypair
-                val account = if (fromPrivateKey.size == 32) {
-                    // Create keypair from seed
-                    val keypair = com.solana.vendor.TweetNaclFast.Signature.keyPair_fromSeed(fromPrivateKey)
-                    HotAccount(keypair.secretKey)
-                } else {
-                    HotAccount(fromPrivateKey)
-                }
-                val fromPubkey = account.publicKey
-                val toPubkey = PublicKey(toAddress)
-                
-                println("From address: ${fromPubkey.toBase58()}")
-                
-                // Get latest blockhash with "finalized" commitment for reliability
-                println("Getting latest blockhash...")
-                val blockhashResult = solana.api.getLatestBlockhash()
-                if (blockhashResult.isFailure) {
-                    return@withRetry Result.failure(Exception("Failed to get latest blockhash: ${blockhashResult.exceptionOrNull()?.message}"))
-                }
-                val blockhashResponse = blockhashResult.getOrThrow()
-                val blockhash = blockhashResponse.blockhash
-                println("Latest blockhash: $blockhash")
-                println("Last valid block height: ${blockhashResponse.lastValidBlockHeight}")
-                
-                // Validate blockhash format (should be base58 string, approximately 32-44 characters)
-                if (blockhash.length < 32 || blockhash.length > 50) {
-                    println("WARNING: Blockhash has unusual length: ${blockhash.length}")
-                }
-                
-                // Create transfer instruction  
-                val transferInstruction = SystemProgram.transfer(
-                    fromPublicKey = fromPubkey,
-                    toPublickKey = toPubkey,  // Note: this is how it's spelled in SolanaKT (typo in their code)
-                    lamports = lamports
+            val solana = createSolanaClient()
+
+            val fromPubkey = PublicKey(wallet.publicKey)
+            val toPubkey = PublicKey(toAddress)
+
+            println("From address: ${fromPubkey.toBase58()}")
+
+            // Get latest blockhash with "finalized" commitment for reliability
+            println("Getting latest blockhash...")
+            val blockhashResult = solana.api.getLatestBlockhash()
+            if (blockhashResult.isFailure) {
+                return@withContext TransactionResult.Error(
+                    "Failed to get latest blockhash",
+                    blockhashResult.exceptionOrNull() as? Exception
                 )
-                
-                // Create transaction
-                val transaction = Transaction()
-                transaction.feePayer = fromPubkey
-                transaction.add(transferInstruction)
-                
-                // Set blockhash explicitly
-                transaction.setRecentBlockHash(blockhash)
-                
-                // Sign the transaction
-                transaction.sign(account)
-                
-                // Send raw transaction with skipPreflight to avoid simulation issues
-                println("Sending transaction (skipping preflight simulation)...")
-                val transactionOptions = TransactionOptions(skipPreflight = true)
-                val signature = solana.api.sendRawTransaction(transaction.serialize(), transactionOptions)
-                
-                if (signature.isFailure) {
-                    val error = signature.exceptionOrNull()
-                    println("Transaction failed: ${error?.message}")
-                    return@withRetry Result.failure(Exception("Failed to send transaction: ${error?.message}"))
-                }
-                
-                val txSignature = signature.getOrThrow()
-                println("Transaction sent successfully: $txSignature")
-                
-                Result.success(txSignature)
-
-            } catch (e: Exception) {
-                println("SOL transfer failed: ${e.message}")
-                e.printStackTrace()
-                Result.failure(e)
             }
+            val blockhashResponse = blockhashResult.getOrThrow()
+            val blockhash = blockhashResponse.blockhash
+            println("Latest blockhash: $blockhash")
+            println("Last valid block height: ${blockhashResponse.lastValidBlockHeight}")
+
+            // Validate blockhash format (should be base58 string, approximately 32-44 characters)
+            if (blockhash.length < 32 || blockhash.length > 50) {
+                println("WARNING: Blockhash has unusual length: ${blockhash.length}")
+            }
+
+            // Create transfer instruction
+            val transferInstruction = SystemProgram.transfer(
+                fromPublicKey = fromPubkey,
+                toPublickKey = toPubkey,  // Note: this is how it's spelled in SolanaKT (typo in their code)
+                lamports = lamports
+            )
+
+            // Create transaction
+            val transaction = Transaction()
+            transaction.feePayer = fromPubkey
+            transaction.add(transferInstruction)
+
+            // Set blockhash explicitly
+            transaction.setRecentBlockHash(blockhash)
+
+            // Use the unified signing flow
+            val signingRequest = wallet.prepareTransaction(transaction)
+
+            // Check the signing method
+            when (val method = signingRequest.signingMethod) {
+                is fi.darklake.wallet.crypto.SigningMethod.Local -> {
+                    // For local wallets, we can sign immediately
+                    val signedTransaction = wallet.completeSignature(transaction, ByteArray(0))
+
+                    // Send raw transaction with skipPreflight to avoid simulation issues
+                    println("Sending transaction (skipping preflight simulation)...")
+                    val transactionOptions = TransactionOptions(skipPreflight = true)
+                    val signature = solana.api.sendRawTransaction(signedTransaction.serialize(), transactionOptions)
+
+                    if (signature.isFailure) {
+                        val error = signature.exceptionOrNull()
+                        println("Transaction failed: ${error?.message}")
+                        return@withContext TransactionResult.Error(
+                            "Failed to send transaction",
+                            error as? Exception
+                        )
+                    }
+
+                    val txSignature = signature.getOrThrow()
+                    println("Transaction sent successfully: $txSignature")
+
+                    TransactionResult.Success(txSignature)
+                }
+                is fi.darklake.wallet.crypto.SigningMethod.SeedVault -> {
+                    // For Seed Vault, return the signing request for UI handling
+                    println("SolanaTransactionService: Seed Vault signing needed, returning NeedsSignature result")
+                    TransactionResult.NeedsSignature(signingRequest)
+                }
+            }
+
+        } catch (e: Exception) {
+            println("SOL transfer failed: ${e.message}")
+            e.printStackTrace()
+            TransactionResult.Error("SOL transfer failed", e)
         }
     }
 
     suspend fun sendTokenTransaction(
-        fromPrivateKey: ByteArray,
+        wallet: fi.darklake.wallet.crypto.SolanaWallet,
         toAddress: String,
         tokenMint: String,
         amount: Long,
         decimals: Int
-    ): Result<String> = withContext(Dispatchers.IO) {
-        TransactionErrorHandler.withRetry {
-            try {
-                println("=== SOLANA TOKEN TRANSFER (SolanaKT) ===")
-                println("To: $toAddress")
-                println("Token: $tokenMint")
-                println("Amount: $amount (decimals: $decimals)")
+    ): TransactionResult = withContext(Dispatchers.IO) {
+        try {
+            println("=== SOLANA TOKEN TRANSFER (SolanaKT) ===")
+            println("To: $toAddress")
+            println("Token: $tokenMint")
+            println("Amount: $amount (decimals: $decimals)")
 
-                val solana = createSolanaClient()
-                
-                // Create account from private key
-                // If it's 32 bytes, it's a seed; if 64 bytes, it's a full keypair
-                val account = if (fromPrivateKey.size == 32) {
-                    // Create keypair from seed
-                    val keypair = com.solana.vendor.TweetNaclFast.Signature.keyPair_fromSeed(fromPrivateKey)
-                    HotAccount(keypair.secretKey)
-                } else {
-                    HotAccount(fromPrivateKey)
-                }
-                val fromPubkey = account.publicKey
-                val toPubkey = PublicKey(toAddress)
-                val mintPubkey = PublicKey(tokenMint)
-                
-                // Get associated token accounts
-                val fromTokenAccount = PublicKey.associatedTokenAddress(fromPubkey, mintPubkey).address
-                val toTokenAccount = PublicKey.associatedTokenAddress(toPubkey, mintPubkey).address
-                
-                // Create transaction
-                val transaction = Transaction()
-                transaction.feePayer = fromPubkey
-                
-                // Use idempotent version that won't fail if ATA already exists
-                val createAtaInstruction = createAssociatedTokenAccountIdempotentInstruction(
-                    payer = fromPubkey,
-                    associatedAccount = toTokenAccount,
-                    owner = toPubkey,
-                    mint = mintPubkey
-                )
-                transaction.add(createAtaInstruction)
-                
-                // Add transfer instruction
-                val transferInstruction = TokenProgram.transferChecked(
-                    source = fromTokenAccount,
-                    destination = toTokenAccount,
-                    amount = amount,
-                    decimals = decimals.toByte(),
-                    owner = fromPubkey,
-                    tokenMint = mintPubkey
-                )
-                transaction.add(transferInstruction)
-                
-                // Get latest blockhash before building transaction
-                val blockhashResult = solana.api.getLatestBlockhash()
-                if (blockhashResult.isFailure) {
-                    return@withRetry Result.failure(Exception("Failed to get latest blockhash: ${blockhashResult.exceptionOrNull()?.message}"))
-                }
-                val blockhashResponse = blockhashResult.getOrThrow()
-                val blockhash = blockhashResponse.blockhash
-                println("Latest blockhash: $blockhash")
-                println("Last valid block height: ${blockhashResponse.lastValidBlockHeight}")
-                
-                // Sign and send
-                transaction.setRecentBlockHash(blockhash)
-                transaction.sign(listOf(account))
-                
-                // Send with skipPreflight to avoid simulation issues
-                val transactionOptions = TransactionOptions(skipPreflight = true)
-                val signature = solana.api.sendRawTransaction(transaction.serialize(), transactionOptions)
-                
-                if (signature.isFailure) {
-                    return@withRetry Result.failure(Exception("Failed to send transaction: ${signature.exceptionOrNull()?.message}"))
-                }
-                
-                val txSignature = signature.getOrThrow()
-                println("Token transfer sent successfully: $txSignature")
-                Result.success(txSignature)
+            val solana = createSolanaClient()
 
-            } catch (e: Exception) {
-                println("Token transfer failed: ${e.message}")
-                e.printStackTrace()
-                Result.failure(e)
+            val fromPubkey = PublicKey(wallet.publicKey)
+            val toPubkey = PublicKey(toAddress)
+            val mintPubkey = PublicKey(tokenMint)
+
+            // Get associated token accounts
+            val fromTokenAccount = PublicKey.associatedTokenAddress(fromPubkey, mintPubkey).address
+            val toTokenAccount = PublicKey.associatedTokenAddress(toPubkey, mintPubkey).address
+
+            // Create transaction
+            val transaction = Transaction()
+            transaction.feePayer = fromPubkey
+
+            // Use idempotent version that won't fail if ATA already exists
+            val createAtaInstruction = createAssociatedTokenAccountIdempotentInstruction(
+                payer = fromPubkey,
+                associatedAccount = toTokenAccount,
+                owner = toPubkey,
+                mint = mintPubkey
+            )
+            transaction.add(createAtaInstruction)
+
+            // Add transfer instruction
+            val transferInstruction = TokenProgram.transferChecked(
+                source = fromTokenAccount,
+                destination = toTokenAccount,
+                amount = amount,
+                decimals = decimals.toByte(),
+                owner = fromPubkey,
+                tokenMint = mintPubkey
+            )
+            transaction.add(transferInstruction)
+
+            // Get latest blockhash before building transaction
+            val blockhashResult = solana.api.getLatestBlockhash()
+            if (blockhashResult.isFailure) {
+                return@withContext TransactionResult.Error(
+                    "Failed to get latest blockhash",
+                    blockhashResult.exceptionOrNull() as? Exception
+                )
             }
+            val blockhashResponse = blockhashResult.getOrThrow()
+            val blockhash = blockhashResponse.blockhash
+            println("Latest blockhash: $blockhash")
+            println("Last valid block height: ${blockhashResponse.lastValidBlockHeight}")
+
+            // Sign and send
+            transaction.setRecentBlockHash(blockhash)
+
+            // Use the unified signing flow
+            val signingRequest = wallet.prepareTransaction(transaction)
+
+            // Check the signing method
+            when (val method = signingRequest.signingMethod) {
+                is fi.darklake.wallet.crypto.SigningMethod.Local -> {
+                    // For local wallets, we can sign immediately
+                    val signedTransaction = wallet.completeSignature(transaction, ByteArray(0))
+
+                    // Send with skipPreflight to avoid simulation issues
+                    val transactionOptions = TransactionOptions(skipPreflight = true)
+                    val signature = solana.api.sendRawTransaction(signedTransaction.serialize(), transactionOptions)
+
+                    if (signature.isFailure) {
+                        return@withContext TransactionResult.Error(
+                            "Failed to send transaction",
+                            signature.exceptionOrNull() as? Exception
+                        )
+                    }
+
+                    val txSignature = signature.getOrThrow()
+                    println("Token transfer sent successfully: $txSignature")
+                    TransactionResult.Success(txSignature)
+                }
+                is fi.darklake.wallet.crypto.SigningMethod.SeedVault -> {
+                    // For Seed Vault, return the signing request for UI handling
+                    println("SolanaTransactionService: Seed Vault signing needed, returning NeedsSignature result")
+                    TransactionResult.NeedsSignature(signingRequest)
+                }
+            }
+
+        } catch (e: Exception) {
+            println("Token transfer failed: ${e.message}")
+            e.printStackTrace()
+            TransactionResult.Error("Token transfer failed", e)
         }
     }
 
     suspend fun sendNftTransaction(
-        fromPrivateKey: ByteArray,
+        wallet: fi.darklake.wallet.crypto.SolanaWallet,
         toAddress: String,
         nftMint: String
-    ): Result<String> = withContext(Dispatchers.IO) {
+    ): TransactionResult = withContext(Dispatchers.IO) {
         try {
             println("=== SOLANA NFT TRANSFER (SolanaKT) ===")
             println("To: $toAddress")
@@ -275,7 +293,7 @@ class SolanaTransactionService(
 
             // NFT transfers are just token transfers with amount = 1 and decimals = 0
             return@withContext sendTokenTransaction(
-                fromPrivateKey = fromPrivateKey,
+                wallet = wallet,
                 toAddress = toAddress,
                 tokenMint = nftMint,
                 amount = 1,
@@ -285,75 +303,57 @@ class SolanaTransactionService(
         } catch (e: Exception) {
             println("NFT transfer failed: ${e.message}")
             e.printStackTrace()
-            Result.failure(e)
+            TransactionResult.Error("NFT transfer failed", e)
         }
     }
 
     /**
-     * Signs a transaction using SolanaKT libraries
+     * Signs a transaction using wallet interface
      * Handles both legacy and versioned transactions
      * @param unsignedTransactionBase64 Base64 encoded unsigned transaction
-     * @param privateKey Private key bytes for signing
-     * @return Base64 encoded signed transaction
+     * @param wallet Wallet to sign with
+     * @return Base64 encoded signed transaction or throws SigningRequiredException for UI handling
      */
     suspend fun signTransaction(
         unsignedTransactionBase64: String,
-        privateKey: ByteArray
+        wallet: fi.darklake.wallet.crypto.SolanaWallet
     ): String = withContext(Dispatchers.IO) {
         try {
             println("Starting transaction signing")
-            
+
             // Decode the unsigned transaction from base64
             val transactionBytes = android.util.Base64.decode(unsignedTransactionBase64, android.util.Base64.DEFAULT)
-            
+
             // Check if this is a versioned transaction (starts with 0x80) or legacy transaction
             val isVersioned = transactionBytes.isNotEmpty() && (transactionBytes[0].toInt() and 0x80) != 0
-            
+
             val signedTransactionBase64 = if (isVersioned) {
-                // Handle versioned transaction
-                val version = transactionBytes[0].toInt() and 0x7f
-                val numSignatures = transactionBytes[1].toInt() and 0xff
-                val messageStart = 2 + (numSignatures * 64)
-                val message = transactionBytes.sliceArray(messageStart until transactionBytes.size)
-                
-                val account = if (privateKey.size == 32) {
-                    val keypair = com.solana.vendor.TweetNaclFast.Signature.keyPair_fromSeed(privateKey)
-                    HotAccount(keypair.secretKey)
-                } else {
-                    HotAccount(privateKey)
-                }
-                
-                val signature = account.sign(message)
-                val signedTxSize = 1 + 1 + 64 + message.size
-                val signedTransaction = ByteArray(signedTxSize)
-                var offset = 0
-                
-                signedTransaction[offset++] = (0x80 or version).toByte()
-                signedTransaction[offset++] = 1
-                System.arraycopy(signature, 0, signedTransaction, offset, 64)
-                offset += 64
-                System.arraycopy(message, 0, signedTransaction, offset, message.size)
-                
-                android.util.Base64.encodeToString(signedTransaction, android.util.Base64.NO_WRAP)
+                // Handle versioned transaction - needs special handling for LocalWallet
+                // For now, throw an exception as versioned transactions need special wallet support
+                throw UnsupportedOperationException("Versioned transaction signing not yet supported with wallet interface")
             } else {
                 // Handle legacy transaction
                 val transaction = Transaction.from(transactionBytes)
-                
-                // Create account from private key
-                val account = if (privateKey.size == 32) {
-                    val keypair = com.solana.vendor.TweetNaclFast.Signature.keyPair_fromSeed(privateKey)
-                    HotAccount(keypair.secretKey)
-                } else {
-                    HotAccount(privateKey)
+
+                // Use the unified signing flow
+                val signingRequest = wallet.prepareTransaction(transaction)
+
+                // Check the signing method
+                val signedTransaction = when (val method = signingRequest.signingMethod) {
+                    is fi.darklake.wallet.crypto.SigningMethod.Local -> {
+                        // For local wallets, we can sign immediately
+                        wallet.completeSignature(transaction, ByteArray(0))
+                    }
+                    is fi.darklake.wallet.crypto.SigningMethod.SeedVault -> {
+                        // For Seed Vault, we cannot handle it here - need UI
+                        throw UnsupportedOperationException("Seed Vault signing requires UI interaction")
+                    }
                 }
-                
-                // Sign the transaction
-                transaction.sign(account)
-                
+
                 // Serialize and encode back to base64
-                android.util.Base64.encodeToString(transaction.serialize(), android.util.Base64.NO_WRAP)
+                android.util.Base64.encodeToString(signedTransaction.serialize(), android.util.Base64.NO_WRAP)
             }
-            
+
             println("Transaction signing completed")
             signedTransactionBase64
         } catch (e: Exception) {
@@ -371,28 +371,42 @@ class SolanaTransactionService(
     ): String? = withContext(Dispatchers.IO) {
         try {
             println("=== SUBMITTING SIGNED TRANSACTION ===")
-            
+            println("Base64 length: ${signedTransactionBase64.length}")
+
             val solana = createSolanaClient()
-            
+
             // Decode the base64 transaction
             val transactionBytes = android.util.Base64.decode(signedTransactionBase64, android.util.Base64.NO_WRAP)
-            
+            println("Transaction bytes length: ${transactionBytes.size}")
+
+            // Log first few bytes for debugging
+            if (transactionBytes.size >= 10) {
+                val hexStart = transactionBytes.take(10).joinToString("") { "%02x".format(it) }
+                println("Transaction starts with: $hexStart")
+            }
+
             // Send with skipPreflight to avoid simulation issues
             val transactionOptions = TransactionOptions(skipPreflight = true)
+            println("Sending raw transaction with skipPreflight=true")
             val signature = solana.api.sendRawTransaction(transactionBytes, transactionOptions)
-            
+
             if (signature.isFailure) {
                 val error = signature.exceptionOrNull()
                 println("Transaction submission failed: ${error?.message}")
+                println("Error type: ${error?.javaClass?.simpleName}")
+                if (error != null) {
+                    error.printStackTrace()
+                }
                 return@withContext null
             }
-            
+
             val txSignature = signature.getOrThrow()
             println("Transaction submitted successfully: $txSignature")
             txSignature
-            
+
         } catch (e: Exception) {
             println("Failed to submit transaction: ${e.message}")
+            println("Exception type: ${e.javaClass.simpleName}")
             e.printStackTrace()
             null
         }

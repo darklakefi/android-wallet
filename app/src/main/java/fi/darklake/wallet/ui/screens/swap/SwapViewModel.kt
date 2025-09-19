@@ -392,7 +392,7 @@ class SwapViewModel(
                 
                 // Sign the transaction using SolanaKT
                 val signedTransactionBase64 = try {
-                    transactionService.signTransaction(swapResponse.unsignedTransaction, wallet.privateKey)
+                    transactionService.signTransaction(swapResponse.unsignedTransaction, wallet)
                 } catch (e: Exception) {
                     throw Exception("Failed to sign transaction: ${e.message}")
                 }

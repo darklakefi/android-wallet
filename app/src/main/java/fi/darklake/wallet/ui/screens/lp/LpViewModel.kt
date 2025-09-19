@@ -347,7 +347,7 @@ class LpViewModel(
                     liquidityStep = LiquidityStep.CONFIRM_TRANSACTION
                 )
                 
-                val signedTransactionBase64 = transactionService.signTransaction(unsignedTransactionBase64, wallet.privateKey)
+                val signedTransactionBase64 = transactionService.signTransaction(unsignedTransactionBase64, wallet)
                 
                 // Step 3: Submit transaction
                 _uiState.value = _uiState.value.copy(
@@ -438,7 +438,7 @@ class LpViewModel(
                     liquidityStep = LiquidityStep.CONFIRM_TRANSACTION
                 )
                 
-                val signedTransactionBase64 = transactionService.signTransaction(unsignedTransactionBase64, wallet.privateKey)
+                val signedTransactionBase64 = transactionService.signTransaction(unsignedTransactionBase64, wallet)
                 
                 // Step 3: Submit transaction
                 _uiState.value = _uiState.value.copy(
@@ -538,7 +538,7 @@ class LpViewModel(
                     liquidityStep = LiquidityStep.CONFIRM_TRANSACTION
                 )
                 
-                val signedTransactionBase64 = transactionService.signTransaction(unsignedTransactionBase64, wallet.privateKey)
+                val signedTransactionBase64 = transactionService.signTransaction(unsignedTransactionBase64, wallet)
                 
                 // Step 3: Submit transaction
                 _uiState.value = _uiState.value.copy(

@@ -31,7 +31,7 @@ class SeedVaultManager(private val context: Context) {
 
         // Result extras (must match WalletContractV1 constants)
         const val EXTRA_SEED_AUTH_TOKEN = "AuthToken"  // WalletContractV1.EXTRA_AUTH_TOKEN
-        const val EXTRA_SIGNED_TRANSACTION = "signed_transaction"
+        const val EXTRA_SIGNED_TRANSACTION = "SignedPayloads"  // For signed transaction result
         const val EXTRA_SEED_NAME = "seed_name"
         const val EXTRA_DERIVATION_PATH = "derivation_path"
         const val EXTRA_TRANSACTION = "transaction"
@@ -208,17 +208,16 @@ class SeedVaultManager(private val context: Context) {
      */
     suspend fun getPublicKeyForAuthToken(authToken: Long): ByteArray? = withContext(Dispatchers.IO) {
         try {
+            // The SDK expects AuthToken in the extras bundle
             val bundle = android.os.Bundle().apply {
-                putString("android.content.extra.SQL_SELECTION", "AuthToken = ?")
-                putStringArray("android.content.extra.SQL_SELECTION_ARGS", arrayOf(authToken.toString()))
-                putLong("AuthToken", authToken)  // Also put it here as the SDK might expect it
+                putLong("AuthToken", authToken)  // This is what WalletContentProvider looks for
             }
 
             val cursor = context.contentResolver.query(
                 ACCOUNTS_URI,
-                null,
-                bundle,
-                null
+                null,  // projection
+                bundle,  // queryArgs
+                null  // cancellationSignal
             )
 
             cursor?.use {
@@ -237,9 +236,9 @@ class SeedVaultManager(private val context: Context) {
                         publicKeyEncodedIndex >= 0 && !it.isNull(publicKeyEncodedIndex) -> {
                             // If we only have encoded, we'd need to decode it
                             val encoded = it.getString(publicKeyEncodedIndex)
-                            Log.d(TAG, "Got encoded public key for token $authToken: $encoded")
-                            // For now return empty array, we'd need Base58 decoder
-                            ByteArray(32)
+                            Log.e(TAG, "Got encoded public key but can't decode Base58 yet: $encoded")
+                            // FAIL - don't return empty data
+                            null
                         }
                         else -> null
                     }
