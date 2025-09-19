@@ -221,9 +221,9 @@ fun SeedVaultSetupScreen(
                                                     isAuthorized = false,
                                                     onClick = {
                                                         // For unauthorized seeds, use the purpose to create authorization intent
+                                                        // Do NOT pass a seed name - existing seeds already have names
                                                         val intent = seedVaultManager.createAuthorizeSeedIntent(
-                                                            purpose = seed.purpose, // Use the purpose field
-                                                            seedName = "Darklake Wallet"
+                                                            purpose = seed.purpose // Just pass the purpose
                                                         )
                                                         authorizeLauncher.launch(intent)
                                                     }
@@ -293,8 +293,9 @@ fun SeedVaultSetupScreen(
                         AppButton(
                             text = "CREATE NEW SEED",
                             onClick = {
+                                // For creating new seeds, we can suggest a name
                                 val intent = seedVaultManager.createNewSeedIntent(
-                                    seedName = "Darklake Wallet"
+                                    seedName = "Darklake Wallet ${System.currentTimeMillis() / 1000}"
                                 )
                                 createSeedLauncher.launch(intent)
                             },
@@ -306,8 +307,9 @@ fun SeedVaultSetupScreen(
                         AppButton(
                             text = "IMPORT EXISTING SEED",
                             onClick = {
+                                // For importing seeds, we can suggest a name
                                 val intent = seedVaultManager.createImportSeedIntent(
-                                    seedName = "Darklake Wallet"
+                                    seedName = "Imported Wallet ${System.currentTimeMillis() / 1000}"
                                 )
                                 createSeedLauncher.launch(intent)
                             },

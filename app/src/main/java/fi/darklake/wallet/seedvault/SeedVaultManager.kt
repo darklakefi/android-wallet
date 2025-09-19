@@ -21,19 +21,12 @@ class SeedVaultManager(private val context: Context) {
         private const val SEED_VAULT_AUTHORITY = "com.solanamobile.seedvault.wallet.v1.walletprovider"
         private val UNAUTHORIZED_SEEDS_URI = Uri.parse("content://$SEED_VAULT_AUTHORITY/unauthorizedseeds")
         private val AUTHORIZED_SEEDS_URI = Uri.parse("content://$SEED_VAULT_AUTHORITY/authorizedseeds")
-        private val SEEDS_URI = Uri.parse("content://$SEED_VAULT_AUTHORITY/seeds")
 
         // Intent actions for Seed Vault
         const val ACTION_AUTHORIZE_SEED_ACCESS = "com.solanamobile.seedvault.wallet.v1.ACTION_AUTHORIZE_SEED_ACCESS"
         const val ACTION_SIGN_TRANSACTION = "com.solanamobile.seedvault.wallet.v1.ACTION_SIGN_TRANSACTION"
         const val ACTION_CREATE_SEED = "com.solanamobile.seedvault.wallet.v1.ACTION_CREATE_SEED"
         const val ACTION_IMPORT_SEED = "com.solanamobile.seedvault.wallet.v1.ACTION_IMPORT_SEED"
-
-        // Request codes for activities
-        const val REQUEST_AUTHORIZE_SEED = 1001
-        const val REQUEST_SIGN_TRANSACTION = 1002
-        const val REQUEST_CREATE_SEED = 1003
-        const val REQUEST_IMPORT_SEED = 1004
 
         // Result extras
         const val EXTRA_SEED_AUTH_TOKEN = "auth_token"
@@ -108,6 +101,7 @@ class SeedVaultManager(private val context: Context) {
                             val purpose = if (idIndex >= 0) it.getInt(idIndex) else PURPOSE_SIGN_SOLANA_TRANSACTION
                             Log.d(TAG, "Found unauthorized seeds for purpose: $purpose")
 
+                            Log.d(TAG, "Seed columns: $it.columnNames")
                             // Create a placeholder entry for this purpose
                             // The authToken is -1 to indicate this is not yet authorized
                             seeds.add(
@@ -200,17 +194,16 @@ class SeedVaultManager(private val context: Context) {
     }
 
     /**
-     * Create an intent to authorize a seed for a specific purpose
+     * Create an intent to authorize an existing seed for a specific purpose
      * @param purpose The purpose for which to authorize a seed (e.g., PURPOSE_SIGN_SOLANA_TRANSACTION)
-     * @param seedName Optional name for the seed
+     * Note: Do NOT pass a seed name here - existing seeds already have names
      */
-    fun createAuthorizeSeedIntent(purpose: Int, seedName: String? = null): Intent {
-        Log.d(TAG, "Creating authorize intent for purpose: $purpose")
+    fun createAuthorizeSeedIntent(purpose: Int): Intent {
+        Log.d(TAG, "Creating authorize intent for existing seed with purpose: $purpose")
         return Intent(ACTION_AUTHORIZE_SEED_ACCESS).apply {
             setPackage("com.solanamobile.seedvaultimpl") // Explicitly target the simulator
-            // Always use EXTRA_PURPOSE for authorization
             putExtra(EXTRA_PURPOSE, purpose)
-            seedName?.let { putExtra(EXTRA_SEED_NAME, it) }
+            // Do NOT include EXTRA_SEED_NAME - that's only for creating new seeds
         }
     }
 

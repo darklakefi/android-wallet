@@ -72,7 +72,13 @@
       "Bash(gh secret list:*)",
       "Bash(gh run list:*)",
       "Bash(gh run watch:*)",
-      "Bash(gh run view:*)"
+      "Bash(gh run view:*)",
+      "WebFetch(domain:docs.solanamobile.com)",
+      "Bash(~/Android/Sdk/emulator/emulator -list-avds)",
+      "Read(//home/vitorpy/.android/avd/**)",
+      "Read(//home/vitorpy/code/**)",
+      "Bash(awk:*)",
+      "Read(//tmp/**)"
     ],
     "deny": [],
     "additionalDirectories": [
