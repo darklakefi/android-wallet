@@ -50,23 +50,14 @@ fun SeedVaultSetupScreen(
     val authorizeLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
+        Log.d("SeedVaultSetup", "Authorization result: resultCode=${result.resultCode}")
         if (result.resultCode == Activity.RESULT_OK) {
             val authToken = seedVaultManager.processAuthorizationResult(result.data)
             if (authToken != null) {
-                // Get the public key for this seed
-                coroutineScope.launch {
-                    // Refresh the seeds lists after authorization
-                    availableSeeds = seedVaultManager.getUnauthorizedSeeds()
-                    authorizedSeeds = seedVaultManager.getAuthorizedSeeds()
-                    hasUnauthorizedSeeds = seedVaultManager.hasUnauthorizedSeeds()
-
-                    val authorizedSeed = authorizedSeeds.find { it.authToken == authToken }
-                    if (authorizedSeed != null) {
-                        onSeedAuthorized(authToken, authorizedSeed.publicKey)
-                    } else {
-                        errorMessage = "Failed to retrieve seed information"
-                    }
-                }
+                // Successfully authorized, pass back to navigation
+                // We'll get the public key later when needed
+                Log.d("SeedVaultSetup", "Successfully authorized seed with token: $authToken")
+                onSeedAuthorized(authToken, ByteArray(32))  // Pass empty public key for now
             } else {
                 errorMessage = "Failed to authorize seed"
             }
@@ -220,12 +211,20 @@ fun SeedVaultSetupScreen(
                                                     seed = seed,
                                                     isAuthorized = false,
                                                     onClick = {
+                                                        Log.d("SeedVaultSetup", "Clicked on available seed with purpose: ${seed.purpose}")
                                                         // For unauthorized seeds, use the purpose to create authorization intent
                                                         // Do NOT pass a seed name - existing seeds already have names
                                                         val intent = seedVaultManager.createAuthorizeSeedIntent(
                                                             purpose = seed.purpose // Just pass the purpose
                                                         )
-                                                        authorizeLauncher.launch(intent)
+                                                        Log.d("SeedVaultSetup", "Launching authorization intent: $intent")
+                                                        try {
+                                                            authorizeLauncher.launch(intent)
+                                                            Log.d("SeedVaultSetup", "Intent launched successfully")
+                                                        } catch (e: Exception) {
+                                                            Log.e("SeedVaultSetup", "Failed to launch intent", e)
+                                                            errorMessage = "Failed to launch Seed Vault: ${e.message}"
+                                                        }
                                                     }
                                                 )
                                                 Spacer(modifier = Modifier.height(8.dp))
@@ -336,8 +335,7 @@ private fun SeedItem(
 ) {
     Surface(
         modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
+            .fillMaxWidth(),
         shape = MaterialTheme.shapes.medium,
         color = if (isAuthorized) DarklakeCardBackground else DarklakeBackground,
         border = if (!isAuthorized) CardDefaults.outlinedCardBorder() else null
@@ -345,6 +343,10 @@ private fun SeedItem(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .clickable {
+                    Log.d("SeedItem", "Clicked on seed: ${seed.name}, authorized: $isAuthorized, purpose: ${seed.purpose}")
+                    onClick()
+                }
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween

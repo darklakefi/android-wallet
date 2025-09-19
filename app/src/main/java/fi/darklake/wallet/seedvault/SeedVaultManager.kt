@@ -21,6 +21,7 @@ class SeedVaultManager(private val context: Context) {
         private const val SEED_VAULT_AUTHORITY = "com.solanamobile.seedvault.wallet.v1.walletprovider"
         private val UNAUTHORIZED_SEEDS_URI = Uri.parse("content://$SEED_VAULT_AUTHORITY/unauthorizedseeds")
         private val AUTHORIZED_SEEDS_URI = Uri.parse("content://$SEED_VAULT_AUTHORITY/authorizedseeds")
+        private val ACCOUNTS_URI = Uri.parse("content://$SEED_VAULT_AUTHORITY/accounts")
 
         // Intent actions for Seed Vault
         const val ACTION_AUTHORIZE_SEED_ACCESS = "com.solanamobile.seedvault.wallet.v1.ACTION_AUTHORIZE_SEED_ACCESS"
@@ -28,13 +29,13 @@ class SeedVaultManager(private val context: Context) {
         const val ACTION_CREATE_SEED = "com.solanamobile.seedvault.wallet.v1.ACTION_CREATE_SEED"
         const val ACTION_IMPORT_SEED = "com.solanamobile.seedvault.wallet.v1.ACTION_IMPORT_SEED"
 
-        // Result extras
-        const val EXTRA_SEED_AUTH_TOKEN = "auth_token"
+        // Result extras (must match WalletContractV1 constants)
+        const val EXTRA_SEED_AUTH_TOKEN = "AuthToken"  // WalletContractV1.EXTRA_AUTH_TOKEN
         const val EXTRA_SIGNED_TRANSACTION = "signed_transaction"
         const val EXTRA_SEED_NAME = "seed_name"
         const val EXTRA_DERIVATION_PATH = "derivation_path"
         const val EXTRA_TRANSACTION = "transaction"
-        const val EXTRA_PURPOSE = "purpose"
+        const val EXTRA_PURPOSE = "Purpose"  // Must match WalletContractV1.EXTRA_PURPOSE
 
         // Purpose constants (from WalletContractV1)
         const val PURPOSE_SIGN_SOLANA_TRANSACTION = 0
@@ -161,26 +162,34 @@ class SeedVaultManager(private val context: Context) {
         try {
             val cursor = context.contentResolver.query(
                 AUTHORIZED_SEEDS_URI,
-                arrayOf("auth_token", "name", "public_key"),
+                null,  // Get all columns to see what's available
                 null,
                 null,
                 null
             )
 
             cursor?.use {
-                val authTokenIndex = it.getColumnIndex("auth_token")
-                val nameIndex = it.getColumnIndex("name")
-                val publicKeyIndex = it.getColumnIndex("public_key")
+                // Log column names for debugging
+                Log.d(TAG, "Authorized seeds columns: ${it.columnNames.joinToString()}")
+
+                val authTokenIndex = it.getColumnIndex("_id")  // AUTHORIZED_SEEDS_AUTH_TOKEN
+                val nameIndex = it.getColumnIndex("AuthorizedSeeds_SeedName")  // AUTHORIZED_SEEDS_SEED_NAME
 
                 while (it.moveToNext()) {
-                    if (authTokenIndex >= 0 && nameIndex >= 0 && publicKeyIndex >= 0) {
+                    if (authTokenIndex >= 0) {
+                        val authToken = it.getLong(authTokenIndex)
+                        val name = if (nameIndex >= 0) it.getString(nameIndex) ?: "Seed" else "Seed"
+
+                        // For now, we'll get the public key from accounts later
+                        // Just create the seed with empty public key
                         seeds.add(
                             Seed(
-                                authToken = it.getLong(authTokenIndex),
-                                name = it.getString(nameIndex),
-                                publicKey = it.getBlob(publicKeyIndex)
+                                authToken = authToken,
+                                name = name,
+                                publicKey = ByteArray(0)  // Will need to query accounts table for this
                             )
                         )
+                        Log.d(TAG, "Found authorized seed: token=$authToken, name=$name")
                     }
                 }
             }
@@ -191,6 +200,56 @@ class SeedVaultManager(private val context: Context) {
         }
 
         return@withContext seeds
+    }
+
+    /**
+     * Get the public key for an authorized seed
+     * Queries the accounts table to get the default account's public key
+     */
+    suspend fun getPublicKeyForAuthToken(authToken: Long): ByteArray? = withContext(Dispatchers.IO) {
+        try {
+            val bundle = android.os.Bundle().apply {
+                putString("android.content.extra.SQL_SELECTION", "AuthToken = ?")
+                putStringArray("android.content.extra.SQL_SELECTION_ARGS", arrayOf(authToken.toString()))
+                putLong("AuthToken", authToken)  // Also put it here as the SDK might expect it
+            }
+
+            val cursor = context.contentResolver.query(
+                ACCOUNTS_URI,
+                null,
+                bundle,
+                null
+            )
+
+            cursor?.use {
+                Log.d(TAG, "Accounts columns: ${it.columnNames.joinToString()}")
+
+                val publicKeyRawIndex = it.getColumnIndex("Accounts_PublicKeyRaw")
+                val publicKeyEncodedIndex = it.getColumnIndex("Accounts_PublicKeyEncoded")
+
+                if (it.moveToFirst()) {
+                    val publicKey = when {
+                        publicKeyRawIndex >= 0 && !it.isNull(publicKeyRawIndex) -> {
+                            it.getBlob(publicKeyRawIndex).also {
+                                Log.d(TAG, "Got raw public key for token $authToken: ${it.size} bytes")
+                            }
+                        }
+                        publicKeyEncodedIndex >= 0 && !it.isNull(publicKeyEncodedIndex) -> {
+                            // If we only have encoded, we'd need to decode it
+                            val encoded = it.getString(publicKeyEncodedIndex)
+                            Log.d(TAG, "Got encoded public key for token $authToken: $encoded")
+                            // For now return empty array, we'd need Base58 decoder
+                            ByteArray(32)
+                        }
+                        else -> null
+                    }
+                    return@withContext publicKey
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to get public key for auth token $authToken: ${e.message}")
+        }
+        return@withContext null
     }
 
     /**
