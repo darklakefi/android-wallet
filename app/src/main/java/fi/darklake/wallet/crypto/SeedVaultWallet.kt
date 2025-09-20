@@ -1,6 +1,5 @@
 package fi.darklake.wallet.crypto
 
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -9,8 +8,6 @@ import com.solana.core.PublicKey
 import com.solana.core.Transaction
 import com.solanamobile.seedvault.SigningRequest
 import com.solanamobile.seedvault.WalletContractV1
-import fi.darklake.wallet.seedvault.SeedVaultManager
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -21,14 +18,13 @@ import kotlinx.coroutines.withContext
 class SeedVaultWallet(
     override val publicKey: String,
     private val authToken: Long,
+    private val derivationPath: String,  // e.g., "bip32:/m/44'/501'/0'"
     private val context: Context
 ) : SolanaWallet {
 
     companion object {
         private const val TAG = "SeedVaultWallet"
     }
-
-    private val seedVaultManager = SeedVaultManager(context)
 
     override suspend fun prepareTransaction(transaction: Transaction): fi.darklake.wallet.crypto.SigningRequest = withContext(Dispatchers.IO) {
         Log.d(TAG, "Preparing transaction for Seed Vault signing (auth token: $authToken)")
@@ -53,11 +49,10 @@ class SeedVaultWallet(
         }
         Log.d(TAG, "Our public key: ${publicKey}")
 
-        // Create BIP44 derivation path for Solana (m/44'/501'/0'/0')
-        // This is the standard Solana derivation path
-        // The account we're using should be at this path
-        val derivationPath = Uri.parse("bip44:/0'/0'")
-        val requestedSignatures = arrayListOf(derivationPath)
+        // Use the derivation path from Seed Vault that matches our public key
+        Log.d(TAG, "Using derivation path: $derivationPath")
+        val derivationUri = Uri.parse(derivationPath)
+        val requestedSignatures = arrayListOf(derivationUri)
 
         // Create SigningRequest object as expected by Seed Vault
         val signingRequest = SigningRequest(messageBytes, requestedSignatures)

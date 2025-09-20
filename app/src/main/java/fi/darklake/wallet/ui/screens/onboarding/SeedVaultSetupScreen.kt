@@ -197,14 +197,14 @@ fun SeedVaultSetupScreen(
                                                     seed = seed,
                                                     isAuthorized = true,
                                                     onClick = {
-                                                        // For authorized seeds, we need to get the public key from accounts
+                                                        // For authorized seeds, we need to get the account info from accounts
                                                         coroutineScope.launch {
-                                                            val publicKey = seedVaultManager.getPublicKeyForAuthToken(seed.authToken)
-                                                            if (publicKey != null && publicKey.isNotEmpty()) {
-                                                                Log.d("SeedVaultSetup", "Got public key for authorized seed: ${publicKey.size} bytes")
-                                                                onSeedAuthorized(seed.authToken, publicKey)
+                                                            val accountInfo = seedVaultManager.getAccountInfoForAuthToken(seed.authToken)
+                                                            if (accountInfo != null && accountInfo.publicKey.isNotEmpty()) {
+                                                                Log.d("SeedVaultSetup", "Got account info for authorized seed: ${accountInfo.publicKey.size} bytes, path: ${accountInfo.derivationPath}")
+                                                                onSeedAuthorized(seed.authToken, accountInfo.publicKey)
                                                             } else {
-                                                                val error = "FAILED to get public key for authorized seed with token ${seed.authToken}"
+                                                                val error = "FAILED to get account info for authorized seed with token ${seed.authToken}"
                                                                 Log.e("SeedVaultSetup", error)
                                                                 errorMessage = error
                                                             }

@@ -24,6 +24,7 @@ class SeedVaultStorageProvider(private val context: Context) : WalletStorageProv
         private const val PREFS_NAME = "seed_vault_wallet_prefs"
         private const val KEY_AUTH_TOKEN = "seed_vault_auth_token"
         private const val KEY_PUBLIC_KEY = "seed_vault_public_key"
+        private const val KEY_DERIVATION_PATH = "seed_vault_derivation_path"
         private const val KEY_WALLET_TYPE = "wallet_type"
         private const val WALLET_TYPE_SEED_VAULT = "seed_vault"
     }
@@ -74,15 +75,27 @@ class SeedVaultStorageProvider(private val context: Context) : WalletStorageProv
      * Store the Seed Vault authorization details
      * This should be called after successful Seed Vault authorization
      */
-    suspend fun storeSeedVaultAuth(authToken: Long, publicKey: ByteArray): Result<Unit> = withContext(Dispatchers.IO) {
+    suspend fun storeSeedVaultAuth(authToken: Long, publicKey: ByteArray, derivationPath: String? = null): Result<Unit> = withContext(Dispatchers.IO) {
         try {
+            // If no derivation path provided, try to query it from Seed Vault
+            val actualDerivationPath = if (derivationPath != null) {
+                derivationPath
+            } else {
+                val accountInfo = seedVaultManager.getAccountInfoForAuthToken(authToken)
+                accountInfo?.derivationPath ?: run {
+                    Log.w(TAG, "Could not get derivation path from Seed Vault, using default")
+                    "bip32:/m/44'/501'/0'"  // Default Solana path
+                }
+            }
+
             sharedPreferences.edit().apply {
                 putLong(KEY_AUTH_TOKEN, authToken)
                 putString(KEY_PUBLIC_KEY, Base64.encodeToString(publicKey, Base64.NO_WRAP))
+                putString(KEY_DERIVATION_PATH, actualDerivationPath)
                 putString(KEY_WALLET_TYPE, WALLET_TYPE_SEED_VAULT)
                 apply()
             }
-            Log.d(TAG, "Stored Seed Vault authorization")
+            Log.d(TAG, "Stored Seed Vault authorization with derivation path: $actualDerivationPath")
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to store Seed Vault auth", e)
@@ -99,6 +112,7 @@ class SeedVaultStorageProvider(private val context: Context) : WalletStorageProv
 
             val authToken = sharedPreferences.getLong(KEY_AUTH_TOKEN, -1L)
             val publicKeyStr = sharedPreferences.getString(KEY_PUBLIC_KEY, null)
+            val derivationPath = sharedPreferences.getString(KEY_DERIVATION_PATH, null)
 
             if (authToken == -1L || publicKeyStr == null) {
                 Log.d(TAG, "No Seed Vault wallet found")
@@ -111,14 +125,19 @@ class SeedVaultStorageProvider(private val context: Context) : WalletStorageProv
             val publicKeyBase58 = Base58.encode(publicKey)
             Log.d(TAG, "Base58 encoded public key: $publicKeyBase58")
 
-            // Create a SeedVaultWallet implementation
+            // Use stored derivation path or default
+            val actualDerivationPath = derivationPath ?: "bip32:/m/44'/501'/0'"
+            Log.d(TAG, "Using derivation path: $actualDerivationPath")
+
+            // Create a SeedVaultWallet implementation with derivation path
             val wallet = fi.darklake.wallet.crypto.SeedVaultWallet(
                 publicKey = publicKeyBase58,
                 authToken = authToken,
+                derivationPath = actualDerivationPath,
                 context = context
             )
 
-            Log.d(TAG, "Retrieved Seed Vault wallet with address: $publicKeyBase58")
+            Log.d(TAG, "Retrieved Seed Vault wallet with address: $publicKeyBase58 and path: $actualDerivationPath")
             Result.success(wallet)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to retrieve wallet", e)

@@ -9,6 +9,32 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
+ * Account information retrieved from Seed Vault
+ */
+data class AccountInfo(
+    val publicKey: ByteArray,
+    val derivationPath: String  // e.g., "bip32:/m/44'/501'/0'"
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as AccountInfo
+
+        if (!publicKey.contentEquals(other.publicKey)) return false
+        if (derivationPath != other.derivationPath) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = publicKey.contentHashCode()
+        result = 31 * result + derivationPath.hashCode()
+        return result
+    }
+}
+
+/**
  * Manager class for interacting with Solana Mobile's Seed Vault.
  * Provides methods to check availability, authorize seeds, and sign transactions.
  */
@@ -207,6 +233,15 @@ class SeedVaultManager(private val context: Context) {
      * Queries the accounts table to get the default account's public key
      */
     suspend fun getPublicKeyForAuthToken(authToken: Long): ByteArray? = withContext(Dispatchers.IO) {
+        val accountInfo = getAccountInfoForAuthToken(authToken)
+        return@withContext accountInfo?.publicKey
+    }
+
+    /**
+     * Get the account information for an authorized seed
+     * Queries the accounts table to get the default account's public key and derivation path
+     */
+    suspend fun getAccountInfoForAuthToken(authToken: Long): AccountInfo? = withContext(Dispatchers.IO) {
         try {
             // The SDK expects AuthToken in the extras bundle
             val bundle = android.os.Bundle().apply {
@@ -225,12 +260,13 @@ class SeedVaultManager(private val context: Context) {
 
                 val publicKeyRawIndex = it.getColumnIndex("Accounts_PublicKeyRaw")
                 val publicKeyEncodedIndex = it.getColumnIndex("Accounts_PublicKeyEncoded")
+                val derivationPathIndex = it.getColumnIndex("Accounts_Bip32DerivationPath")
 
                 if (it.moveToFirst()) {
                     val publicKey = when {
                         publicKeyRawIndex >= 0 && !it.isNull(publicKeyRawIndex) -> {
-                            it.getBlob(publicKeyRawIndex).also {
-                                Log.d(TAG, "Got raw public key for token $authToken: ${it.size} bytes")
+                            it.getBlob(publicKeyRawIndex).also { key ->
+                                Log.d(TAG, "Got raw public key for token $authToken: ${key.size} bytes")
                             }
                         }
                         publicKeyEncodedIndex >= 0 && !it.isNull(publicKeyEncodedIndex) -> {
@@ -242,11 +278,23 @@ class SeedVaultManager(private val context: Context) {
                         }
                         else -> null
                     }
-                    return@withContext publicKey
+
+                    val derivationPath = if (derivationPathIndex >= 0 && !it.isNull(derivationPathIndex)) {
+                        it.getString(derivationPathIndex).also { path ->
+                            Log.d(TAG, "Got derivation path for token $authToken: $path")
+                        }
+                    } else {
+                        Log.e(TAG, "No derivation path found for token $authToken")
+                        null
+                    }
+
+                    if (publicKey != null && derivationPath != null) {
+                        return@withContext AccountInfo(publicKey, derivationPath)
+                    }
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to get public key for auth token $authToken: ${e.message}")
+            Log.e(TAG, "Failed to get account info for auth token $authToken: ${e.message}")
         }
         return@withContext null
     }

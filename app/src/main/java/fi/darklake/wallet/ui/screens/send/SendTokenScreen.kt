@@ -249,28 +249,13 @@ fun SendTokenScreen(
                                     fontSize = 16.sp
                                 )
                             }
-                        } else if (tokenMint != null) {
+                        } else {
                             TokenIconByAddress(
                                 tokenAddress = tokenMint,
                                 size = 32.dp
                             )
-                        } else {
-                            Box(
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .clip(CircleShape)
-                                    .background(DarklakeCardBackground),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "?",
-                                    color = DarklakeTextSecondary,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 16.sp
-                                )
-                            }
                         }
-                        
+
                         Column {
                             Text(
                                 text = tokenSymbol,
