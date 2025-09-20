@@ -160,25 +160,4 @@ class SeedVaultStorageProvider(private val context: Context) : WalletStorageProv
         val walletType = sharedPreferences.getString(KEY_WALLET_TYPE, null)
         walletType == WALLET_TYPE_SEED_VAULT && sharedPreferences.contains(KEY_AUTH_TOKEN)
     }
-
-    /**
-     * Check if Seed Vault is actually available on this device
-     */
-    suspend fun checkAvailability(): Boolean = withContext(Dispatchers.IO) {
-        seedVaultManager.isSeedVaultAvailable()
-    }
-
-    /**
-     * Get the stored auth token for Seed Vault signing operations
-     */
-    fun getAuthToken(): Long {
-        return sharedPreferences.getLong(KEY_AUTH_TOKEN, -1L)
-    }
-
-    /**
-     * Check if the current wallet is a Seed Vault wallet
-     */
-    fun isSeedVaultWallet(): Boolean {
-        return sharedPreferences.getString(KEY_WALLET_TYPE, null) == WALLET_TYPE_SEED_VAULT
-    }
 }

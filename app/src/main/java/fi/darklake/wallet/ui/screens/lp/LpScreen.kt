@@ -593,7 +593,7 @@ private fun LiquidityPositionCard(
 @Composable
 fun PreviewLpScreen() {
     DarklakeWalletTheme {
-        val context = androidx.compose.ui.platform.LocalContext.current
+        val context = LocalContext.current
         val settingsManager = remember { SettingsManager(context) }
         val storageManager = remember { WalletStorageManager(context) }
         

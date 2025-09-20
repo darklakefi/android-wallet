@@ -87,7 +87,7 @@ fun SendTokenScreen(
                     )
                 } else {
                     @Suppress("DEPRECATION")
-                    result.data?.getParcelableArrayListExtra<com.solanamobile.seedvault.SigningResponse>(
+                    result.data?.getParcelableArrayListExtra(
                         com.solanamobile.seedvault.WalletContractV1.EXTRA_SIGNING_RESPONSE
                     )
                 }
@@ -153,9 +153,9 @@ fun SendTokenScreen(
     val tokenInfo = if (!isSol) uiState.selectedToken else null
     val tokenSymbol = if (!isSol) uiState.tokenSymbol ?: "TOKEN" else "SOL"
     val tokenName = if (!isSol) uiState.tokenName ?: "Unknown Token" else "SOLANA"
-    val displayMint = if (isSol) "So11...1112" else tokenMint?.let { 
+    val displayMint = if (isSol) "So11...1112" else tokenMint.let {
         "${it.take(4)}...${it.takeLast(4)}"
-    } ?: ""
+    }
     val balance = if (isSol) uiState.solBalance else (tokenInfo?.balance?.uiAmount ?: 0.0)
     
     // Handle success state - navigate back and trigger refresh
