@@ -123,7 +123,7 @@ This project uses Fastlane-powered GitHub Actions workflows:
 
 ### Technology Stack
 - **UI Framework**: Jetpack Compose with Material 3
-- **Min SDK**: 24 (Android 7.0)
+- **Min SDK**: 26 (Android 8.0)
 - **Target SDK**: 36
 - **Kotlin**: 2.2.10
 - **Java**: 11
